@@ -1,3 +1,6 @@
+#ifndef _AUP_H
+#define _AUP_H
+#pragma once
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4996)
@@ -10,8 +13,8 @@
 #if !(defined(_STDBOOL) || defined(STDBOOL_H) || defined(_STDBOOL_H) || defined(__STDBOOL) || defined(__STDBOOL_H))
 #define __bool_true_false_are_defined	1
 #ifndef __cplusplus
-#if _MSC_VER <= 1600
-#define bool    char
+#if defined(_MSC_VER) && _MSC_VER <= 1600
+#define bool    unsigned char
 #else
 #define bool    _Bool
 #endif
@@ -29,11 +32,11 @@
 #error "This architecture is not supported!"
 #endif
 
-/*
-typedef enum {
+enum {
     AUP_TNIL,
     AUP_TBOOL,
     AUP_TNUM,
     AUP_TOBJ
-} aupT;
-*/
+};
+
+#endif
