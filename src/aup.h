@@ -1,5 +1,5 @@
-#ifndef _AUP_H
-#define _AUP_H
+#ifndef _AUP_API_H
+#define _AUP_API_H
 #pragma once
 
 #ifdef _MSC_VER
