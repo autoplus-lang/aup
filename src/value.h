@@ -9,6 +9,12 @@ typedef struct _aupOs aupOs;
 
 typedef uint64_t aupV;
 
+typedef struct {
+	int count;
+	int capacity;
+	aupV *values;
+} aupVa;
+
 typedef union {
 	uint64_t b;
 	uint32_t bs[2];
@@ -41,5 +47,9 @@ typedef union {
 #define AUP_IS_FALSE(v) (!(value) || AUP_IS_NIL(value) \
 	|| (AUP_IS_BOOL(value) && AUP_AS_BOOL(value) == false) \
 	|| (AUP_IS_OBJ(value) && AUP_AS_OBJ(value) == NULL))
+
+void aupVa_init(aupVa *array);
+void aupVa_free(aupVa *array);
+int aupVa_write(aupVa *array, aupV value);
 
 #endif

@@ -1,0 +1,29 @@
+#ifndef _AUP_MEMORY_H
+#define _AUP_MEMORY_H
+#pragma once
+
+typedef struct {
+	size_t size;
+	size_t : sizeof(size_t);	// padding
+} aupM;
+
+/*
+	memory block: [-info-header-|-returned-pointer-]
+	//
+	aupM *mem = malloc(sizeof(aupM) + size);
+	mem->size = size;
+	void *ptr = (uintptr_t)mem + sizeof(aupM);
+*/
+
+#define AUP_GROW_CAP(capacity) \
+	((capacity) < 8 ? 8 : (capacity) * 2)
+
+#define AUP_GROW_ARR(type, ptr, oldCount, count) \
+	(type*)aup_realloc(ptr, sizeof(type) * (oldCount), sizeof(type) * (count))
+
+#define AUP_FREE_ARR(type, ptr, oldCount) \
+	aup_realloc(ptr, sizeof(type) * (oldCount), 0)
+
+void *aup_realloc(void *previous, size_t oldSize, size_t newSize);
+
+#endif
