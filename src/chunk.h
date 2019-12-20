@@ -4,19 +4,31 @@
 
 #include "value.h"
 
-typedef enum {
+enum {
 	AUP_OP_NOP = 0,
 
+	AUP_OP_PSH,
 	AUP_OP_POP,
-	AUP_OP_PUSH,
+	AUP_OP_PUT,
 
 	AUP_OP_NIL,
-	AUP_OP_BOOL,
-	AUP_OP_CONST,
+	AUP_OP_BOL,
+	AUP_OP_LDK,
+
+	AUP_OP_ADD,
+	AUP_OP_SUB,
+	AUP_OP_MUL,
+	AUP_OP_DIV,
+	AUP_OP_MOD,
 
 	AUP_OP_MOV,
 
-} aupOp;
+	AUP_OP_LD,
+	AUP_OP_ST,
+
+	AUP_OP_GLD,
+	AUP_OP_GST,
+};
 
 /*
 						 32-bits instruction
@@ -51,17 +63,17 @@ typedef enum {
 #define AUP_SET_OpAsBsC(op, A, sB, sC)    \
     ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((sB) & 1) << 22) | (((sC) & 1) << 31) ))
 
-#define AUP_GET_Op(i)   ((int)((i) & 63))
+#define AUP_GET_Op(i)   ((int)((i) & 0x3F))
 
-#define AUP_GET_A(i)    ((int)(((i) >> 6) & 255))
+#define AUP_GET_A(i)    ((int)(((i) >> 6) & 0xFF))
 #define AUP_GET_Ax(i)   ((short)((i) >> 6))
 
-#define AUP_GET_B(i)    ((int)(((i) >> 14) & 255))
-#define AUP_GET_Bx(i)   ((int)(((i) >> 14) & 511))
+#define AUP_GET_B(i)    ((int)(((i) >> 14) & 0xFF))
+#define AUP_GET_Bx(i)   ((int)(((i) >> 14) & 0x1FF))
 #define AUP_GET_sB(i)   ((int)(((i) >> 22) & 1))
 
-#define AUP_GET_C(i)    ((int)(((i) >> 23) & 255))
-#define AUP_GET_Cx(i)   ((int)(((i) >> 23) & 511))
+#define AUP_GET_C(i)    ((int)(((i) >> 23) & 0xFF))
+#define AUP_GET_Cx(i)   ((int)(((i) >> 23) & 0x1FF))
 #define AUP_GET_sC(i)   ((int)(((i) >> 31) & 1))
 
 typedef struct {
