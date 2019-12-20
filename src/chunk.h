@@ -78,7 +78,7 @@ typedef struct {
 void aupCh_init(aupCh *chunk);
 void aupCh_free(aupCh *chunk);
 int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t column);
-int aupCh_addConst(aupCh *chunk, aupV value);
+int aupCh_addK(aupCh *chunk, aupV value);
 
 void aupCh_dasm(aupCh *chunk, const char *name);
 void aupCh_dasmInst(aupCh *chunk, int offset);

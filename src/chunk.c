@@ -38,7 +38,17 @@ void aupCh_free(aupCh *chunk)
 	aupCh_init(chunk);
 }
 
-int aupCh_addConst(aupCh *chunk, aupV value)
+int aupCh_addK(aupCh *chunk, aupV value)
 {
 	aupVa_write(&chunk->constants, value);
+}
+
+void aupCh_dasm(aupCh *chunk, const char *name)
+{
+
+}
+
+void aupCh_dasmInst(aupCh *chunk, int offset)
+{
+
 }
