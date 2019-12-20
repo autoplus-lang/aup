@@ -38,6 +38,10 @@ typedef struct {
 	int column;
 } aupTk;
 
+#define AUP_MAX_ARGS	32
+#define AUP_MAX_CONSTS	256
+#define AUP_MAX_LOCALS	224
+
 void aupLx_init(const char *source);
 aupTk aupLx_scan();
 
