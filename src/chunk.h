@@ -22,8 +22,8 @@ typedef enum {
 						 32-bits instruction
 	 0 1 2 3 4 5 6 7 8 9 ...                                   ... 31
 	[- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -]
-	 [_6_op____] [_8_A_________] [_9_B___________] [_9_C___________]
-				 [_16_Ax_______________________] |                 |
+	 \_6_op____/ \_8_A_________/ \_9_B___________/ \_9_C___________/
+				 \_16_Ax_______________________/ \                 \
 												 sB                sC
 */
 
@@ -32,24 +32,24 @@ typedef enum {
 #define AUP_SET_OpAx(op, Ax)    \
     ((uint32_t)( (op) | ((uint16_t)(Ax) << 6) ))
 #define AUP_SET_OpAxCx(op, Ax, Cx)    \
-    ((uint32_t)( (op) | ((uint16_t)(Ax) << 6) | (((Cx) & 511) << 23) ))
+    ((uint32_t)( (op) | ((uint16_t)(Ax) << 6) | (((Cx) & 0x1FF) << 23) ))
 
 #define AUP_SET_OpAB(op, A, B)  \
-    ((uint32_t)( (op) | (((A) & 255) << 6) | (((B) & 255) << 14) ))
+    ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((B) & 0xFF) << 14) ))
 #define AUP_SET_OpABC(op, A, B, C)  \
-    ((uint32_t)( (op) | (((A) & 255) << 6) | (((B) & 255) << 14) | (((C) & 255) << 23)  ))
+    ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((B) & 0xFF) << 14) | (((C) & 255) << 23)  ))
 
 #define AUP_SET_OpABx(op, A, Bx)    \
-    ((uint32_t)( (op) | (((A) & 255) << 6) | (((Bx) & 511) << 14) ))
+    ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((Bx) & 0x1FF) << 14) ))
 #define AUP_SET_OpABxCx(op, A, Bx, Cx) \
-    ((uint32_t)( (op) | (((A) & 255) << 6) | (((Bx) & 511) << 14) | (((Cx) & 511) << 23) ))
+    ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((Bx) & 0x1FF) << 14) | (((Cx) & 511) << 23) ))
 
 #define AUP_SET_OpAsB(op, A, sB)    \
-    ((uint32_t)( (op) | (((A) & 255) << 6) | (((sB) & 1) << 22) ))
+    ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((sB) & 1) << 22) ))
 #define AUP_SET_OpAsC(op, A, sC)    \
-    ((uint32_t)( (op) | (((A) & 255) << 6) | (((sC) & 1) << 31) ))
+    ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((sC) & 1) << 31) ))
 #define AUP_SET_OpAsBsC(op, A, sB, sC)    \
-    ((uint32_t)( (op) | (((A) & 255) << 6) | (((sB) & 1) << 22) |(((sC) & 1) << 31) ))
+    ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((sB) & 1) << 22) | (((sC) & 1) << 31) ))
 
 #define AUP_GET_Op(i)   ((int)((i) & 63))
 

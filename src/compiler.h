@@ -41,4 +41,6 @@ typedef struct {
 void aupLx_init(const char *source);
 aupTk aupLx_scan();
 
+bool aup_compile(const char *source, aupCh *chunk);
+
 #endif
