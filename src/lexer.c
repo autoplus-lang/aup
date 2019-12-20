@@ -39,9 +39,21 @@ static bool isAtEnd()
 	return *lexer.current == '\0';
 }
 
+static void newLine()
+{
+	lexer.line++;
+	lexer.position = 0;
+}
+
+static void tabIndent()
+{
+	lexer.position += (4 - 1);
+}
+
 static char advance()
 {
 	lexer.current++;
+	lexer.position++;
 	return lexer.current[-1];
 }
 
@@ -72,6 +84,7 @@ static aupTk makeToken(int type)
 	token.start = lexer.start;
 	token.length = (int)(lexer.current - lexer.start);
 	token.line = lexer.line;
+	token.column = lexer.position - token.length;
 
 	return token;
 }
@@ -83,6 +96,7 @@ static aupTk errorToken(const char *message)
 	token.start = message;
 	token.length = (int)strlen(message);
 	token.line = lexer.line;
+	token.column = lexer.position - 1;
 
 	return token;
 }
@@ -92,14 +106,15 @@ static void skipWhitespace()
 	for (;;) {
 		char c = peek();
 		switch (c) {
+			case '\t':
+				tabIndent();
 			case ' ':
 			case '\r':
-			case '\t':
 				advance();
 				break;
 
 			case '\n':
-				lexer.line++;
+				newLine();
 				advance();
 				break;
 
@@ -190,7 +205,7 @@ static aupTk number()
 static aupTk string(char c)
 {
 	while (peek() != c && !isAtEnd()) {
-		if (peek() == '\n') lexer.line++;
+		if (peek() == '\n') newLine();
 		advance();
 	}
 
