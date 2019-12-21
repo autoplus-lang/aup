@@ -5,7 +5,41 @@
 
 #include "vm.h"
 
+static aupVM g_vm, *g_pvm = NULL;
 
+static void resetStack(aupVM *vm)
+{
+	vm->top = vm->stack;
+}
+
+aupVM *aupVM_new()
+{
+	aupVM *vm;
+	if (g_pvm == NULL) {
+		vm = &g_vm;
+		g_pvm = vm;
+	}
+	else {
+		vm = malloc(sizeof(aupVM));
+		if (vm == NULL) return NULL;
+		memset(vm, '\0', sizeof(aupVM));
+	}
+	{
+		vm->objects = NULL;
+	}
+	return vm;
+}
+
+void aupVM_free(aupVM *vm)
+{
+	if (vm == NULL && g_pvm != NULL)
+		vm = g_pvm;
+	{
+
+	}
+	if (vm != g_pvm) free(vm);
+	else g_pvm = NULL;
+}
 
 static int exec(aupVM *vm)
 {
