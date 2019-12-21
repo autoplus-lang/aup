@@ -121,7 +121,7 @@ static void emit(uint32_t instruction)
 		parser.previous.line, parser.previous.column);
 }
 
-static  REG		currentReg;
+static  REG		currentReg = 0;
 
 #define PUSH()	currentReg++
 #define POP()	--currentReg

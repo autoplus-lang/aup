@@ -14,6 +14,16 @@ void aupCh_init(aupCh *chunk)
 	aupVa_init(&chunk->constants);
 }
 
+void aupCh_free(aupCh *chunk)
+{
+	free(chunk->code);
+	free(chunk->lines);
+	free(chunk->columns);
+	aupVa_free(&chunk->constants);
+
+	aupCh_init(chunk);
+}
+
 int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t column)
 {
 	if (chunk->capacity < chunk->count + 1) {
@@ -27,16 +37,6 @@ int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t colu
 	chunk->lines[chunk->count] = line;
 	chunk->columns[chunk->count] = column;
 	return chunk->count++;
-}
-
-void aupCh_free(aupCh *chunk)
-{
-	free(chunk->code);
-	free(chunk->lines);
-	free(chunk->columns);
-	aupVa_free(&chunk->constants);
-
-	aupCh_init(chunk);
 }
 
 int aupCh_addK(aupCh *chunk, aupV value)
@@ -82,7 +82,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 #define code_err()  default:
 #define next		break
 
-	i = chunk->code[i];
+	i = chunk->code[offset];
 	printf("%02x %2x %3x %3x  ", GET_Op(), GET_A(), GET_Bx(), GET_Cx());
 
 	dispatch() {
