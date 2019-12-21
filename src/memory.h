@@ -18,6 +18,9 @@ typedef struct {
 #define AUP_ALLOC(type, count) \
 	(type *)aup_realloc(NULL, 0, sizeof(type) * (count))
 
+#define AUP_FREE(type, ptr) \
+	aup_realloc(ptr, sizeof(type), 0)
+
 #define AUP_GROW_CAP(capacity) \
 	((capacity) < 8 ? 8 : (capacity) * 2)
 
