@@ -23,6 +23,11 @@ static aupOs *allocString(char *chars, int length)
 	return string;
 }
 
+aupOs *aupOs_take(char *chars, int length)
+{
+	return allocString(chars, length);
+}
+
 aupOs *aupOs_copy(const char *chars, int length)
 {
 	char *heapChars = AUP_ALLOC(char, length + 1);
