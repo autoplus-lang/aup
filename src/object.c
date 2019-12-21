@@ -37,18 +37,30 @@ static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 	string->chars = chars;
 	string->hash = hash;
 
+	aupT_set(&vm->strings, string, AUP_NIL);
+
 	return string;
 }
 
 aupOs *aupOs_take(AUP_VM, char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
+
+	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
+	if (interned != NULL) {
+		AUP_FREE_ARR(char, chars, length + 1);
+		return interned;
+	}
+
 	return allocString(vm, chars, length, hash);
 }
 
 aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
+
+	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
+	if (interned != NULL) return interned;
 
 	char *heapChars = AUP_ALLOC(char, length + 1);
 	memcpy(heapChars, chars, length);
