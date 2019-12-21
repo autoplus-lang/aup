@@ -17,5 +17,7 @@ typedef struct {
 
 void aupT_init(aupT *table);
 void aupT_free(aupT *table);
+bool aupT_set(aupT *table, aupOs *key, aupV value);
+void aupT_addAll(aupT *from, aupT *to);
 
 #endif
