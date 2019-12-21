@@ -138,6 +138,10 @@ static void emitConstant(aupV value)
 static void endCompiler()
 {
 	//emitReturn();
+
+	if (!parser.hadError) {
+		aupCh_dasm(currentChunk(), "code");
+	}
 }
 
 static void expression();
