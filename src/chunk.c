@@ -86,11 +86,18 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 	printf("%02x %2x %3x %3x  ", GET_Op(), GET_A(), GET_Bx(), GET_Cx());
 
 	dispatch() {
-		code(NOP)
+		code(NOP) next;
+		code(RET) next;
+		code(DEF) {
+			printf("G[%d] = ", GET_A());
+			if (GET_sB()) printf("nil");
+			else printf("K[%d]", GET_B());
 			next;
-		code_err()
+		}
+		code_err() {
 			printf("bad opcode, got %d", GET_Op());
-			break;
+			next;
+		}
 	}
 
 	printf("\n");
@@ -100,7 +107,7 @@ void aupCh_dasm(aupCh *chunk, const char *name)
 {
 	printf("\n");
 
-	printf("off ln  col  op  A  Bx  Cx  dasm\n");
+	printf("off  ln col  op  A  Bx  Cx  disassemble\n");
 	printf("--- --- ---  -------------  --------------------\n");
 
 	for (int offset = 0; offset < chunk->count; offset++) {
