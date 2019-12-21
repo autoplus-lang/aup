@@ -3,21 +3,21 @@
 #pragma once
 
 #include "compiler.h"
+#include "table.h"
 
 #define AUP_MAX_FRAMES	(1)
 #define AUP_MAX_STACK	(AUP_MAX_LOCALS + AUP_MAX_ARGS) * AUP_MAX_FRAMES
 
-typedef struct _aupVM {
+struct _aupVM {
 	uint32_t *ip;
 	aupCh *chunk;
 	aupV *top;
 	aupV stack[AUP_MAX_STACK];
-} aupVM;
 
-enum {
-	AUP_OK = 0,
-	AUP_COMPILE_ERR,
-	AUP_RUNTIME_ERR
+	aupT strings;
+	aupT globals;
+
+	aupO *objects;
 };
 
 #endif
