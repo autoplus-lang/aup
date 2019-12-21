@@ -15,6 +15,13 @@ enum {
 	AUP_OP_BOL,
 	AUP_OP_LDK,
 
+	AUP_OP_NOT,
+	AUP_OP_NEG,
+
+	AUP_OP_LT,
+	AUP_OP_LE,
+	AUP_OP_EQ,
+
 	AUP_OP_ADD,
 	AUP_OP_SUB,
 	AUP_OP_MUL,
