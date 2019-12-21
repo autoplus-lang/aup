@@ -177,7 +177,8 @@ static REG parsePrecedence(Precedence precedence, REG dest);
 
 static uint8_t identifierConstant(aupTk *name)
 {
-	return makeConstant(AUP_OBJ(aupOs_copy(currentVM(), name->start, name->length)));
+	aupOs *identifier = aupOs_copy(currentVM(), name->start, name->length);
+	return makeConstant(AUP_OBJ(identifier));
 }
 
 static uint8_t parseVariable(const char *errorMessage)
@@ -186,9 +187,12 @@ static uint8_t parseVariable(const char *errorMessage)
 	return identifierConstant(&parser.previous);
 }
 
-static void defineVariable(uint8_t global)
+static void defineVariable(uint8_t global, REG src)
 {
-	//emitBytes(OP_DEFINE_GLOBAL, global);
+	if (src == -1)
+		EMIT_OpAsB(DEF, global, true);
+	else
+		EMIT_OpAB(DEF, global, src);
 }
 
 static void binary(REG dest, bool canAssign)
@@ -372,16 +376,17 @@ static REG expression(REG dest)
 static void varDeclaration()
 {
 	uint8_t global = parseVariable("Expect variable name.");
+	REG src;
 
 	if (match(TOKEN_EQUAL)) {
-		expression(-1);
+		src = expression(-1);
 	}
 	else {
-		//emitByte(OP_NIL);
+		src = -1; //emitByte(OP_NIL);
 	}
 	consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
 
-	defineVariable(global);
+	defineVariable(global, src);
 }
 
 static void expressionStatement()

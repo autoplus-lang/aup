@@ -33,6 +33,7 @@ enum {
 	AUP_OP_LD,
 	AUP_OP_ST,
 
+	AUP_OP_DEF,
 	AUP_OP_GLD,
 	AUP_OP_GST,
 };

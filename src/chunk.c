@@ -33,6 +33,8 @@ int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t colu
 void aupCh_free(aupCh *chunk)
 {
 	AUP_FREE_ARR(uint32_t, chunk->code, chunk->capacity);
+	AUP_FREE_ARR(uint16_t, chunk->lines, chunk->capacity);
+	AUP_FREE_ARR(uint16_t, chunk->columns, chunk->capacity);
 	aupVa_free(&chunk->constants);
 
 	aupCh_init(chunk);
@@ -40,7 +42,7 @@ void aupCh_free(aupCh *chunk)
 
 int aupCh_addK(aupCh *chunk, aupV value)
 {
-	aupVa_write(&chunk->constants, value);
+	return aupVa_write(&chunk->constants, value);
 }
 
 void aupCh_dasmInst(aupCh *chunk, int offset)
