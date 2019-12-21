@@ -4,6 +4,8 @@
 #include <string.h>
 
 #include "compiler.h"
+#include "object.h"
+#include "vm.h"
 
 typedef struct {
 	aupTk current;
@@ -37,10 +39,16 @@ typedef struct {
 
 static aupPs parser;
 static aupCh *compilingChunk;
+static aupVM *runningVM;
 
 static aupCh *currentChunk()
 {
 	return compilingChunk;
+}
+
+static aupVM *currentVM()
+{
+	return runningVM;
 }
 
 static void errorAt(aupTk *token, const char *msgf, ...)
@@ -166,6 +174,22 @@ static void statement();
 static void declaration();
 static ParseRule *getRule(aupTkt type);
 static REG parsePrecedence(Precedence precedence, REG dest);
+
+static uint8_t identifierConstant(aupTk *name)
+{
+	return makeConstant(AUP_OBJ(aupOs_copy(currentVM(), name->start, name->length)));
+}
+
+static uint8_t parseVariable(const char *errorMessage)
+{
+	consume(TOKEN_IDENTIFIER, errorMessage);
+	return identifierConstant(&parser.previous);
+}
+
+static void defineVariable(uint8_t global)
+{
+	//emitBytes(OP_DEFINE_GLOBAL, global);
+}
 
 static void binary(REG dest)
 {
@@ -318,6 +342,21 @@ static REG expression(REG dest)
 	return parsePrecedence(PREC_ASSIGNMENT, dest);
 }
 
+static void varDeclaration()
+{
+	uint8_t global = parseVariable("Expect variable name.");
+
+	if (match(TOKEN_EQUAL)) {
+		expression(-1);
+	}
+	else {
+		//emitByte(OP_NIL);
+	}
+	consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+
+	defineVariable(global);
+}
+
 static void expressionStatement()
 {
 	expression(-1);
@@ -361,7 +400,12 @@ static void synchronize()
 
 static void declaration()
 {
-	statement();
+	if (match(TOKEN_VAR)) {
+		varDeclaration();
+	}
+	else {
+		statement();
+	}
 
 	if (parser.panicMode) synchronize();
 }
@@ -376,10 +420,11 @@ static void statement()
 	}
 }
 
-bool aup_compile(const char *source, aupCh *chunk)
+bool aup_compile(AUP_VM, const char *source, aupCh *chunk)
 {
 	aupLx_init(source);
 	compilingChunk = chunk;
+	runningVM = vm;
 
 	parser.hadError = false;
 	parser.panicMode = false;

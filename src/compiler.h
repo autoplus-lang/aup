@@ -2,6 +2,7 @@
 #define _AUP_COMPILER_H
 #pragma once
 
+#include "util.h"
 #include "chunk.h"
 
 typedef enum {
@@ -45,6 +46,6 @@ typedef struct {
 void aupLx_init(const char *source);
 aupTk aupLx_scan();
 
-bool aup_compile(const char *source, aupCh *chunk);
+bool aup_compile(AUP_VM, const char *source, aupCh *chunk);
 
 #endif
