@@ -19,6 +19,7 @@ void aupT_init(aupT *table);
 void aupT_free(aupT *table);
 bool aupT_get(aupT *table, aupOs *key, aupV *value);
 bool aupT_set(aupT *table, aupOs *key, aupV value);
+bool aupT_delete(aupT *table, aupOs *key);
 void aupT_addAll(aupT *from, aupT *to);
 
 #endif

@@ -23,10 +23,23 @@ void aupT_free(aupT *table)
 static aupTe *findEntry(aupTe *entries, int capacity, aupOs *key)
 {
 	uint32_t index = key->hash % capacity;
+	aupTe *tombstone = NULL;
+
 	for (;;) {
 		aupTe *entry = &entries[index];
 
-		if (entry->key == key || entry->key == NULL) {
+		if (entry->key == NULL) {
+			if (AUP_IS_NIL(entry->value)) {
+				// Empty entry.                              
+				return tombstone != NULL ? tombstone : entry;
+			}
+			else {
+				// We found a tombstone.                     
+				if (tombstone == NULL) tombstone = entry;
+			}
+		}
+		else if (entry->key == key) {
+			// We found the key.                           
 			return entry;
 		}
 
@@ -82,6 +95,21 @@ bool aupT_set(aupT *table, aupOs *key, aupV value)
 	entry->key = key;
 	entry->value = value;
 	return isNewKey;
+}
+
+bool aupT_delete(aupT *table, aupOs *key)
+{
+	if (table->count == 0) return false;
+
+	// Find the entry.                                             
+	aupTe *entry = findEntry(table->entries, table->capacity, key);
+	if (entry->key == NULL) return false;
+
+	// Place a tombstone in the entry.                             
+	entry->key = NULL;
+	entry->value = AUP_BOOL(true);
+
+	return true;
 }
 
 void aupT_addAll(aupT *from, aupT *to)
