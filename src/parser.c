@@ -190,12 +190,13 @@ static void grouping()
 
 static void number()
 {
+	//double num = strtod(parser.previous.start, NULL);
 }
 
 static void string()
 {
-	int len = parser.previous.length - 2;
-	const char *src = parser.previous.start + 1;
+	//int len = parser.previous.length - 2;
+	//const char *src = parser.previous.start + 1;
 }
 
 static void unary()
