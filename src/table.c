@@ -66,6 +66,7 @@ static void adjustCapacity(aupT *table, int capacity)
 		entries[i].value = AUP_NIL;
 	}
 
+	table->count = 0;
 	for (int i = 0; i < table->capacity; i++) {
 		aupTe *entry = &table->entries[i];
 		if (entry->key == NULL) continue;
@@ -73,6 +74,8 @@ static void adjustCapacity(aupT *table, int capacity)
 		aupTe* dest = findEntry(entries, capacity, entry->key);
 		dest->key = entry->key;
 		dest->value = entry->value;
+
+		table->count++;
 	}
 
 	AUP_FREE_ARR(aupTe, table->entries, table->capacity);
@@ -90,7 +93,7 @@ bool aupT_set(aupT *table, aupOs *key, aupV value)
 	aupTe *entry = findEntry(table->entries, table->capacity, key);
 
 	bool isNewKey = entry->key == NULL;
-	if (isNewKey) table->count++;
+	if (isNewKey && AUP_IS_NIL(entry->value)) table->count++;
 
 	entry->key = key;
 	entry->value = value;
