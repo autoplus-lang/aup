@@ -237,13 +237,16 @@ static void grouping(REG dest, bool canAssign)
 
 static void number(REG dest, bool canAssign)
 {
-	//double num = strtod(parser.previous.start, NULL);
+	double value = strtod(parser.previous.start, NULL);
+	emitConstant(AUP_NUM(value));
 }
 
 static void string(REG dest, bool canAssign)
 {
-	//int len = parser.previous.length - 2;
-	//const char *src = parser.previous.start + 1;
+	aupOs *value = aupOs_copy(currentVM(),
+		parser.previous.start + 1, parser.previous.length - 2);
+
+	emitConstant(AUP_OBJ(value));
 }
 
 static void namedVariable(aupTk name, REG dest, bool canAssign)
