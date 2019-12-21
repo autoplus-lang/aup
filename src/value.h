@@ -8,7 +8,10 @@ typedef enum {
 	AUP_TNIL,
 	AUP_TBOOL,
 	AUP_TNUM,
-	AUP_TOBJ
+	AUP_TOBJ,
+
+	AUP_TSTR,
+
 } aupVt;
 
 typedef struct _aupO aupO;
