@@ -96,6 +96,18 @@ static void advance()
 		errorAt(&parser.current, msgf, ##__VA_ARGS__); \
 	} while(0)
 
+static bool check(aupTkt type)
+{
+	return parser.current.type == type;
+}
+
+static bool match(aupTkt type)
+{
+	if (!check(type)) return false;
+	advance();
+	return true;
+}
+
 static void emit(uint32_t instruction)
 {
 	aupCh_write(currentChunk(), instruction,
@@ -145,6 +157,8 @@ static void endCompiler()
 }
 
 static void expression();
+static void statement();
+static void declaration();
 static ParseRule *getRule(aupTkt type);
 static void parsePrecedence(Precedence precedence);
 
@@ -295,6 +309,25 @@ static void expression()
 	parsePrecedence(PREC_ASSIGNMENT);
 }
 
+static void printStatement()
+{
+	expression();
+	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+	//emitByte(OP_PRINT);
+}
+
+static void declaration()
+{
+	statement();
+}
+
+static void statement()
+{
+	if (match(TOKEN_PRINT)) {
+		printStatement();
+	}
+}
+
 bool aup_compile(const char *source, aupCh *chunk)
 {
 	aupLx_init(source);
@@ -304,9 +337,11 @@ bool aup_compile(const char *source, aupCh *chunk)
 	parser.panicMode = false;
 
 	advance();
-	expression();
-	consume(TOKEN_EOF, "Expect end of expression.");
-	endCompiler();
 
+	while (!match(TOKEN_EOF)) {
+		declaration();
+	}
+
+	endCompiler();
 	return !parser.hadError;
 }
