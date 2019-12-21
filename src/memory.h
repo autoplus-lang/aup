@@ -15,11 +15,14 @@ typedef struct {
 	void *ptr = (uintptr_t)mem + sizeof(aupM);
 */
 
+#define AUP_ALLOC(type, count) \
+	(type *)aup_realloc(NULL, 0, sizeof(type) * (count))
+
 #define AUP_GROW_CAP(capacity) \
 	((capacity) < 8 ? 8 : (capacity) * 2)
 
 #define AUP_GROW_ARR(type, ptr, oldCount, count) \
-	(type*)aup_realloc(ptr, sizeof(type) * (oldCount), sizeof(type) * (count))
+	(type *)aup_realloc(ptr, sizeof(type) * (oldCount), sizeof(type) * (count))
 
 #define AUP_FREE_ARR(type, ptr, oldCount) \
 	aup_realloc(ptr, sizeof(type) * (oldCount), 0)
