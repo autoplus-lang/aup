@@ -269,7 +269,7 @@ static ParseRule rules[] = {
     [TOKEN_IF]              = { NULL,     NULL,    PREC_NONE },
     [TOKEN_NIL]             = { literal,  NULL,    PREC_NONE },
     [TOKEN_OR]              = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_PRINT]           = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_PUTS]            = { NULL,     NULL,    PREC_NONE },
     [TOKEN_RETURN]          = { NULL,     NULL,    PREC_NONE },
     [TOKEN_SUPER]           = { NULL,     NULL,    PREC_NONE },
     [TOKEN_THIS]            = { NULL,     NULL,    PREC_NONE },
@@ -309,7 +309,7 @@ static void expression()
 	parsePrecedence(PREC_ASSIGNMENT);
 }
 
-static void printStatement()
+static void putsStatement()
 {
 	expression();
 	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
@@ -323,8 +323,8 @@ static void declaration()
 
 static void statement()
 {
-	if (match(TOKEN_PRINT)) {
-		printStatement();
+	if (match(TOKEN_PUTS)) {
+		putsStatement();
 	}
 }
 
