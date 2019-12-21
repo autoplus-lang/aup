@@ -34,6 +34,17 @@ static aupTe *findEntry(aupTe *entries, int capacity, aupOs *key)
 	}
 }
 
+bool aupT_get(aupT *table, aupOs *key, aupV *value)
+{
+	if (table->count == 0) return false;
+
+	aupTe *entry = findEntry(table->entries, table->capacity, key);
+	if (entry->key == NULL) return false;
+
+	*value = entry->value;
+	return true;
+}
+
 static void adjustCapacity(aupT *table, int capacity)
 {
 	aupTe *entries = AUP_ALLOC(aupTe, capacity);
