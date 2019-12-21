@@ -2,6 +2,8 @@
 #define _AUP_MEMORY_H
 #pragma once
 
+#include "util.h"
+
 typedef struct {
 	size_t size;
 	size_t : sizeof(size_t);	// padding
