@@ -16,7 +16,7 @@ struct _aupOs {
 	uint32_t hash;
 };
 
-aupOs *aupOs_take(char *chars, int length);
-aupOs *aupOs_copy(const char *chars, int length);
+aupOs *aupOs_take(AUP_VM, char *chars, int length);
+aupOs *aupOs_copy(AUP_VM, const char *chars, int length);
 
 #endif

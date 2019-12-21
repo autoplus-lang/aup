@@ -11,4 +11,6 @@ typedef enum {
 
 typedef struct _aupVM aupVM;
 
+#define AUP_VM	aupVM *vm
+
 #endif

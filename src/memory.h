@@ -33,5 +33,6 @@ typedef struct {
 	aup_realloc(ptr, sizeof(type) * (oldCount), 0)
 
 void *aup_realloc(void *previous, size_t oldSize, size_t newSize);
+void aup_freeObjects(AUP_VM);
 
 #endif

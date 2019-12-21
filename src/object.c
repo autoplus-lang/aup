@@ -3,6 +3,7 @@
 
 #include "object.h"
 #include "memory.h"
+#include "vm.h"
 
 static uint32_t hashString(const char *key, int length)
 {
@@ -16,19 +17,22 @@ static uint32_t hashString(const char *key, int length)
 	return hash;
 }
 
-#define ALLOC_OBJ(type, objectType) \
-	(type *)allocObject(sizeof(type), objectType)
+#define ALLOC_OBJ(vm, type, objectType) \
+	(type *)allocObject(vm, sizeof(type), objectType)
 
-static aupO *allocObject(size_t size, aupVt type)
+static aupO *allocObject(AUP_VM, size_t size, aupVt type)
 {
 	aupO *object = (aupO *)aup_realloc(NULL, 0, size);
 	object->type = type;
+
+	object->next = vm->objects;
+	vm->objects = object;
 	return object;
 }
 
-static aupOs *allocString(char *chars, int length, uint32_t hash)
+static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 {
-	aupOs *string = ALLOC_OBJ(aupOs, AUP_TSTR);
+	aupOs *string = ALLOC_OBJ(vm, aupOs, AUP_TSTR);
 	string->length = length;
 	string->chars = chars;
 	string->hash = hash;
@@ -36,13 +40,13 @@ static aupOs *allocString(char *chars, int length, uint32_t hash)
 	return string;
 }
 
-aupOs *aupOs_take(char *chars, int length)
+aupOs *aupOs_take(AUP_VM, char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
-	return allocString(chars, length, hash);
+	return allocString(vm, chars, length, hash);
 }
 
-aupOs *aupOs_copy(const char *chars, int length)
+aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
 
@@ -50,5 +54,5 @@ aupOs *aupOs_copy(const char *chars, int length)
 	memcpy(heapChars, chars, length);
 	heapChars[length] = '\0';
 
-	return allocString(heapChars, length, hash);
+	return allocString(vm, heapChars, length, hash);
 }
