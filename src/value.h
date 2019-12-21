@@ -4,6 +4,13 @@
 
 #include "util.h"
 
+typedef enum {
+	AUP_TNIL,
+	AUP_TBOOL,
+	AUP_TNUM,
+	AUP_TOBJ
+} aupVt;
+
 typedef struct _aupO aupO;
 typedef struct _aupOs aupOs;
 

@@ -5,7 +5,7 @@
 #include "value.h"
 
 struct _aupO {
-	int type;
+	aupVt type;
 	struct _aupO *next;
 };
 

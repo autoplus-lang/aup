@@ -32,11 +32,4 @@
 #error "This architecture is not supported!"
 #endif
 
-enum {
-    AUP_TNIL,
-    AUP_TBOOL,
-    AUP_TNUM,
-    AUP_TOBJ
-};
-
 #endif
