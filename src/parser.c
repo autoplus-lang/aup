@@ -155,6 +155,13 @@ static void binary()
 
 	// Emit the operator instruction.                        
 	switch (operatorType) {
+		case TOKEN_BANG_EQUAL:    //emitBytes(OP_EQUAL, OP_NOT); break;
+		case TOKEN_EQUAL_EQUAL:   //emitByte(OP_EQUAL); break;
+		case TOKEN_GREATER:       //emitByte(OP_GREATER); break;
+		case TOKEN_GREATER_EQUAL: //emitBytes(OP_LESS, OP_NOT); break;
+		case TOKEN_LESS:          //emitByte(OP_LESS); break;
+		case TOKEN_LESS_EQUAL:    //emitBytes(OP_GREATER, OP_NOT); break;
+
 		case TOKEN_PLUS:          //emitByte(OP_ADD); break;
 		case TOKEN_MINUS:        // emitByte(OP_SUBTRACT); break;
 		case TOKEN_STAR:         // emitByte(OP_MULTIPLY); break;
@@ -216,13 +223,13 @@ static ParseRule rules[] = {
     [TOKEN_STAR]            = { NULL,     binary,  PREC_FACTOR },
 
     [TOKEN_BANG]            = { unary,    NULL,    PREC_NONE },
-    [TOKEN_BANG_EQUAL]      = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_BANG_EQUAL]      = { NULL,     binary,  PREC_EQUALITY },
     [TOKEN_EQUAL]           = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_EQUAL_EQUAL]     = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_GREATER]         = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_GREATER_EQUAL]   = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_LESS]            = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_LESS_EQUAL]      = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_EQUAL_EQUAL]     = { NULL,     binary,  PREC_EQUALITY },
+    [TOKEN_GREATER]         = { NULL,     binary,  PREC_COMPARISON },
+    [TOKEN_GREATER_EQUAL]   = { NULL,     binary,  PREC_COMPARISON },
+    [TOKEN_LESS]            = { NULL,     binary,  PREC_COMPARISON },
+    [TOKEN_LESS_EQUAL]      = { NULL,     binary,  PREC_COMPARISON },
 
     [TOKEN_IDENTIFIER]      = { NULL,     NULL,    PREC_NONE },
     [TOKEN_STRING]          = { NULL,     NULL,    PREC_NONE },
