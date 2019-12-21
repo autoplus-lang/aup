@@ -26,7 +26,8 @@ typedef enum {
 	PREC_PRIMARY
 } Precedence;
 
-typedef void (* ParseFn)();
+#define REG		int
+typedef void (* ParseFn)(REG dest);
 
 typedef struct {
 	ParseFn prefix;
@@ -112,7 +113,6 @@ static void emit(uint32_t instruction)
 		parser.previous.line, parser.previous.column);
 }
 
-#define REG		int
 static  REG		currentReg;
 
 #define PUSH()	currentReg++
@@ -161,20 +161,20 @@ static void endCompiler()
 	}
 }
 
-static void expression();
+static REG expression(REG dest);
 static void statement();
 static void declaration();
 static ParseRule *getRule(aupTkt type);
-static void parsePrecedence(Precedence precedence);
+static REG parsePrecedence(Precedence precedence, REG dest);
 
-static void binary()
+static void binary(REG dest)
 {
 	// Remember the operator.                                
 	aupTkt operatorType = parser.previous.type;
 
 	// Compile the right operand.                            
 	ParseRule* rule = getRule(operatorType);
-	parsePrecedence((Precedence)(rule->precedence + 1));
+	parsePrecedence((Precedence)(rule->precedence + 1), dest);
 
 	// Emit the operator instruction.                        
 	switch (operatorType) {
@@ -194,7 +194,7 @@ static void binary()
 	}
 }
 
-static void literal()
+static void literal(REG dest)
 {
 	switch (parser.previous.type) {
 		case TOKEN_FALSE: //emitByte(OP_FALSE); break;
@@ -205,29 +205,29 @@ static void literal()
 	}
 }
 
-static void grouping()
+static void grouping(REG dest)
 {
-	expression();
+	expression(dest);
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-static void number()
+static void number(REG dest)
 {
 	//double num = strtod(parser.previous.start, NULL);
 }
 
-static void string()
+static void string(REG dest)
 {
 	//int len = parser.previous.length - 2;
 	//const char *src = parser.previous.start + 1;
 }
 
-static void unary()
+static void unary(REG dest)
 {
 	aupTkt operatorType = parser.previous.type;
 
 	// Compile the operand.                        
-	parsePrecedence(PREC_UNARY);
+	parsePrecedence(PREC_UNARY, dest);
 
 	// Emit the operator instruction.              
 	switch (operatorType) {
@@ -286,22 +286,26 @@ static ParseRule rules[] = {
     [TOKEN_EOF]             = { NULL,     NULL,    PREC_NONE },
 };
 
-static void parsePrecedence(Precedence precedence)
+static REG parsePrecedence(Precedence precedence, REG dest)
 {
+	if (dest <= -1) dest = PUSH();
+
 	advance();
 	ParseFn prefixRule = getRule(parser.previous.type)->prefix;
 	if (prefixRule == NULL) {
 		error("Expect expression.");
-		return;
+		return -1;
 	}
 
-	prefixRule();
+	prefixRule(dest);
 
 	while (precedence <= getRule(parser.current.type)->precedence) {
 		advance();
 		ParseFn infixRule = getRule(parser.previous.type)->infix;
-		infixRule();
+		infixRule(dest);
 	}
+
+	return dest;
 }
 
 static ParseRule *getRule(aupTkt type)
@@ -309,21 +313,21 @@ static ParseRule *getRule(aupTkt type)
 	return &rules[type];
 }
 
-static void expression()
+static REG expression(REG dest)
 {
-	parsePrecedence(PREC_ASSIGNMENT);
+	return parsePrecedence(PREC_ASSIGNMENT, dest);
 }
 
 static void expressionStatement()
 {
-	expression();
+	expression(-1);
 	consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
 	//emitByte(OP_POP);
 }
 
 static void putsStatement()
 {
-	expression();
+	expression(-1);
 	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
 	//emitByte(OP_PRINT);
 }
