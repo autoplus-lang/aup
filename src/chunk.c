@@ -1,7 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "chunk.h"
-#include "memory.h"
 
 void aupCh_init(aupCh *chunk)
 {
@@ -17,11 +17,10 @@ void aupCh_init(aupCh *chunk)
 int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t column)
 {
 	if (chunk->capacity < chunk->count + 1) {
-		int oldCapacity = chunk->capacity;
-		chunk->capacity = AUP_GROW_CAP(oldCapacity);
-		chunk->code = AUP_GROW_ARR(uint32_t, chunk->code, oldCapacity, chunk->capacity);
-		chunk->lines = AUP_GROW_ARR(uint16_t, chunk->lines, oldCapacity, chunk->capacity);
-		chunk->columns = AUP_GROW_ARR(uint16_t, chunk->columns, oldCapacity, chunk->capacity);
+		int cap = (chunk->capacity += AUP_CODE_PAGE);
+		chunk->code = realloc(chunk->code, cap * sizeof(uint32_t));
+		chunk->lines = realloc(chunk->lines, cap * sizeof(uint16_t));
+		chunk->columns = realloc(chunk->columns, cap * sizeof(uint16_t));
 	}
 
 	chunk->code[chunk->count] = instruction;
@@ -32,9 +31,9 @@ int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t colu
 
 void aupCh_free(aupCh *chunk)
 {
-	AUP_FREE_ARR(uint32_t, chunk->code, chunk->capacity);
-	AUP_FREE_ARR(uint16_t, chunk->lines, chunk->capacity);
-	AUP_FREE_ARR(uint16_t, chunk->columns, chunk->capacity);
+	free(chunk->code);
+	free(chunk->lines);
+	free(chunk->columns);
 	aupVa_free(&chunk->constants);
 
 	aupCh_init(chunk);

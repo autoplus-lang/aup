@@ -93,7 +93,7 @@ typedef struct {
 	aupVa constants;
 } aupCh;
 
-#define AUP_CODEPAGE	256
+#define AUP_CODE_PAGE	256
 
 void aupCh_init(aupCh *chunk);
 void aupCh_free(aupCh *chunk);
