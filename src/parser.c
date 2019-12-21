@@ -5,8 +5,6 @@
 
 #include "compiler.h"
 
-#define REG int
-
 typedef struct {
 	aupTk current;
 	aupTk previous;
@@ -113,6 +111,13 @@ static void emit(uint32_t instruction)
 	aupCh_write(currentChunk(), instruction,
 		parser.previous.line, parser.previous.column);
 }
+
+#define REG		int
+static  REG		currentReg;
+
+#define PUSH()	currentReg++
+#define POP()	--currentReg
+#define RESET()	currentReg = 0
 
 #define _OPCODE(x)					AUP_OP_##x
 
