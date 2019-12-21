@@ -11,7 +11,8 @@ void aupT_init(aupT *table)
 	table->entries = NULL;
 }
 
-void auoT_free(aupT *table) {
+void aupT_free(aupT *table)
+{
 	AUP_FREE_ARR(aupTe, table->entries, table->capacity);
 	aupT_init(table);
 }

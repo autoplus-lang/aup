@@ -16,5 +16,6 @@ typedef struct {
 } aupT;
 
 void aupT_init(aupT *table);
+void aupT_free(aupT *table);
 
 #endif
