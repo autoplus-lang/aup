@@ -29,7 +29,7 @@ typedef enum {
 } Precedence;
 
 #define REG		int
-typedef void (* ParseFn)(REG dest);
+typedef void (* ParseFn)(REG dest, bool canAssign);
 
 typedef struct {
 	ParseFn prefix;
@@ -191,7 +191,7 @@ static void defineVariable(uint8_t global)
 	//emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
-static void binary(REG dest)
+static void binary(REG dest, bool canAssign)
 {
 	// Remember the operator.                                
 	aupTkt operatorType = parser.previous.type;
@@ -218,7 +218,7 @@ static void binary(REG dest)
 	}
 }
 
-static void literal(REG dest)
+static void literal(REG dest, bool canAssign)
 {
 	switch (parser.previous.type) {
 		case TOKEN_FALSE: //emitByte(OP_FALSE); break;
@@ -229,24 +229,42 @@ static void literal(REG dest)
 	}
 }
 
-static void grouping(REG dest)
+static void grouping(REG dest, bool canAssign)
 {
 	expression(dest);
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-static void number(REG dest)
+static void number(REG dest, bool canAssign)
 {
 	//double num = strtod(parser.previous.start, NULL);
 }
 
-static void string(REG dest)
+static void string(REG dest, bool canAssign)
 {
 	//int len = parser.previous.length - 2;
 	//const char *src = parser.previous.start + 1;
 }
 
-static void unary(REG dest)
+static void namedVariable(aupTk name, REG dest, bool canAssign)
+{
+	uint8_t arg = identifierConstant(&name);
+	
+	if (canAssign && match(TOKEN_EQUAL)) {
+		expression(dest);
+		//emitBytes(OP_SET_GLOBAL, arg);
+	}
+	else {
+		//emitBytes(OP_GET_GLOBAL, arg);
+	}
+}
+
+static void variable(REG dest, bool canAssign)
+{
+	namedVariable(parser.previous, dest, canAssign);
+}
+
+static void unary(REG dest, bool canAssign)
 {
 	aupTkt operatorType = parser.previous.type;
 
@@ -285,7 +303,7 @@ static ParseRule rules[] = {
     [TOKEN_LESS]            = { NULL,     binary,  PREC_COMPARISON },
     [TOKEN_LESS_EQUAL]      = { NULL,     binary,  PREC_COMPARISON },
 
-    [TOKEN_IDENTIFIER]      = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_IDENTIFIER]      = { variable, NULL,    PREC_NONE },
     [TOKEN_STRING]          = { string,   NULL,    PREC_NONE },
     [TOKEN_NUMBER]          = { number,   NULL,    PREC_NONE },
 
@@ -321,12 +339,18 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 		return -1;
 	}
 
-	prefixRule(dest);
+	bool canAssign = precedence <= PREC_ASSIGNMENT;
+	prefixRule(dest, canAssign);
 
 	while (precedence <= getRule(parser.current.type)->precedence) {
 		advance();
 		ParseFn infixRule = getRule(parser.previous.type)->infix;
-		infixRule(dest);
+		infixRule(dest, canAssign);
+	}
+
+	if (canAssign && match(TOKEN_EQUAL)) {
+		error("Invalid assignment target.");
+		return -1;
 	}
 
 	return dest;
