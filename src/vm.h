@@ -20,4 +20,7 @@ struct _aupVM {
 	aupO *objects;
 };
 
+aupVM *aupVM_new();
+void aupVM_free(aupVM *vm);
+
 #endif
