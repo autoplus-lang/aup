@@ -43,6 +43,8 @@ aupVM *aupVM_new()
 	}
 	{
 		vm->objects = NULL;
+		aupT_init(&vm->globals);
+		aupT_init(&vm->strings);
 	}
 	return vm;
 }
@@ -52,6 +54,8 @@ void aupVM_free(aupVM *vm)
 	if (vm == NULL && g_pvm != NULL)
 		vm = g_pvm;
 	{
+		aupT_free(&vm->globals);
+		aupT_free(&vm->strings);
 		aup_freeObjects(vm);
 	}
 	if (vm != g_pvm) free(vm);

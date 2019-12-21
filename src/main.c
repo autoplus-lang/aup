@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "aup.h"
-#include "compiler.h"
+#include "vm.h"
 
 static char *readFile(const char* path)
 {
@@ -40,17 +40,18 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	aupCh chunk;
-	char *source;
 	
-	source = readFile(argv[argc - 1]);
+	char *source = readFile(argv[argc - 1]);
+	aupVM *vm = aupVM_new();
+	aupCh chunk;
 	aupCh_init(&chunk);
 
-	if (!aup_compile(source, &chunk)) {
+	if (!aup_compile(vm, source, &chunk)) {
 		puts("\nCompile error!");
 	}
 
 	aupCh_free(&chunk);
+	aupVM_free(vm);
 	free(source);
 	return 0;
 }
