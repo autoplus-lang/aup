@@ -192,6 +192,12 @@ static void number()
 {
 }
 
+static void string()
+{
+	int len = parser.previous.length - 2;
+	const char *src = parser.previous.start + 1;
+}
+
 static void unary()
 {
 	aupTkt operatorType = parser.previous.type;
@@ -232,7 +238,7 @@ static ParseRule rules[] = {
     [TOKEN_LESS_EQUAL]      = { NULL,     binary,  PREC_COMPARISON },
 
     [TOKEN_IDENTIFIER]      = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_STRING]          = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_STRING]          = { string,   NULL,    PREC_NONE },
     [TOKEN_NUMBER]          = { number,   NULL,    PREC_NONE },
 
     [TOKEN_AND]             = { NULL,     NULL,    PREC_NONE },
