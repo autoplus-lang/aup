@@ -21,5 +21,6 @@ bool aupT_get(aupT *table, aupOs *key, aupV *value);
 bool aupT_set(aupT *table, aupOs *key, aupV value);
 bool aupT_delete(aupT *table, aupOs *key);
 void aupT_addAll(aupT *from, aupT *to);
+aupOs *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash);
 
 #endif

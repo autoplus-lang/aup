@@ -124,3 +124,27 @@ void aupT_addAll(aupT *from, aupT *to)
 		}
 	}
 }
+
+aupOs *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash)
+{
+	if (table->count == 0) return NULL;
+
+	uint32_t index = hash % table->capacity;
+
+	for (;;) {
+		aupTe *entry = &table->entries[index];
+
+		if (entry->key == NULL) {
+			// Stop if we find an empty non-tombstone entry.                 
+			if (AUP_IS_NIL(entry->value)) return NULL;
+		}
+		else if (entry->key->length == length &&
+			entry->key->hash == hash &&
+			memcmp(entry->key->chars, chars, length) == 0) {
+			// We found it.                                                  
+			return entry->key;
+		}
+
+		index = (index + 1) % table->capacity;
+	}
+}
