@@ -11,8 +11,8 @@ struct _aupO {
 
 struct _aupOs {
 	struct _aupO obj;
-	char *src;
-	int len;
+	char *chars;
+	int length;
 	uint32_t hash;
 };
 
