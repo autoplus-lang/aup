@@ -77,7 +77,7 @@ static bool match(char expected)
 	return true;
 }
 
-static aupTk makeToken(int type)
+static aupTk makeToken(aupTkt type)
 {
 	aupTk token;
 	token.type = type;
@@ -134,7 +134,7 @@ static void skipWhitespace()
 	}
 }
 
-static int checkKeyword(int start, int length, const char *rest, int type)
+static aupTkt checkKeyword(int start, int length, const char *rest, aupTkt type)
 {
 	if (lexer.current - lexer.start == start + length &&
 		memcmp(lexer.start + start, rest, length) == 0) {

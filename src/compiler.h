@@ -31,7 +31,7 @@ typedef enum {
 } aupTkt;
 
 typedef struct {
-	int type;
+	aupTkt type;
 	const char* start;
 	int length;
 	int line;
