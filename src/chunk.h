@@ -6,6 +6,7 @@
 
 enum {
 	AUP_OP_NOP = 0,
+	AUP_OP_RET,
 
 	AUP_OP_PSH,
 	AUP_OP_POP,

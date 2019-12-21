@@ -162,7 +162,7 @@ static void emitConstant(aupV value)
 
 static void endCompiler()
 {
-	//emitReturn();
+	EMIT_Op(RET);
 
 	if (!parser.hadError) {
 		aupCh_dasm(currentChunk(), "code");
