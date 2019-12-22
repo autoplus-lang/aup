@@ -98,6 +98,28 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			printf("R[%d] = K[%d]", GET_A(), GET_B());
 			next;
 		}
+
+		code(ADD) {
+
+			next;
+		}
+		code(SUB) {
+
+			next;
+		}
+		code(MUL) {
+
+			next;
+		}
+		code(DIV) {
+
+			next;
+		}
+		code(MOD) {
+
+			next;
+		}
+
 		code(DEF) {
 			printf("G.K[%d] = ", GET_A());
 			if (GET_sB()) printf("nil");
