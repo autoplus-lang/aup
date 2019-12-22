@@ -141,7 +141,7 @@ static int exec(aupVM *vm)
 
 		code(DEF) {
 			aupOs *name = AUP_AS_STR(REG_K(GET_A()));
-			aupT_set(&vm->globals, name, REG(GET_B()));
+			aupT_set(&vm->globals, name, GET_sB() ? AUP_NIL : REG(GET_B()));
 			next;
 		}
 		code(GLD) {
