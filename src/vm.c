@@ -266,6 +266,15 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(LD) {
+			R_A() = R_B();
+			next;
+		}
+		code(ST) {
+			R_A() = R_B();
+			next;
+		}
+
 		code_err() {
 			runtimeError(vm, "bad opcode, got %d.", GET_Op());
 			return AUP_RUNTIME_ERR;
