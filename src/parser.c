@@ -582,20 +582,22 @@ static void expressionStatement()
 static void ifStatement()
 {
 	consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
-	REG src = expression(-1); POP();
+	REG src = expression(-1);
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
 	int thenJump = emitJump(true, src);
-	//emitByte(OP_POP);
+	POP();	//emitByte(OP_POP);
 	statement();
 
-	int elseJump = emitJump(false, -1);
-
-	patchJump(thenJump);
-	//emitByte(OP_POP);
-
-	if (match(TOKEN_ELSE)) statement();
-	patchJump(elseJump);
+	if (match(TOKEN_ELSE)) {
+		int elseJump = emitJump(false, -1);
+		patchJump(thenJump);
+		statement();
+		patchJump(elseJump);
+	}
+	else {
+		patchJump(thenJump);
+	}
 }
 
 static void putsStatement()
