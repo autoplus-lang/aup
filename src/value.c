@@ -4,6 +4,29 @@
 #include "object.h"
 #include "memory.h"
 
+static const char
+	__nil[]  = "nil",
+	__bool[] = "bool",
+	__num[]  = "num";
+
+const char *aupV_typeOf(aupV value)
+{
+	if (AUP_IS_NIL(value)) {
+		return __nil;
+	}
+	else if (AUP_IS_BOOL(value)) {
+		return __bool;
+	}
+	else if (AUP_IS_NUM(value)) {
+		return __num;
+	}
+	else if (AUP_IS_OBJ(value)) {
+		return aupO_typeOf(AUP_AS_OBJ(value));
+	}
+
+	return __nil;
+}
+
 void aupV_print(aupV value)
 {
 	if (AUP_IS_NIL(value)) {

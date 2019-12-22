@@ -29,6 +29,7 @@ static inline bool aupO_isType(aupV value, aupVt type) {
 aupOs *aupOs_take(AUP_VM, char *chars, int length);
 aupOs *aupOs_copy(AUP_VM, const char *chars, int length);
 
+const char *aupO_typeOf(aupO *object);
 void aupO_print(aupO *object);
 
 #endif

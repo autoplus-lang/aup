@@ -10,6 +10,20 @@
 #define AS_STR(o)	((aupOs *)(o))
 #define AS_CSTR(o)	(((aupOs *)(o))->chars)
 
+static const char
+	__obj[] = "obj",
+	__str[] = "str";
+
+const char *aupO_typeOf(aupO *object)
+{
+	switch (TYPE(object)) {
+		case AUP_TSTR:
+			return __str;
+		default:
+			return __obj;
+	}
+}
+
 void aupO_print(aupO *object)
 {
 	switch (TYPE(object)) {
