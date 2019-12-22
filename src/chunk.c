@@ -176,7 +176,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
 void aupCh_dasm(aupCh *chunk, const char *name)
 {
-	printf("\n>> disassembling chunk: <%s>\n", name);
+	printf(">> disassembling chunk: <%s>\n", name);
 
 	for (int i = 0; i < chunk->constants.count; i++) {
 		printf("K[%d] = ", i); aupV_print(chunk->constants.values[i]);
@@ -192,5 +192,5 @@ void aupCh_dasm(aupCh *chunk, const char *name)
 		aupCh_dasmInst(chunk, offset);
 	}
 
-	printf("------------------------------------------------\n");
+	printf("------------------------------------------------\n\n");
 }
