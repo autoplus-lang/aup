@@ -62,4 +62,6 @@ void aupVa_init(aupVa *array);
 void aupVa_free(aupVa *array);
 int aupVa_write(aupVa *array, aupV value);
 
+void aupV_print(aupV value);
+
 #endif
