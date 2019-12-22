@@ -5,12 +5,19 @@
 #include "compiler.h"
 #include "table.h"
 
-#define AUP_MAX_FRAMES	(1)
+#define AUP_MAX_FRAMES	(64)
 #define AUP_MAX_STACK	(AUP_MAX_LOCALS + AUP_MAX_ARGS) * AUP_MAX_FRAMES
 
-struct _aupVM {
+typedef struct {
+	aupOf *function;
 	uint32_t *ip;
-	aupCh *chunk;
+	aupV *stack;
+} aupCf;
+
+struct _aupVM {
+	aupCf frames[AUP_MAX_FRAMES];
+	int frameCount;
+
 	aupV *top;
 	aupV stack[AUP_MAX_STACK];
 

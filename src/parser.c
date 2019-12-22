@@ -42,7 +42,16 @@ typedef struct {
 	int depth;
 } Local;
 
+typedef enum {
+	TYPE_FUNCTION,
+	TYPE_SCRIPT
+} FunType;
+
 typedef struct Compiler {
+	struct Compiler *enclosing;
+	aupOf *function;
+	FunType type;
+
 	Local locals[AUP_MAX_LOCALS];
 	int localCount;
 	int scopeDepth;
@@ -50,12 +59,11 @@ typedef struct Compiler {
 
 static aupPs parser;
 static Compiler *current = NULL;
-static aupCh *compilingChunk;
 static aupVM *runningVM;
 
 static aupCh *currentChunk()
 {
-	return compilingChunk;
+	return &current->function->chunk;
 }
 
 static aupVM *currentVM()
@@ -200,20 +208,39 @@ static void patchJump(int offset)
 	*inst = AUP_SET_OpAxCx(op, jump, Cx);
 }
 
-static void initCompiler(Compiler *compiler)
+static void initCompiler(Compiler *compiler, FunType type)
 {
+	compiler->enclosing = current;
+	compiler->function = NULL;
+	compiler->type = type;
 	compiler->localCount = 0;
 	compiler->scopeDepth = 0;
+	compiler->function = aupOf_new(currentVM());
+
 	current = compiler;
+
+	if (type != TYPE_SCRIPT) {
+		current->function->name = aupOs_copy(currentVM(), parser.previous.start,
+			parser.previous.length);
+	}
+
+	Local *local = &current->locals[current->localCount++];
+	local->depth = 0;
+	local->name.start = "";
+	local->name.length = 0;
 }
 
-static void endCompiler()
+static aupOf *endCompiler()
 {
 	EMIT_Op(RET);
+	aupOf *function = current->function;
 
 	if (!parser.hadError) {
-		aupCh_dasm(currentChunk(), "code");
+		aupCh_dasm(currentChunk(), function->name != NULL ? function->name->chars : "<script>");
 	}
+
+	current = current->enclosing;
+	return function;
 }
 
 static void beginScope()
@@ -310,6 +337,8 @@ static uint8_t parseVariable(const char *errorMessage)
 
 static void markInitialized()
 {
+	if (current->scopeDepth == 0) return;
+
 	current->locals[current->localCount - 1].depth =
 		current->scopeDepth;
 }
@@ -370,6 +399,28 @@ static void binary(REG dest, bool canAssign)
 
 		default: return; // Unreachable.                              
 	}
+}
+
+static uint8_t argumentList()
+{
+	uint8_t argCount = 0;
+	if (!check(TOKEN_RIGHT_PAREN)) {
+		do {
+			expression(-1);
+			if (++argCount >= AUP_MAX_ARGS) {
+				error("Cannot have more than %d arguments.", AUP_MAX_ARGS);
+			}
+		} while (match(TOKEN_COMMA));
+	}
+
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+	return argCount;
+}
+
+static void call(REG dest, bool canAssign)
+{
+	uint8_t argCount = argumentList();
+	EMIT_OpAB(CALL, dest, argCount);
 }
 
 static void literal(REG dest, bool canAssign)
@@ -478,7 +529,7 @@ static void unary(REG dest, bool canAssign)
 }
 
 static ParseRule rules[] = {
-    [TOKEN_LEFT_PAREN]      = { grouping, NULL,    PREC_NONE },
+    [TOKEN_LEFT_PAREN]      = { grouping, call,    PREC_CALL },
     [TOKEN_RIGHT_PAREN]     = { NULL,     NULL,    PREC_NONE },
     [TOKEN_LEFT_BRACE]      = { NULL,     NULL,    PREC_NONE },
     [TOKEN_RIGHT_BRACE]     = { NULL,     NULL,    PREC_NONE },
@@ -576,6 +627,46 @@ static void block()
 	consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
+static REG function(FunType type)
+{
+	Compiler compiler;
+	initCompiler(&compiler, type);
+	beginScope();
+
+	// Compile the parameter list.                                
+	consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+	if (!check(TOKEN_RIGHT_PAREN)) {
+		do {
+			current->function->arity++;
+			if (current->function->arity > 255) {
+				errorAtCurrent("Cannot have more than 255 parameters.");
+			}
+
+			uint8_t paramConstant = parseVariable("Expect parameter name.");
+			defineVariable(paramConstant, -1);
+		} while (match(TOKEN_COMMA));
+	}
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+
+	// The body.                                                  
+	consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+	block();
+
+	// Create the function object.                                
+	aupOf *function = endCompiler();
+	//emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
+	emitConstant(AUP_OBJ(function), PUSH());
+	return POP();
+}
+
+static void funDeclaration()
+{
+	uint8_t global = parseVariable("Expect function name.");
+	markInitialized();
+	REG src = function(TYPE_FUNCTION);
+	defineVariable(global, src);
+}
+
 static void varDeclaration()
 {
 	uint8_t global = parseVariable("Expect variable name.");
@@ -640,6 +731,39 @@ static void putsStatement()
 	EMIT_OpAB(PUT, src, nvalues), POPN(nvalues);
 }
 
+static void returnStatement()
+{
+	if (current->type == TYPE_SCRIPT) {
+		error("Cannot return from top-level code.");
+		return;
+	}
+
+	if (match(TOKEN_SEMICOLON)) {
+		EMIT_OpAsB(RET, 0, false);
+	}
+	else {
+		REG src = expression(-1);
+		consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+		EMIT_OpAsB(RET, src, true);
+	}
+}
+
+static void returnStatement_()
+{
+	if (current->type == TYPE_SCRIPT) {
+		error("Cannot return from top-level code.");
+	}
+
+	if (match(TOKEN_SEMICOLON)
+		|| check(TOKEN_RIGHT_BRACE)) {
+		EMIT_OpAsB(RET, 0, false);
+	}
+	else {
+		REG src = expression(-1);
+		EMIT_OpAsB(RET, src, true);
+	}
+}
+
 static void synchronize()
 {
 	parser.panicMode = false;
@@ -671,7 +795,10 @@ static void declaration()
 {
 	RESET();
 
-	if (match(TOKEN_VAR)) {
+	if (match(TOKEN_FUN)) {
+		funDeclaration();
+	}
+	else if (match(TOKEN_VAR)) {
 		varDeclaration();
 	}
 	else {
@@ -689,6 +816,9 @@ static void statement()
 	else if (match(TOKEN_IF)) {
 		ifStatement();
 	}
+	else if (match(TOKEN_RETURN)) {
+		returnStatement();
+	}
 	else if (match(TOKEN_LEFT_BRACE)) {
 		beginScope();
 		block();
@@ -699,26 +829,24 @@ static void statement()
 	}
 }
 
-bool aup_compile(AUP_VM, const char *source, aupCh *chunk)
+aupOf *aup_compile(AUP_VM, const char *source)
 {
-	aupLx_init(source);
-	Compiler compiler;
-	initCompiler(&compiler);
-
-	compilingChunk = chunk;
 	runningVM = vm;
+	aupLx_init(source);
+
+	Compiler compiler;
+	initCompiler(&compiler, TYPE_SCRIPT);
 
 	parser.hadError = false;
 	parser.panicMode = false;
 
 	advance();
-
 	if (!match(TOKEN_EOF)) {
 		do {
 			declaration();
 		} while (!match(TOKEN_EOF));
 	}
 
-	endCompiler();
-	return !parser.hadError;
+	aupOf *function = endCompiler();
+	return parser.hadError ? NULL : function;
 }

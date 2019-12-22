@@ -12,6 +12,7 @@ static aupVM g_vm, *g_pvm = NULL;
 static void resetStack(aupVM *vm)
 {
 	vm->top = vm->stack;
+	vm->frameCount = 0;
 }
 
 static void runtimeError(aupVM *vm, const char* format, ...)
@@ -22,10 +23,21 @@ static void runtimeError(aupVM *vm, const char* format, ...)
 	va_end(args);
 	fputs("\n", stderr);
 
-	size_t instruction = vm->ip - vm->chunk->code;
-	int line = vm->chunk->lines[instruction];
-	int column = vm->chunk->columns[instruction];
-	fprintf(stderr, "[%d:%d] in script\n", line, column);
+	for (int i = vm->frameCount - 1; i >= 0; i--) {
+		aupCf *frame = &vm->frames[i];
+		aupOf *function = frame->function;
+		// -1 because the IP is sitting on the next instruction to be
+		// executed.                                                 
+		size_t instruction = frame->ip - function->chunk.code - 1;
+		fprintf(stderr, "[%d:%d] in ",
+			function->chunk.lines[instruction], function->chunk.columns[instruction]);
+		if (function->name == NULL) {
+			fprintf(stderr, "script\n");
+		}
+		else {
+			fprintf(stderr, "%s()\n", function->name->chars);
+		}
+	}
 
 	resetStack(vm);
 }
@@ -46,6 +58,7 @@ aupVM *aupVM_new()
 		vm->objects = NULL;
 		aupT_init(&vm->globals);
 		aupT_init(&vm->strings);
+		resetStack(vm);
 	}
 	return vm;
 }
@@ -63,10 +76,49 @@ void aupVM_free(aupVM *vm)
 	else g_pvm = NULL;
 }
 
+static bool call(AUP_VM, aupOf *function, int argCount)
+{
+	if (argCount != function->arity) {
+		runtimeError(vm, "Expected %d arguments but got %d.",
+			function->arity, argCount);
+		return false;
+	}
+
+	if (vm->frameCount == AUP_MAX_FRAMES) {
+		runtimeError(vm, "Stack overflow.");
+		return false;
+	}
+
+	aupCf *frame = &vm->frames[vm->frameCount++];
+	frame->function = function;
+	frame->ip = function->chunk.code;
+
+	frame->stack = vm->top;
+	return true;
+}
+
+static bool callValue(AUP_VM, aupV callee, int argCount)
+{
+	if (AUP_IS_OBJ(callee)) {
+		switch (AUP_OBJ_TYPE(callee)) {
+			case AUP_TFUN:
+				return call(vm, AUP_AS_FUN(callee), argCount);
+			default:
+				// Non-callable object type.                   
+				break;
+		}
+	}
+
+	runtimeError(vm, "Can only call functions and classes.");
+	return false;
+}
+
 #define TOF(v)	aupV_typeOf(v)
+#define PUSH(v)	(*((vm)->top++) = (v))
 
 static int exec(aupVM *vm)
 {
+	aupCf *frame = &vm->frames[vm->frameCount - 1];
 	uint32_t i;
 
 #define GET_Op()	AUP_GET_Op(i)
@@ -77,8 +129,8 @@ static int exec(aupVM *vm)
 #define GET_sB()	AUP_GET_sB(i)
 #define GET_sC()	AUP_GET_sC(i)
 
-#define R(i)		(vm->stack[i])
-#define K(i)		(vm->chunk->constants.values[i])
+#define R(i)		(frame->stack[i])
+#define K(i)		(frame->function->chunk.constants.values[i])
 
 #define R_A()		R(GET_A())
 #define R_B()		R(GET_B())
@@ -91,7 +143,7 @@ static int exec(aupVM *vm)
 #define RK_B()		(GET_sB() ? K(GET_B()) : R(GET_B()))
 #define RK_C()		(GET_sC() ? K(GET_C()) : R(GET_C()))
 
-#define dispatch()	for (;;) switch (AUP_GET_Op(i = *(vm->ip++)))
+#define dispatch()	for (;;) switch (AUP_GET_Op(i = *(frame->ip++)))
 #define code(x)		case (AUP_OP_##x):
 #define code_err()	default:
 #define next		continue
@@ -102,8 +154,28 @@ static int exec(aupVM *vm)
 		}
 
 		code(RET) {
+			frame->stack[0] = GET_sB() ? R_A() : AUP_NIL;
 
-			return AUP_OK;
+			vm->frameCount--;
+			if (vm->frameCount == 0) {
+				//pop();
+				return AUP_OK;
+			}
+
+			vm->top = frame->stack;
+			//push(result);
+
+			frame = &vm->frames[vm->frameCount - 1];
+			next;
+		}
+		code(CALL) {
+			int argCount = GET_B();
+			vm->top = &R_A();
+			if (!callValue(vm, R_A(), argCount)) {
+				return AUP_RUNTIME_ERR;
+			}
+			frame = &vm->frames[vm->frameCount - 1];
+			next;
 		}
 
 		code(PUT) {
@@ -277,12 +349,12 @@ static int exec(aupVM *vm)
 		}
 
 		code(JMP) {
-			vm->ip += GET_Ax();
+			frame->ip += GET_Ax();
 			next;
 		}
 		code(JMPF) {
 			aupV value = R_C();
-			if (AUP_IS_FALSE(value)) vm->ip += GET_Ax();
+			if (AUP_IS_FALSE(value)) frame->ip += GET_Ax();
 			next;
 		}
 
@@ -297,19 +369,15 @@ static int exec(aupVM *vm)
 
 int aup_interpret(aupVM *vm, const char *source)
 {
-	aupCh chunk;
-	aupCh_init(&chunk);
+	aupOf *function = aup_compile(vm, source);
+	if (function == NULL) return AUP_COMPILE_ERR;
 
-	if (!aup_compile(vm, source, &chunk)) {
-		aupCh_free(&chunk);
-		return AUP_COMPILE_ERR;
-	}
+	PUSH(AUP_OBJ(function));
+	callValue(vm, AUP_OBJ(function), 0);
+	//aupCf *frame = &vm->frames[vm->frameCount++];
+	//frame->function = function;
+	//frame->ip = function->chunk.code;
+	//frame->slots = vm->stack;
 
-	vm->chunk = &chunk;
-	vm->ip = vm->chunk->code;
-
-	int result = exec(vm);
-
-	aupCh_free(&chunk);
-	return result;
+	return exec(vm);
 }
