@@ -6,12 +6,15 @@
 #include "memory.h"
 #include "vm.h"
 
+#define TYPE(o)		((o)->type)
+#define AS_STR(o)	((aupOs *)(o))
+#define AS_CSTR(o)	(((aupOs *)(o))->chars)
+
 void aupO_print(aupO *object)
 {
-	switch (object->type) {
+	switch (TYPE(object)) {
 		case AUP_TSTR: {
-			aupOs *string = (aupOs *)object;
-			printf("%.*s", string->length, string->chars);
+			printf("%s", AS_CSTR(object));
 			break;
 		}
 	}
