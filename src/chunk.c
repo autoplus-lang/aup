@@ -87,7 +87,21 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
 	dispatch() {
 		code(NOP) next;
+
 		code(RET) next;
+		code(CALL) {
+			printf("R[%d] = R[%d](", GET_A(), GET_A());
+			if (GET_B() <= 0) {
+				printf(")");
+			}
+			else {
+				for (int i = 1; i <= GET_B(); i++) {
+					printf("R[%d]", GET_A() + i);
+					if (i < GET_B()) printf(", ");
+				}
+			}
+			next;
+		}
 
 		code(PUT) {
 			if (GET_B() > 1) {
