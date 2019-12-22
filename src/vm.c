@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "vm.h"
+#include "object.h"
 #include "memory.h"
 
 static aupVM g_vm, *g_pvm = NULL;
@@ -123,6 +124,12 @@ static int exec(aupVM *vm)
 				runtimeError(vm, "cannot perform '-', got <%s>.", aupV_typeOf(value));
 				return AUP_RUNTIME_ERR;
 			}
+			next;
+		}
+
+		code(DEF) {
+			aupOs *name = AUP_AS_STR(REG_K(GET_A()));
+			aupT_set(&vm->globals, name, REG(GET_B()));
 			next;
 		}
 
