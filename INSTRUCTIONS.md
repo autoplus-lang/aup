@@ -16,19 +16,20 @@ OpAsBsC |`opcode`|`A`  [8]|`sB` [1]|`sC` [1]
 
 ### Instruction listings
 
-- `NOP`
+- `NOP`, do nothing.
 
-- `RET`
+- `RET` %r, return `r`.
+
+- `PUT %r, n`, print `n` values from `r`.
 
 - `MOV %r, %r/k`
 
 - `NOT %r, %r/k`
-- `NEG %r, %r/k`
-
 - `LT %r, %r/k, %r/k`
 - `LE %r, %r/k, %r/k`
 - `EQ %r, %r/k, %r/k`
 
+- `NEG %r, %r/k`, 
 - `ADD %r, %r/k, %r/k`
 - `SUB %r, %r/k, %r/k`
 - `MUL %r, %r/k, %r/k`
