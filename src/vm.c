@@ -145,6 +145,41 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+
+		code(LT) {
+			aupV left = R_B(), right = R_C();
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				R_A() = AUP_BOOL(AUP_AS_NUM(left) < AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '<', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+		code(LE) {
+			aupV left = R_B(), right = R_C();
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				R_A() = AUP_BOOL(AUP_AS_NUM(left) <= AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '<=', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+		code(EQ) {
+			aupV left = R_B(), right = R_C();
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				R_A() = AUP_BOOL(AUP_AS_NUM(left) == AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '==', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+
 		code(ADD) {
 			aupV left = R_B(), right = R_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
