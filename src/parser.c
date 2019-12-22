@@ -182,6 +182,20 @@ static void emitConstant(aupV value, REG dest)
 	EMIT_OpAB(LDK, dest, k);
 }
 
+static void emitReturn(REG src)
+{
+	aupCh *chunk = currentChunk();
+
+	if (chunk->count == 0 || AUP_GET_Op(chunk->code[chunk->count - 1]) != AUP_OP_RET) {
+		if (src == -1) {
+			EMIT_Op(RET);
+		}
+		else {
+			EMIT_OpAsB(RET, src, true);
+		}
+	}
+}
+
 static int emitJump(bool isJMPF, REG srcJMPF)
 {
 	if (isJMPF)
@@ -232,7 +246,7 @@ static void initCompiler(Compiler *compiler, FunType type)
 
 static aupOf *endCompiler()
 {
-	EMIT_Op(RET);
+	emitReturn(-1);
 	aupOf *function = current->function;
 
 	if (!parser.hadError) {
@@ -740,12 +754,12 @@ static void returnStatement()
 	}
 
 	if (match(TOKEN_SEMICOLON)) {
-		EMIT_OpAsB(RET, 0, false);
+		emitReturn(-1);
 	}
 	else {
 		REG src = expression(-1);
 		consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
-		EMIT_OpAsB(RET, src, true);
+		emitReturn(src);
 	}
 }
 
