@@ -97,6 +97,11 @@ static int exec(aupVM *vm)
 			return AUP_OK;
 		}
 
+		code(LDK) {
+			REG_A() = REG_K(GET_B());
+			next;
+		}
+
 		code_err() {
 			runtimeError(vm, "bad opcode, got %d.", AUP_GET_Op(i));
 			return AUP_RUNTIME_ERR;
