@@ -198,6 +198,13 @@ static void beginScope()
 static void endScope()
 {
 	current->scopeDepth--;
+
+	while (current->localCount > 0 &&
+		current->locals[current->localCount - 1].depth >
+		current->scopeDepth) {
+		//emitByte(OP_POP);
+		current->localCount--;
+	}
 }
 
 static REG expression(REG dest);
@@ -212,14 +219,72 @@ static uint8_t identifierConstant(aupTk *name)
 	return makeConstant(AUP_OBJ(identifier));
 }
 
+static bool identifiersEqual(aupTk *a, aupTk *b)
+{
+	if (a->length != b->length) return false;
+	return memcmp(a->start, b->start, a->length) == 0;
+}
+
+static int resolveLocal(Compiler *compiler, aupTk *name)
+{
+	for (int i = compiler->localCount - 1; i >= 0; i--) {
+		Local *local = &compiler->locals[i];
+		if (identifiersEqual(name, &local->name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static void addLocal(aupTk name)
+{
+	if (current->localCount == AUP_MAX_LOCALS) {
+		error("Too many local variables in function.");
+		return;
+	}
+
+	Local *local = &current->locals[current->localCount++];
+	local->name = name;
+	local->depth = current->scopeDepth;
+}
+
+static void declareVariable()
+{
+	// Global variables are implicitly declared.
+	if (current->scopeDepth == 0) return;
+
+	aupTk *name = &parser.previous;
+	for (int i = current->localCount - 1; i >= 0; i--) {
+		Local *local = &current->locals[i];
+		if (local->depth != -1 && local->depth < current->scopeDepth) {
+			break;
+		}
+
+		if (identifiersEqual(name, &local->name)) {
+			error("Variable with this name already declared in this scope.");
+		}
+	}
+
+	addLocal(*name);
+}
+
 static uint8_t parseVariable(const char *errorMessage)
 {
 	consume(TOKEN_IDENTIFIER, errorMessage);
+
+	declareVariable();
+	if (current->scopeDepth > 0) return 0;
+
 	return identifierConstant(&parser.previous);
 }
 
 static void defineVariable(uint8_t global, REG src)
 {
+	if (current->scopeDepth > 0) {
+		return;
+	}
+
 	if (src == -1)
 		EMIT_OpAsB(DEF, global, true);
 	else
@@ -293,14 +358,21 @@ static void string(REG dest, bool canAssign)
 
 static void namedVariable(aupTk name, REG dest, bool canAssign)
 {
-	uint8_t arg = identifierConstant(&name);
-	
-	if (canAssign && match(TOKEN_EQUAL)) {
-		REG src = expression(dest);
-		EMIT_OpAB(GST, arg, src);	//emitBytes(OP_SET_GLOBAL, arg);
+	int arg = resolveLocal(current, &name);
+
+	if (arg != -1) {
+		//getOp = OP_GET_LOCAL;
+		//setOp = OP_SET_LOCAL;
 	}
 	else {
-		EMIT_OpAB(GLD, dest, arg);	//emitBytes(OP_GET_GLOBAL, arg);
+		arg = identifierConstant(&name);
+		if (canAssign && match(TOKEN_EQUAL)) {
+			REG src = expression(dest);
+			EMIT_OpAB(GST, arg, src);	//emitBytes(OP_SET_GLOBAL, arg);
+		}
+		else {
+			EMIT_OpAB(GLD, dest, arg);	//emitBytes(OP_GET_GLOBAL, arg);
+		}
 	}
 }
 
