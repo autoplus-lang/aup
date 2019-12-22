@@ -403,7 +403,7 @@ static void putsStatement()
 	REG src = expression(-1);
 	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
 
-	EMIT_OpA(PUT, src);
+	EMIT_OpA(PUT, src), POP();
 }
 
 static void synchronize()
