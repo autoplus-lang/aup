@@ -190,6 +190,16 @@ static void endCompiler()
 	}
 }
 
+static void beginScope()
+{
+	current->scopeDepth++;
+}
+
+static void endScope()
+{
+	current->scopeDepth--;
+}
+
 static REG expression(REG dest);
 static void statement();
 static void declaration();
@@ -401,6 +411,15 @@ static REG expression(REG dest)
 	return parsePrecedence(PREC_ASSIGNMENT, dest);
 }
 
+static void block()
+{
+	while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+		declaration();
+	}
+
+	consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+}
+
 static void varDeclaration()
 {
 	uint8_t global = parseVariable("Expect variable name.");
@@ -487,6 +506,11 @@ static void statement()
 {
 	if (match(TOKEN_PUTS)) {
 		putsStatement();
+	}
+	else if (match(TOKEN_LEFT_BRACE)) {
+		beginScope();
+		block();
+		endScope();
 	}
 	else {
 		expressionStatement();
