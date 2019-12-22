@@ -277,12 +277,12 @@ static void unary(REG dest, bool canAssign)
 	aupTkt operatorType = parser.previous.type;
 
 	// Compile the operand.                        
-	parsePrecedence(PREC_UNARY, dest);
+	REG src = parsePrecedence(PREC_UNARY, dest);
 
 	// Emit the operator instruction.              
 	switch (operatorType) {
-		case TOKEN_BANG: //emitByte(OP_NOT); break;
-		case TOKEN_MINUS: //emitByte(OP_NEGATE); break;
+		case TOKEN_BANG:	EMIT_OpAB(NOT, dest, src); break;	//emitByte(OP_NOT);
+		case TOKEN_MINUS:	EMIT_OpAB(NEG, dest, src); break;	//emitByte(OP_NEGATE);
 		default:
 			return; // Unreachable.                    
 	}
