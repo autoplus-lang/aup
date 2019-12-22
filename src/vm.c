@@ -73,7 +73,16 @@ static int exec(aupVM *vm)
 
 	dispatch() {
 		code(NOP) next;
-		code(LDK);
+
+		code(RET) {
+
+			return AUP_OK;
+		}
+
+		code_err() {
+			runtimeError(vm, "bad opcode, got %d.", AUP_GET_Op(i));
+			return AUP_RUNTIME_ERR;
+		}
 	}
 
 	return AUP_OK;
