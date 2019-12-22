@@ -106,6 +106,14 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(NIL) {
+			REG_A() = AUP_NIL;
+			next;
+		}
+		code(BOL) {
+			REG_A() = AUP_BOOL(GET_sB());
+			next;
+		}
 		code(LDK) {
 			REG_A() = REG_K(GET_B());
 			next;
