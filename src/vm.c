@@ -97,6 +97,12 @@ static int exec(aupVM *vm)
 			return AUP_OK;
 		}
 
+		code(PUT) {
+			aupV_print(REG_A());
+			printf("\n");
+			next;
+		}
+
 		code(LDK) {
 			REG_A() = REG_K(GET_B());
 			next;
