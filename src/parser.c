@@ -174,6 +174,32 @@ static void emitConstant(aupV value, REG dest)
 	EMIT_OpAB(LDK, dest, k);
 }
 
+static int emitJump(uint32_t jmpInstruction, REG jmpfSrc)
+{
+	if (jmpInstruction != AUP_OP_JMPF)
+		EMIT_OpAxCx(JMPF, 0, jmpfSrc);
+	else
+		EMIT_OpAx(JMP, 0);
+
+	return currentChunk()->count - 1;
+}
+
+static void patchJump(int offset)
+{
+	// -1, backtrack after [ip++]
+	int jump = currentChunk()->count - offset - 1;
+
+	if (jump > INT16_MAX || jump < INT16_MIN) {
+		error("Too much code to jump over.");
+	}
+
+	uint32_t *inst = &currentChunk()->code[offset];
+
+	uint8_t op = AUP_GET_Op(*inst);
+	int Cx = AUP_GET_Cx(*inst);
+	*inst = AUP_SET_OpAxCx(op, jump, Cx);
+}
+
 static void initCompiler(Compiler *compiler)
 {
 	compiler->localCount = 0;
