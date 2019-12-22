@@ -54,9 +54,9 @@ typedef union {
 #define AUP_AS_NUM(v)   ((aupVn){ .b=(v) }).f
 #define AUP_AS_OBJ(v)   ((aupO *)(uintptr_t)((v) & ~(AUP_SBIT | AUP_QNAN)))
 
-#define AUP_IS_FALSE(v) (!(value) || AUP_IS_NIL(value) \
-	|| (AUP_IS_BOOL(value) && AUP_AS_BOOL(value) == false) \
-	|| (AUP_IS_OBJ(value) && AUP_AS_OBJ(value) == NULL))
+#define AUP_IS_FALSE(v) (!(v) || AUP_IS_NIL(v) \
+	|| (AUP_IS_BOOL(v) && AUP_AS_BOOL(v) == false) \
+	|| (AUP_IS_OBJ(v) && AUP_AS_OBJ(v) == NULL))
 
 void aupVa_init(aupVa *array);
 void aupVa_free(aupVa *array);
