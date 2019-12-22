@@ -109,15 +109,15 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 
 		code(LT) {
-
+			printf("R[%d] = R[%d] < R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 		code(LE) {
-
+			printf("R[%d] = R[%d] <= R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 		code(EQ) {
-
+			printf("R[%d] = R[%d] == R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 
@@ -138,7 +138,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 		code(MOD) {
-
+			printf("R[%d] = R[%d] %% R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 
