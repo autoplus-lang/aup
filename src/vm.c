@@ -258,7 +258,7 @@ static int exec(aupVM *vm)
 		}
 		code(GST) {
 			aupOs *name = AUP_AS_STR(K_A());
-			if (aupT_set(&vm->globals, name, K_B())) {
+			if (aupT_set(&vm->globals, name, R_B())) {
 				aupT_delete(&vm->globals, name);
 				runtimeError(vm, "undefined variable '%s'.", name->chars);
 				return AUP_RUNTIME_ERR;
