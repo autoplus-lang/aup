@@ -474,8 +474,10 @@ bool aup_compile(AUP_VM, const char *source, aupCh *chunk)
 
 	advance();
 
-	while (!match(TOKEN_EOF)) {
-		declaration();
+	if (!match(TOKEN_EOF)) {
+		do {
+			declaration();
+		} while (!match(TOKEN_EOF));
 	}
 
 	endCompiler();
