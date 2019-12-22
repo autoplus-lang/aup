@@ -66,6 +66,24 @@ static int exec(aupVM *vm)
 {
 	uint32_t i;
 
+#define GET_Op()	AUP_GET_Op(i)
+#define GET_A()		AUP_GET_A(i)
+#define GET_Ax()	AUP_GET_Ax(i)
+#define GET_B()		AUP_GET_B(i)
+#define GET_C()		AUP_GET_C(i)
+#define GET_sB()	AUP_GET_sB(i)
+#define GET_sC()	AUP_GET_sC(i)
+
+#define REG(i)		(vm->stack[i])
+#define REG_K(i)	(vm->chunk->constants.values[i])
+
+#define REG_A()		REG(GET_A())
+#define REG_B()		REG(GET_B())
+#define REG_C()		REG(GET_C())
+
+#define REG_BK()	(GET_sB() ? REG_K(GET_B()) : REG(GET_B()))
+#define REG_CK()	(GET_sC() ? REG_K(GET_C()) : REG(GET_C()))
+
 #define dispatch()	for (;;) switch (AUP_GET_Op(i = *(vm->ip++)))
 #define code(x)		case (AUP_OP_##x):
 #define code_err()	default:
