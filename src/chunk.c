@@ -179,6 +179,15 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 
+		code(JMP) {
+			printf("ip -> %03d", offset + GET_Ax() + 1);
+			next;
+		}
+		code(JMPF) {
+			printf("ip -> %03d, if !R[%d]", offset + GET_Ax() + 1, GET_C());
+			next;
+		}
+
 		code_err() {
 			printf("bad opcode, got %d", GET_Op());
 			next;
