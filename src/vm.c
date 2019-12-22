@@ -108,13 +108,19 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(NOT) {
+			aupV value = REG_K(GET_B());
+			REG_A() = AUP_BOOL(AUP_IS_FALSE(value));
+			next;
+		}
+
 		code(NEG) {
 			aupV value = REG_K(GET_B());
 			if (AUP_IS_NUM(value)) {
 				REG_A() = AUP_NUM(-AUP_AS_NUM(value));
 			}
 			else {
-				runtimeError(vm, "cannot perform '-', got <>.");
+				runtimeError(vm, "cannot perform '-', got <%s>.", aupV_typeOf(value));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
