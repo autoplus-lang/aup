@@ -389,6 +389,7 @@ static void varDeclaration()
 
 	if (match(TOKEN_EQUAL)) {
 		src = expression(-1);
+		POP();
 	}
 	else {
 		src = -1; //emitByte(OP_NIL);
