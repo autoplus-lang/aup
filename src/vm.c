@@ -116,6 +116,11 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(MOV) {
+			R_A() = R_B();
+			next;
+		}
+
 		code(NIL) {
 			R_A() = AUP_NIL;
 			next;
