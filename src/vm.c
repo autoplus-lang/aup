@@ -113,6 +113,7 @@ static int exec(aupVM *vm)
 				if (i < nvalues - 1) printf("\t");
 			}
 			printf("\n");
+			fflush(stdout);
 			next;
 		}
 

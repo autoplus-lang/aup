@@ -11,11 +11,13 @@ typedef enum {
 	AUP_TOBJ,
 
 	AUP_TSTR,
+	AUP_TFUN
 
 } aupVt;
 
 typedef struct _aupO aupO;
 typedef struct _aupOs aupOs;
+typedef struct _aupOf aupOf;
 
 typedef uint64_t aupV;
 

@@ -24,6 +24,12 @@ static void freeObject(aupO *object)
 			AUP_FREE(aupOs, object);
 			break;
 		}
+		case AUP_TFUN: {
+			aupOf *function = (aupOf*)object;
+			aupCh_free(&function->chunk);
+			AUP_FREE(aupOf, object);
+			break;
+		}
 	}
 }
 

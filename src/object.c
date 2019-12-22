@@ -9,19 +9,32 @@
 #define TYPE(o)		((o)->type)
 #define AS_STR(o)	((aupOs *)(o))
 #define AS_CSTR(o)	(((aupOs *)(o))->chars)
+#define AS_FUN(o)	((aupOf *)(o))
 
 static const char
 	__obj[] = "obj",
-	__str[] = "str";
+	__str[] = "str",
+	__fun[] = "fn";
 
 const char *aupO_typeOf(aupO *object)
 {
 	switch (TYPE(object)) {
 		case AUP_TSTR:
 			return __str;
+		case AUP_TFUN:
+			return __fun;
 		default:
 			return __obj;
 	}
+}
+
+static void printFunction(aupOf *function)
+{
+	if (function->name == NULL) {
+		printf("<script>");
+		return;
+	}
+	printf("%s: <%s>", __fun, function->name->chars);
 }
 
 void aupO_print(aupO *object)
@@ -29,6 +42,14 @@ void aupO_print(aupO *object)
 	switch (TYPE(object)) {
 		case AUP_TSTR: {
 			printf("%s", AS_CSTR(object));
+			break;
+		}
+		case AUP_TFUN: {
+			printFunction(AS_FUN(object));
+			break;
+		}
+		default: {
+			printf("%s: %p", __obj, object);
 			break;
 		}
 	}
@@ -104,4 +125,15 @@ aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
 	heapChars[length] = '\0';
 
 	return allocString(vm, heapChars, length, hash);
+}
+
+aupOf *aupOf_new(AUP_VM)
+{
+	aupOf *function = ALLOC_OBJ(vm, aupOf, AUP_TFUN);
+
+	function->arity = 0;
+	function->name = NULL;
+	aupCh_init(&function->chunk);
+
+	return function;
 }
