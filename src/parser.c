@@ -155,9 +155,10 @@ static uint8_t makeConstant(aupV value)
 	return (uint8_t)constant;
 }
 
-static void emitConstant(aupV value)
+static void emitConstant(aupV value, REG dest)
 {
-	//emitBytes(OP_CONSTANT, makeConstant(value));
+	uint8_t k = makeConstant(value);
+	EMIT_OpAB(LDK, dest, k);
 }
 
 static void endCompiler()
@@ -242,7 +243,7 @@ static void grouping(REG dest, bool canAssign)
 static void number(REG dest, bool canAssign)
 {
 	double value = strtod(parser.previous.start, NULL);
-	emitConstant(AUP_NUM(value));
+	emitConstant(AUP_NUM(value), dest);
 }
 
 static void string(REG dest, bool canAssign)
@@ -250,7 +251,7 @@ static void string(REG dest, bool canAssign)
 	aupOs *value = aupOs_copy(currentVM(),
 		parser.previous.start + 1, parser.previous.length - 2);
 
-	emitConstant(AUP_OBJ(value));
+	emitConstant(AUP_OBJ(value), dest);
 }
 
 static void namedVariable(aupTk name, REG dest, bool canAssign)
