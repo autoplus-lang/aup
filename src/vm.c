@@ -156,6 +156,50 @@ static int exec(aupVM *vm)
 			}
 			next;
 		}
+		code(SUB) {
+			aupV left = R_B(), right = R_C();
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				R_A() = AUP_NUM(AUP_AS_NUM(left) - AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '-', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+		code(MUL) {
+			aupV left = R_B(), right = R_C();
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				R_A() = AUP_NUM(AUP_AS_NUM(left) * AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '*', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+		code(DIV) {
+			aupV left = R_B(), right = R_C();
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				R_A() = AUP_NUM(AUP_AS_NUM(left) / AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '/', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+		code(MOD) {
+			aupV left = R_B(), right = R_C();
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				R_A() = AUP_NUM((long)AUP_AS_NUM(left) % (long)AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '%', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
 
 		code(DEF) {
 			aupOs *name = AUP_AS_STR(K_A());
