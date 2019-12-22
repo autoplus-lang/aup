@@ -174,10 +174,10 @@ static void emitConstant(aupV value, REG dest)
 	EMIT_OpAB(LDK, dest, k);
 }
 
-static int emitJump(uint32_t jmpInstruction, REG jmpfSrc)
+static int emitJump(bool isJMPF, REG srcJMPF)
 {
-	if (jmpInstruction != AUP_OP_JMPF)
-		EMIT_OpAxCx(JMPF, 0, jmpfSrc);
+	if (isJMPF)
+		EMIT_OpAxCx(JMPF, 0, srcJMPF);
 	else
 		EMIT_OpAx(JMP, 0);
 
@@ -582,17 +582,17 @@ static void expressionStatement()
 static void ifStatement()
 {
 	consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
-	expression();
+	REG src = expression(-1); POP();
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
-	int thenJump; //= emitJump(OP_JUMP_IF_FALSE);
-	emitByte(OP_POP);
+	int thenJump = emitJump(true, src);
+	//emitByte(OP_POP);
 	statement();
 
-	int elseJump; //= emitJump(OP_JUMP);
+	int elseJump = emitJump(false, -1);
 
 	patchJump(thenJump);
-	emitByte(OP_POP);
+	//emitByte(OP_POP);
 
 	if (match(TOKEN_ELSE)) statement();
 	patchJump(elseJump);
