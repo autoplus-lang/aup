@@ -208,7 +208,7 @@ static aupTk identifier()
 
 static aupTk number(char c)
 {
-	if (c == '0') {
+	if (c == '0' && isAlpha(peek()) && !isDigit(peek())) {
 		switch (advance()) {
 			case 'b': case 'B':
 				while (isDigit(peek()) || isAlpha(peek()))
@@ -274,13 +274,17 @@ aupTk aupLx_scan()
 		case ')': return makeToken(TOKEN_RIGHT_PAREN);
 		case '{': return makeToken(TOKEN_LEFT_BRACE);
 		case '}': return makeToken(TOKEN_RIGHT_BRACE);
+
 		case ';': return makeToken(TOKEN_SEMICOLON);
 		case ',': return makeToken(TOKEN_COMMA);
 		case '.': return makeToken(TOKEN_DOT);
+
 		case '-': return makeToken(TOKEN_MINUS);
 		case '+': return makeToken(TOKEN_PLUS);
 		case '/': return makeToken(TOKEN_SLASH);
 		case '*': return makeToken(TOKEN_STAR);
+		case '%': return makeToken(TOKEN_PERCENT);
+
 		case '!':
 			return makeToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
 		case '=':

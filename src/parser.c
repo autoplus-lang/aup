@@ -330,6 +330,7 @@ static void binary(REG dest, bool canAssign)
 		case TOKEN_MINUS:			EMIT_OpABC(SUB, dest, left, right); break;	//emitByte(OP_SUBTRACT); break;
 		case TOKEN_STAR:			EMIT_OpABC(MUL, dest, left, right); break;	//emitByte(OP_MULTIPLY); break;
 		case TOKEN_SLASH:			EMIT_OpABC(DIV, dest, left, right); break;	//emitByte(OP_DIVIDE); break;
+		case TOKEN_PERCENT:			EMIT_OpABC(MOD, dest, left, right); break;
 
 		default: return; // Unreachable.                              
 	}
@@ -441,6 +442,7 @@ static ParseRule rules[] = {
     [TOKEN_SEMICOLON]       = { NULL,     NULL,    PREC_NONE },
     [TOKEN_SLASH]           = { NULL,     binary,  PREC_FACTOR },
     [TOKEN_STAR]            = { NULL,     binary,  PREC_FACTOR },
+    [TOKEN_PERCENT]         = { NULL,     binary,  PREC_FACTOR },
 
     [TOKEN_BANG]            = { unary,    NULL,    PREC_NONE },
     [TOKEN_BANG_EQUAL]      = { NULL,     binary,  PREC_EQUALITY },
