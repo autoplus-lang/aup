@@ -267,11 +267,11 @@ static void namedVariable(aupTk name, REG dest, bool canAssign)
 	uint8_t arg = identifierConstant(&name);
 	
 	if (canAssign && match(TOKEN_EQUAL)) {
-		expression(dest);
-		//emitBytes(OP_SET_GLOBAL, arg);
+		REG src = expression(dest);
+		EMIT_OpAB(GST, arg, src);	//emitBytes(OP_SET_GLOBAL, arg);
 	}
 	else {
-		//emitBytes(OP_GET_GLOBAL, arg);
+		EMIT_OpAB(GLD, dest, arg);	//emitBytes(OP_GET_GLOBAL, arg);
 	}
 }
 
