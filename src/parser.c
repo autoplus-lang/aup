@@ -37,7 +37,19 @@ typedef struct {
 	Precedence precedence;
 } ParseRule;
 
+typedef struct {
+	aupTk name;
+	int depth;
+} Local;
+
+typedef struct Compiler {
+	Local locals[AUP_MAX_LOCALS];
+	int localCount;
+	int scopeDepth;
+} Compiler;
+
 static aupPs parser;
+static Compiler *current = NULL;
 static aupCh *compilingChunk;
 static aupVM *runningVM;
 
@@ -160,6 +172,13 @@ static void emitConstant(aupV value, REG dest)
 {
 	uint8_t k = makeConstant(value);
 	EMIT_OpAB(LDK, dest, k);
+}
+
+static void initCompiler(Compiler *compiler)
+{
+	compiler->localCount = 0;
+	compiler->scopeDepth = 0;
+	current = compiler;
 }
 
 static void endCompiler()
@@ -477,6 +496,9 @@ static void statement()
 bool aup_compile(AUP_VM, const char *source, aupCh *chunk)
 {
 	aupLx_init(source);
+	Compiler compiler;
+	initCompiler(&compiler);
+
 	compilingChunk = chunk;
 	runningVM = vm;
 
