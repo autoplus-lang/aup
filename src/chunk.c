@@ -99,6 +99,15 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 
+		code(NOT) {
+			printf("R[%d] = !R[%d]", GET_A(), GET_B());
+			next;
+		}
+		code(NEG) {
+			printf("R[%d] = -R[%d]", GET_A(), GET_B());
+			next;
+		}
+
 		code(LT) {
 
 			next;
