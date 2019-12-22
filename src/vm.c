@@ -91,7 +91,9 @@ static int exec(aupVM *vm)
 #define next		continue
 
 	dispatch() {
-		code(NOP) next;
+		code(NOP) {
+			next;
+		}
 
 		code(RET) {
 
@@ -163,7 +165,7 @@ static int exec(aupVM *vm)
 		}
 
 		code_err() {
-			runtimeError(vm, "bad opcode, got %d.", AUP_GET_Op(i));
+			runtimeError(vm, "bad opcode, got %d.", GET_Op());
 			return AUP_RUNTIME_ERR;
 		}
 	}
