@@ -127,6 +127,18 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(ADD) {
+			aupV left = REG(GET_B()), right = REG(GET_C());
+			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
+				REG_A() = AUP_NUM(AUP_AS_NUM(left) + AUP_AS_NUM(right));
+			}
+			else {
+				runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+
 		code(DEF) {
 			aupOs *name = AUP_AS_STR(REG_K(GET_A()));
 			aupT_set(&vm->globals, name, REG(GET_B()));
