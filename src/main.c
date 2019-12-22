@@ -43,14 +43,12 @@ int main(int argc, char *argv[])
 	
 	char *source = readFile(argv[argc - 1]);
 	aupVM *vm = aupVM_new();
-	aupCh chunk;
-	aupCh_init(&chunk);
 
-	if (!aup_compile(vm, source, &chunk)) {
-		puts("\nCompile error!");
-	}
+	int ret = aup_interpret(vm, source);
 
-	aupCh_free(&chunk);
+	if (ret != AUP_OK)
+		printf("\n%s error!\n", ret == AUP_COMPILE_ERR ? "Compile" : "Runtime");
+
 	aupVM_free(vm);
 	free(source);
 	return 0;
