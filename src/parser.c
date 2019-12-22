@@ -133,12 +133,12 @@ static void emit(uint32_t instruction)
 		parser.previous.line, parser.previous.column);
 }
 
-static  REG		currentReg = 0;
+static  REG		currentReg;
 
 #define PUSH()	currentReg++
 #define POP()	--currentReg
 #define POPN(n) currentReg -= (n)
-#define RESET()	currentReg = 0
+#define RESET()	currentReg = current->localCount
 
 #define _OPCODE(x)					AUP_OP_##x
 
@@ -579,6 +579,8 @@ static void synchronize()
 
 static void declaration()
 {
+	RESET();
+
 	if (match(TOKEN_VAR)) {
 		varDeclaration();
 	}
