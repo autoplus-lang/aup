@@ -361,8 +361,13 @@ static void namedVariable(aupTk name, REG dest, bool canAssign)
 	int arg = resolveLocal(current, &name);
 
 	if (arg != -1) {
-		//getOp = OP_GET_LOCAL;
-		//setOp = OP_SET_LOCAL;
+		if (canAssign && match(TOKEN_EQUAL)) {
+			REG src = expression(dest);
+			EMIT_OpAB(ST, arg, src);	//setOp = OP_SET_LOCAL;
+		}
+		else {
+			EMIT_OpAB(LD, dest, arg);	//getOp = OP_GET_LOCAL;
+		}
 	}
 	else {
 		arg = identifierConstant(&name);
