@@ -198,28 +198,35 @@ static void defineVariable(uint8_t global, REG src)
 
 static void binary(REG dest, bool canAssign)
 {
+	REG left = dest;
+
 	// Remember the operator.                                
 	aupTkt operatorType = parser.previous.type;
 
 	// Compile the right operand.                            
 	ParseRule* rule = getRule(operatorType);
-	parsePrecedence((Precedence)(rule->precedence + 1), dest);
+	REG right = parsePrecedence((Precedence)(rule->precedence + 1), -1);
+	POP();
 
 	// Emit the operator instruction.                        
 	switch (operatorType) {
-		case TOKEN_BANG_EQUAL:    //emitBytes(OP_EQUAL, OP_NOT); break;
-		case TOKEN_EQUAL_EQUAL:   //emitByte(OP_EQUAL); break;
-		case TOKEN_GREATER:       //emitByte(OP_GREATER); break;
-		case TOKEN_GREATER_EQUAL: //emitBytes(OP_LESS, OP_NOT); break;
-		case TOKEN_LESS:          //emitByte(OP_LESS); break;
-		case TOKEN_LESS_EQUAL:    //emitBytes(OP_GREATER, OP_NOT); break;
+		case TOKEN_EQUAL_EQUAL:		EMIT_OpABC(EQ, dest, left, right); break;	//emitByte(OP_EQUAL); break;
+		case TOKEN_LESS:			EMIT_OpABC(LT, dest, left, right); break;	//emitByte(OP_LESS); break;
+		case TOKEN_LESS_EQUAL:		EMIT_OpABC(LE, dest, left, right); break;	//emitBytes(OP_GREATER, OP_NOT); break;
 
-		case TOKEN_PLUS:          //emitByte(OP_ADD); break;
-		case TOKEN_MINUS:        // emitByte(OP_SUBTRACT); break;
-		case TOKEN_STAR:         // emitByte(OP_MULTIPLY); break;
-		case TOKEN_SLASH:        // emitByte(OP_DIVIDE); break;
-		default:
-			return; // Unreachable.                              
+		case TOKEN_BANG_EQUAL:		EMIT_OpABC(EQ, dest, left, right);
+									EMIT_OpAB(NOT, dest, dest); break;	//emitBytes(OP_EQUAL, OP_NOT); break;
+		case TOKEN_GREATER:			EMIT_OpABC(LE, dest, left, right);
+									EMIT_OpAB(NOT, dest, dest); break;	//emitByte(OP_GREATER); break;
+		case TOKEN_GREATER_EQUAL:	EMIT_OpABC(LT, dest, left, right);
+									EMIT_OpAB(NOT, dest, dest); break;	//emitBytes(OP_LESS, OP_NOT); break;
+
+		case TOKEN_PLUS:			EMIT_OpABC(ADD, dest, left, right); break;	//emitByte(OP_ADD); break;
+		case TOKEN_MINUS:			EMIT_OpABC(SUB, dest, left, right); break;	//emitByte(OP_SUBTRACT); break;
+		case TOKEN_STAR:			EMIT_OpABC(MUL, dest, left, right); break;	//emitByte(OP_MULTIPLY); break;
+		case TOKEN_SLASH:			EMIT_OpABC(DIV, dest, left, right); break;	//emitByte(OP_DIVIDE); break;
+
+		default: return; // Unreachable.                              
 	}
 }
 
