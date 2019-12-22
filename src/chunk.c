@@ -99,6 +99,19 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 
+		code(LT) {
+
+			next;
+		}
+		code(LE) {
+
+			next;
+		}
+		code(EQ) {
+
+			next;
+		}
+
 		code(ADD) {
 
 			next;
