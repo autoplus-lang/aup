@@ -125,6 +125,7 @@ static  REG		currentReg = 0;
 
 #define PUSH()	currentReg++
 #define POP()	--currentReg
+#define POPN(n) currentReg -= (n)
 #define RESET()	currentReg = 0
 
 #define _OPCODE(x)					AUP_OP_##x
