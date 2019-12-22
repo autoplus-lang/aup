@@ -156,6 +156,15 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			else printf("K[%d]", GET_B());
 			next;
 		}
+		code(GLD) {
+			printf("R[%d] = G.K[%d]", GET_A(), GET_B());
+			next;
+		}
+		code(GST) {
+			printf("G.K[%d] = R[%d]", GET_A(), GET_B());
+			next;
+		}
+
 		code_err() {
 			printf("bad opcode, got %d", GET_Op());
 			next;
