@@ -399,9 +399,10 @@ static void expressionStatement()
 
 static void putsStatement()
 {
-	expression(-1);
+	REG src = expression(-1);
 	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
-	//emitByte(OP_PRINT);
+
+	EMIT_OpA(PUT, src);
 }
 
 static void synchronize()
