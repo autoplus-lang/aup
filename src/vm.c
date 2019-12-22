@@ -152,7 +152,16 @@ static int exec(aupVM *vm)
 				return AUP_RUNTIME_ERR;
 			}
 			REG_A() = value;
-			break;
+			next;
+		}
+		code(GST) {
+			aupOs *name = AUP_AS_STR(REG_K(GET_A()));
+			if (aupT_set(&vm->globals, name, REG(GET_B()))) {
+				aupT_delete(&vm->globals, name);
+				runtimeError(vm, "undefined variable '%s'.", name->chars);
+				return AUP_RUNTIME_ERR;
+			}
+			next;
 		}
 
 		code_err() {
