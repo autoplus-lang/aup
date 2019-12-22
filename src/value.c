@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "value.h"
+#include "object.h"
 #include "memory.h"
 
 void aupV_print(aupV value)
@@ -15,7 +16,7 @@ void aupV_print(aupV value)
 		printf("%.14g", AUP_AS_NUM(value));
 	}
 	else if (AUP_IS_OBJ(value)) {
-		// todo
+		aupO_print(AUP_AS_OBJ(value));
 	}
 }
 

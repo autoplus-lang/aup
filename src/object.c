@@ -1,9 +1,21 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "object.h"
 #include "memory.h"
 #include "vm.h"
+
+void aupO_print(aupO *object)
+{
+	switch (object->type) {
+		case AUP_TSTR: {
+			aupOs *string = (aupOs *)object;
+			printf("%.*s", string->length, string->chars);
+			break;
+		}
+	}
+}
 
 static uint32_t hashString(const char *key, int length)
 {

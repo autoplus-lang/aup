@@ -19,4 +19,6 @@ struct _aupOs {
 aupOs *aupOs_take(AUP_VM, char *chars, int length);
 aupOs *aupOs_copy(AUP_VM, const char *chars, int length);
 
+void aupO_print(aupO *object);
+
 #endif
