@@ -22,5 +22,6 @@ struct _aupVM {
 
 aupVM *aupVM_new();
 void aupVM_free(aupVM *vm);
+int aup_interpret(aupVM *vm, const char *source);
 
 #endif

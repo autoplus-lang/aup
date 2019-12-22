@@ -78,3 +78,22 @@ static int exec(aupVM *vm)
 
 	return AUP_OK;
 }
+
+int aup_interpret(aupVM *vm, const char *source)
+{
+	aupCh chunk;
+	aupCh_init(&chunk);
+
+	if (!aup_compile(vm, source, &chunk)) {
+		aupCh_free(&chunk);
+		return AUP_COMPILE_ERR;
+	}
+
+	vm->chunk = &chunk;
+	vm->ip = vm->chunk->code;
+
+	int result = exec(vm);
+
+	aupCh_free(&chunk);
+	return result;
+}
