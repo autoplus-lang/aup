@@ -215,11 +215,11 @@ static void binary(REG dest, bool canAssign)
 		case TOKEN_LESS_EQUAL:		EMIT_OpABC(LE, dest, left, right); break;	//emitBytes(OP_GREATER, OP_NOT); break;
 
 		case TOKEN_BANG_EQUAL:		EMIT_OpABC(EQ, dest, left, right);
-									EMIT_OpAB(NOT, dest, dest); break;	//emitBytes(OP_EQUAL, OP_NOT); break;
+									EMIT_OpAB(NOT, dest, dest); break;			//emitBytes(OP_EQUAL, OP_NOT); break;
 		case TOKEN_GREATER:			EMIT_OpABC(LE, dest, left, right);
-									EMIT_OpAB(NOT, dest, dest); break;	//emitByte(OP_GREATER); break;
+									EMIT_OpAB(NOT, dest, dest); break;			//emitByte(OP_GREATER); break;
 		case TOKEN_GREATER_EQUAL:	EMIT_OpABC(LT, dest, left, right);
-									EMIT_OpAB(NOT, dest, dest); break;	//emitBytes(OP_LESS, OP_NOT); break;
+									EMIT_OpAB(NOT, dest, dest); break;			//emitBytes(OP_LESS, OP_NOT); break;
 
 		case TOKEN_PLUS:			EMIT_OpABC(ADD, dest, left, right); break;	//emitByte(OP_ADD); break;
 		case TOKEN_MINUS:			EMIT_OpABC(SUB, dest, left, right); break;	//emitByte(OP_SUBTRACT); break;
@@ -233,11 +233,11 @@ static void binary(REG dest, bool canAssign)
 static void literal(REG dest, bool canAssign)
 {
 	switch (parser.previous.type) {
-		case TOKEN_FALSE: //emitByte(OP_FALSE); break;
-		case TOKEN_NIL: //emitByte(OP_NIL); break;
-		case TOKEN_TRUE: //emitByte(OP_TRUE); break;
-		default:
-			return; // Unreachable.                   
+		case TOKEN_NIL:		EMIT_OpA(NIL, dest); break;			//emitByte(OP_NIL); break;
+		case TOKEN_FALSE:	EMIT_OpAsB(BOL, dest, 0); break;	//emitByte(OP_FALSE); break;
+		case TOKEN_TRUE:	EMIT_OpAsB(BOL, dest, 1); break;	//emitByte(OP_TRUE); break;
+
+		default: return; // Unreachable.                   
 	}
 }
 
