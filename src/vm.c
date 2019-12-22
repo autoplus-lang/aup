@@ -118,18 +118,27 @@ static bool callValue(AUP_VM, aupV callee, int argCount)
 
 static int exec(aupVM *vm)
 {
-	aupCf *frame = &vm->frames[vm->frameCount - 1];
-	uint32_t i;
+	register uint32_t *ip;
+	register aupCf *frame;
+	register aupV *stack;
 
-#define GET_Op()	AUP_GET_Op(i)
-#define GET_A()		AUP_GET_A(i)
-#define GET_Ax()	AUP_GET_Ax(i)
-#define GET_B()		AUP_GET_B(i)
-#define GET_C()		AUP_GET_C(i)
-#define GET_sB()	AUP_GET_sB(i)
-#define GET_sC()	AUP_GET_sC(i)
+#define STORE_FRAME() \
+	frame->ip = ip
 
-#define R(i)		(frame->stack[i])
+#define LOAD_FRAME() \
+	frame = &vm->frames[vm->frameCount - 1]; \
+	stack = frame->stack; \
+	ip = frame->ip
+
+#define GET_Op()	AUP_GET_Op(ip[-1])
+#define GET_A()		AUP_GET_A(ip[-1])
+#define GET_Ax()	AUP_GET_Ax(ip[-1])
+#define GET_B()		AUP_GET_B(ip[-1])
+#define GET_C()		AUP_GET_C(ip[-1])
+#define GET_sB()	AUP_GET_sB(ip[-1])
+#define GET_sC()	AUP_GET_sC(ip[-1])
+
+#define R(i)		(stack[i])
 #define K(i)		(frame->function->chunk.constants.values[i])
 
 #define R_A()		R(GET_A())
@@ -143,10 +152,12 @@ static int exec(aupVM *vm)
 #define RK_B()		(GET_sB() ? K(GET_B()) : R(GET_B()))
 #define RK_C()		(GET_sC() ? K(GET_C()) : R(GET_C()))
 
-#define dispatch()	for (;;) switch (AUP_GET_Op(i = *(frame->ip++)))
+#define dispatch()	for (;;) switch (AUP_GET_Op((*ip++)))
 #define code(x)		case (AUP_OP_##x):
 #define code_err()	default:
 #define next		continue
+
+	LOAD_FRAME();
 
 	dispatch() {
 		code(NOP) {
@@ -154,7 +165,7 @@ static int exec(aupVM *vm)
 		}
 
 		code(RET) {
-			frame->stack[0] = GET_sB() ? R_A() : AUP_NIL;
+			R(0) = GET_sB() ? R_A() : AUP_NIL;
 
 			vm->frameCount--;
 			if (vm->frameCount == 0) {
@@ -162,19 +173,23 @@ static int exec(aupVM *vm)
 				return AUP_OK;
 			}
 
-			vm->top = frame->stack;
+			//vm->top = frame->stack;
 			//push(result);
 
-			frame = &vm->frames[vm->frameCount - 1];
+			LOAD_FRAME();
 			next;
 		}
 		code(CALL) {
 			int argCount = GET_B();
+
+			STORE_FRAME();
 			vm->top = &R_A();
+
 			if (!callValue(vm, R_A(), argCount)) {
 				return AUP_RUNTIME_ERR;
 			}
-			frame = &vm->frames[vm->frameCount - 1];
+			
+			LOAD_FRAME();
 			next;
 		}
 
@@ -349,12 +364,12 @@ static int exec(aupVM *vm)
 		}
 
 		code(JMP) {
-			frame->ip += GET_Ax();
+			ip += GET_Ax();
 			next;
 		}
 		code(JMPF) {
 			aupV value = R_C();
-			if (AUP_IS_FALSE(value)) frame->ip += GET_Ax();
+			if (AUP_IS_FALSE(value)) ip += GET_Ax();
 			next;
 		}
 
