@@ -275,6 +275,16 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(JMP) {
+			vm->ip += GET_Ax();
+			next;
+		}
+		code(JMPF) {
+			aupV value = R_C();
+			if (AUP_IS_FALSE(value)) vm->ip += GET_Ax();
+			next;
+		}
+
 		code_err() {
 			runtimeError(vm, "bad opcode, got %d.", GET_Op());
 			return AUP_RUNTIME_ERR;
