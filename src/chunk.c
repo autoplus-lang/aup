@@ -88,6 +88,12 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 	dispatch() {
 		code(NOP) next;
 		code(RET) next;
+
+		code(PUT) {
+			printf("R[%d]", GET_A());
+			next;
+		}
+
 		code(LDK) {
 			printf("R[%d] = K[%d]", GET_A(), GET_B());
 			next;
