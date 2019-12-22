@@ -202,9 +202,9 @@ static void patchJump(int offset)
 	}
 
 	uint32_t *inst = &currentChunk()->code[offset];
-
 	uint8_t op = AUP_GET_Op(*inst);
 	int Cx = AUP_GET_Cx(*inst);
+	// Patch the hole
 	*inst = AUP_SET_OpAxCx(op, jump, Cx);
 }
 
@@ -356,6 +356,22 @@ static void defineVariable(uint8_t global, REG src)
 		EMIT_OpAB(DEF, global, src);
 }
 
+static uint8_t argumentList()
+{
+	uint8_t argCount = 0;
+	if (!check(TOKEN_RIGHT_PAREN)) {
+		do {
+			expression(-1);
+			if (++argCount >= AUP_MAX_ARGS) {
+				error("Cannot have more than %d arguments.", AUP_MAX_ARGS);
+			}
+		} while (match(TOKEN_COMMA));
+	}
+
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+	return argCount;
+}
+
 static void and_(REG dest, bool canAssign)
 {
 	int endJump = emitJump(true, dest);
@@ -399,22 +415,6 @@ static void binary(REG dest, bool canAssign)
 
 		default: return; // Unreachable.                              
 	}
-}
-
-static uint8_t argumentList()
-{
-	uint8_t argCount = 0;
-	if (!check(TOKEN_RIGHT_PAREN)) {
-		do {
-			expression(-1);
-			if (++argCount >= AUP_MAX_ARGS) {
-				error("Cannot have more than %d arguments.", AUP_MAX_ARGS);
-			}
-		} while (match(TOKEN_COMMA));
-	}
-
-	consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
-	return argCount;
 }
 
 static void call(REG dest, bool canAssign)

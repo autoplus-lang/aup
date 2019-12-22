@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "aup.h"
 #include "vm.h"
@@ -40,6 +41,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	clock_t clk = clock();
 	
 	char *source = readFile(argv[argc - 1]);
 	aupVM *vm = aupVM_new();
@@ -51,5 +53,7 @@ int main(int argc, char *argv[])
 
 	aupVM_free(vm);
 	free(source);
+
+	printf("\ndone in %dms!\n", clock() - clk);
 	return 0;
 }
