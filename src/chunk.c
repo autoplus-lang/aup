@@ -94,6 +94,14 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 
+		code(NIL) {
+			printf("R[%d] = nil", GET_A());
+			next;
+		}
+		code(BOL) {
+			printf("R[%d] = %s", GET_A(), GET_sB() ? "true" : "false");
+			next;
+		}
 		code(LDK) {
 			printf("R[%d] = K[%d]", GET_A(), GET_B());
 			next;
