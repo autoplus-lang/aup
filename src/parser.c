@@ -389,6 +389,18 @@ static void grouping(REG dest, bool canAssign)
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
+static void or_(REG dest, bool canAssign)
+{
+	int elseJump = emitJump(true, dest);
+	int endJump = emitJump(false, -1);
+
+	patchJump(elseJump);
+	//emitByte(OP_POP);
+
+	parsePrecedence(PREC_OR, dest);
+	patchJump(endJump);
+}
+
 static void number(REG dest, bool canAssign)
 {
 	double value;
@@ -504,7 +516,7 @@ static ParseRule rules[] = {
     [TOKEN_FUN]             = { NULL,     NULL,    PREC_NONE },
     [TOKEN_IF]              = { NULL,     NULL,    PREC_NONE },
     [TOKEN_NIL]             = { literal,  NULL,    PREC_NONE },
-    [TOKEN_OR]              = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_OR]              = { NULL,     or_,     PREC_OR   },
     [TOKEN_PUTS]            = { NULL,     NULL,    PREC_NONE },
     [TOKEN_RETURN]          = { NULL,     NULL,    PREC_NONE },
     [TOKEN_SUPER]           = { NULL,     NULL,    PREC_NONE },
