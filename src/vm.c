@@ -108,6 +108,18 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(NEG) {
+			aupV value = REG_K(GET_B());
+			if (AUP_IS_NUM(value)) {
+				REG_A() = AUP_NUM(-AUP_AS_NUM(value));
+			}
+			else {
+				runtimeError(vm, "cannot perform '-', got <>.");
+				return AUP_RUNTIME_ERR;
+			}
+			next;
+		}
+
 		code_err() {
 			runtimeError(vm, "bad opcode, got %d.", AUP_GET_Op(i));
 			return AUP_RUNTIME_ERR;
