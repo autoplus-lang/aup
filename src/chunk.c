@@ -180,7 +180,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		code(DEF) {
 			printf("G.K[%d] = ", GET_A());
 			if (GET_sB()) printf("nil");
-			else printf("K[%d]", GET_B());
+			else printf("R[%d]", GET_B());
 			next;
 		}
 		code(GLD) {
