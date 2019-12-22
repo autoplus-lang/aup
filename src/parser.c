@@ -327,6 +327,16 @@ static void defineVariable(uint8_t global, REG src)
 		EMIT_OpAB(DEF, global, src);
 }
 
+static void and_(REG dest, bool canAssign)
+{
+	int endJump = emitJump(true, dest);
+
+	//emitByte(OP_POP);
+	parsePrecedence(PREC_AND, dest);
+
+	patchJump(endJump);
+}
+
 static void binary(REG dest, bool canAssign)
 {
 	REG left = dest;
@@ -486,7 +496,7 @@ static ParseRule rules[] = {
     [TOKEN_OCTAL]           = { number,   NULL,    PREC_NONE },
     [TOKEN_HEXADECIMAL]     = { number,   NULL,    PREC_NONE },
 
-    [TOKEN_AND]             = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_AND]             = { NULL,     and_,    PREC_AND  },
     [TOKEN_CLASS]           = { NULL,     NULL,    PREC_NONE },
     [TOKEN_ELSE]            = { NULL,     NULL,    PREC_NONE },
     [TOKEN_FALSE]           = { literal,  NULL,    PREC_NONE },
