@@ -110,7 +110,7 @@ static int exec(aupVM *vm)
 		}
 
 		code(NOT) {
-			aupV value = REG_K(GET_B());
+			aupV value = REG(GET_B());
 			REG_A() = AUP_BOOL(AUP_IS_FALSE(value));
 			next;
 		}
