@@ -90,7 +90,12 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		code(RET) next;
 
 		code(PUT) {
-			printf("R[%d]", GET_A());
+			if (GET_B() > 1) {
+				printf("R[%d]..R[%d]", GET_A(), GET_A() + GET_B() - 1);		
+			}
+			else {
+				printf("R[%d]", GET_A());
+			}
 			next;
 		}
 

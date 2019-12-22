@@ -105,7 +105,11 @@ static int exec(aupVM *vm)
 		}
 
 		code(PUT) {
-			aupV_print(R_A());
+			int rA = GET_A(), nvalues = GET_B();
+			for (int i = 0; i < nvalues; i++) {
+				aupV_print(R(rA + i));
+				if (i < nvalues - 1) printf("\t");
+			}
 			printf("\n");
 			next;
 		}
