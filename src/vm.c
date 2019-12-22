@@ -116,7 +116,7 @@ static int exec(aupVM *vm)
 		}
 
 		code(NEG) {
-			aupV value = REG_K(GET_B());
+			aupV value = REG(GET_B());
 			if (AUP_IS_NUM(value)) {
 				REG_A() = AUP_NUM(-AUP_AS_NUM(value));
 			}
