@@ -34,6 +34,25 @@ static bool isDigit(char c)
 		&& (c <= '9');
 }
 
+static bool isBinaryDigit(char c)
+{
+	return (c == '0')
+		|| (c == '1');
+}
+
+static bool isOctalDigit(char c)
+{
+	return (c >= '0')
+		&& (c <= '7');
+}
+
+static bool isHexadecimalDigit(char c)
+{
+	return (c >= '0' && c <= '9')
+		|| (c >= 'a' && c <= 'f')
+		|| (c >= 'A' && c <= 'F');
+}
+
 static bool isAtEnd()
 {
 	return *lexer.current == '\0';
@@ -187,8 +206,30 @@ static aupTk identifier()
 	return makeToken(identifierType());
 }
 
-static aupTk number()
+static aupTk number(char c)
 {
+	if (c == '0' && peek() == 'x') {
+		switch (advance()) {
+			case 'b': case 'B':
+				while (isDigit(peek()) || isAlpha(peek()))
+					if (!isBinaryDigit(advance())) return errorToken("Expect binary digit.");
+				return makeToken(TOKEN_BINARY);
+
+			case 'o': case 'O': case 'q': case 'Q':
+				while (isDigit(peek()) || isAlpha(peek()))
+					if (!isOctalDigit(advance())) return errorToken("Expect octal digit.");
+				return makeToken(TOKEN_OCTAL);
+
+			case 'x': case 'X': case 'h': case 'H':
+				while (isDigit(peek()) || isAlpha(peek()))
+					if (!isHexadecimalDigit(advance())) return errorToken("Expect hexadecimal digit.");
+				return makeToken(TOKEN_HEXADECIMAL);
+
+			default:
+				return errorToken("Unexpected number format.");
+		}
+	}
+
 	while (isDigit(peek())) advance();
 
 	// Look for a fractional part.             
@@ -226,7 +267,7 @@ aupTk aupLx_scan()
 
 	char c = advance();
 	if (isAlpha(c)) return identifier();
-	if (isDigit(c)) return number();
+	if (isDigit(c)) return number(c);
 
 	switch (c) {
 		case '(': return makeToken(TOKEN_LEFT_PAREN);

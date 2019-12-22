@@ -354,7 +354,23 @@ static void grouping(REG dest, bool canAssign)
 
 static void number(REG dest, bool canAssign)
 {
-	double value = strtod(parser.previous.start, NULL);
+	double value;
+
+	switch (parser.previous.type) {
+		case TOKEN_BINARY:
+			value = strtol(parser.previous.start + 2, NULL, 2);
+			break;
+		case TOKEN_OCTAL:
+			value = strtol(parser.previous.start + 2, NULL, 8);
+			break;
+		case TOKEN_HEXADECIMAL:
+			value = strtol(parser.previous.start + 2, NULL, 16);
+			break;
+		case TOKEN_NUMBER: default:
+			value = strtod(parser.previous.start, NULL);
+			break;
+	}
+
 	emitConstant(AUP_NUM(value), dest);
 }
 
@@ -438,6 +454,9 @@ static ParseRule rules[] = {
     [TOKEN_IDENTIFIER]      = { variable, NULL,    PREC_NONE },
     [TOKEN_STRING]          = { string,   NULL,    PREC_NONE },
     [TOKEN_NUMBER]          = { number,   NULL,    PREC_NONE },
+    [TOKEN_BINARY]          = { number,   NULL,    PREC_NONE },
+    [TOKEN_OCTAL]           = { number,   NULL,    PREC_NONE },
+    [TOKEN_HEXADECIMAL]     = { number,   NULL,    PREC_NONE },
 
     [TOKEN_AND]             = { NULL,     NULL,    PREC_NONE },
     [TOKEN_CLASS]           = { NULL,     NULL,    PREC_NONE },
