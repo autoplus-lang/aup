@@ -132,6 +132,16 @@ static int exec(aupVM *vm)
 			aupT_set(&vm->globals, name, REG(GET_B()));
 			next;
 		}
+		code(GLD) {
+			aupOs *name = AUP_AS_STR(REG_K(GET_B()));
+			aupV value;
+			if (!aupT_get(&vm->globals, name, &value)) {
+				runtimeError(vm, "undefined variable '%s'.", name->chars);
+				return AUP_RUNTIME_ERR;
+			}
+			REG_A() = value;
+			break;
+		}
 
 		code_err() {
 			runtimeError(vm, "bad opcode, got %d.", AUP_GET_Op(i));
