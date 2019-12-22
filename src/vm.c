@@ -63,6 +63,8 @@ void aupVM_free(aupVM *vm)
 	else g_pvm = NULL;
 }
 
+#define TOF(v)	aupV_typeOf(v)
+
 static int exec(aupVM *vm)
 {
 	uint32_t i;
@@ -139,7 +141,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_NUM(-AUP_AS_NUM(value));
 			}
 			else {
-				runtimeError(vm, "cannot perform '-', got <%s>.", aupV_typeOf(value));
+				runtimeError(vm, "cannot perform '-', got <%s>.", TOF(value));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -152,7 +154,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_BOOL(AUP_AS_NUM(left) < AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '<', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -163,7 +165,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_BOOL(AUP_AS_NUM(left) <= AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '<=', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -174,7 +176,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_BOOL(AUP_AS_NUM(left) == AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '==', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -186,7 +188,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_NUM(AUP_AS_NUM(left) + AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -197,7 +199,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_NUM(AUP_AS_NUM(left) - AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '-', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -208,7 +210,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_NUM(AUP_AS_NUM(left) * AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '*', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -219,7 +221,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_NUM(AUP_AS_NUM(left) / AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '/', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
@@ -230,7 +232,7 @@ static int exec(aupVM *vm)
 				R_A() = AUP_NUM((long)AUP_AS_NUM(left) % (long)AUP_AS_NUM(right));
 			}
 			else {
-				runtimeError(vm, "cannot perform '%', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
+				runtimeError(vm, "cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
 				return AUP_RUNTIME_ERR;
 			}
 			next;
