@@ -22,11 +22,19 @@ void aupO_print(aupO *object)
 
 static uint32_t hashString(const char *key, int length)
 {
-	uint32_t hash = 2166136261u;
+	// fnv_32
+	static const int prime = 16777619;
+	static const uint32_t basis = 2166136261U;
 
-	for (int i = 0; i < length; i++) {
+	uint32_t hash = basis;
+
+	if (length < 0) while (*key != '\0') {
+		hash ^= *(key++);
+		hash *= prime;
+	}
+	else for (int i = 0; i < length; i++) {
 		hash ^= key[i];
-		hash *= 16777619;
+		hash *= prime;
 	}
 
 	return hash;
