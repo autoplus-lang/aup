@@ -75,15 +75,19 @@ static int exec(aupVM *vm)
 #define GET_sB()	AUP_GET_sB(i)
 #define GET_sC()	AUP_GET_sC(i)
 
-#define REG(i)		(vm->stack[i])
-#define REG_K(i)	(vm->chunk->constants.values[i])
+#define R(i)		(vm->stack[i])
+#define K(i)		(vm->chunk->constants.values[i])
 
-#define REG_A()		REG(GET_A())
-#define REG_B()		REG(GET_B())
-#define REG_C()		REG(GET_C())
+#define R_A()		R(GET_A())
+#define R_B()		R(GET_B())
+#define R_C()		R(GET_C())
 
-#define REG_BK()	(GET_sB() ? REG_K(GET_B()) : REG(GET_B()))
-#define REG_CK()	(GET_sC() ? REG_K(GET_C()) : REG(GET_C()))
+#define K_A()		K(GET_A())
+#define K_B()		K(GET_B())
+#define K_C()		K(GET_C())
+
+#define RK_B()		(GET_sB() ? K(GET_B()) : R(GET_B()))
+#define RK_C()		(GET_sC() ? K(GET_C()) : R(GET_C()))
 
 #define dispatch()	for (;;) switch (AUP_GET_Op(i = *(vm->ip++)))
 #define code(x)		case (AUP_OP_##x):
@@ -101,34 +105,34 @@ static int exec(aupVM *vm)
 		}
 
 		code(PUT) {
-			aupV_print(REG_A());
+			aupV_print(R_A());
 			printf("\n");
 			next;
 		}
 
 		code(NIL) {
-			REG_A() = AUP_NIL;
+			R_A() = AUP_NIL;
 			next;
 		}
 		code(BOL) {
-			REG_A() = AUP_BOOL(GET_sB());
+			R_A() = AUP_BOOL(GET_sB());
 			next;
 		}
 		code(LDK) {
-			REG_A() = REG_K(GET_B());
+			R_A() = K_B();
 			next;
 		}
 
 		code(NOT) {
-			aupV value = REG(GET_B());
-			REG_A() = AUP_BOOL(AUP_IS_FALSE(value));
+			aupV value = R_B();
+			R_A() = AUP_BOOL(AUP_IS_FALSE(value));
 			next;
 		}
 
 		code(NEG) {
-			aupV value = REG(GET_B());
+			aupV value = R_B();
 			if (AUP_IS_NUM(value)) {
-				REG_A() = AUP_NUM(-AUP_AS_NUM(value));
+				R_A() = AUP_NUM(-AUP_AS_NUM(value));
 			}
 			else {
 				runtimeError(vm, "cannot perform '-', got <%s>.", aupV_typeOf(value));
@@ -138,9 +142,9 @@ static int exec(aupVM *vm)
 		}
 
 		code(ADD) {
-			aupV left = REG(GET_B()), right = REG(GET_C());
+			aupV left = R_B(), right = R_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				REG_A() = AUP_NUM(AUP_AS_NUM(left) + AUP_AS_NUM(right));
+				R_A() = AUP_NUM(AUP_AS_NUM(left) + AUP_AS_NUM(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", aupV_typeOf(left), aupV_typeOf(right));
@@ -150,21 +154,21 @@ static int exec(aupVM *vm)
 		}
 
 		code(DEF) {
-			aupOs *name = AUP_AS_STR(REG_K(GET_A()));
-			aupT_set(&vm->globals, name, GET_sB() ? AUP_NIL : REG(GET_B()));
+			aupOs *name = AUP_AS_STR(K_A());
+			aupT_set(&vm->globals, name, GET_sB() ? AUP_NIL : R_B());
 			next;
 		}
 		code(GLD) {
-			aupOs *name = AUP_AS_STR(REG_K(GET_B()));
-			if (!aupT_get(&vm->globals, name, &REG_A())) {
+			aupOs *name = AUP_AS_STR(K_B());
+			if (!aupT_get(&vm->globals, name, &R_A())) {
 				runtimeError(vm, "undefined variable '%s'.", name->chars);
 				return AUP_RUNTIME_ERR;
 			}
 			next;
 		}
 		code(GST) {
-			aupOs *name = AUP_AS_STR(REG_K(GET_A()));
-			if (aupT_set(&vm->globals, name, REG(GET_B()))) {
+			aupOs *name = AUP_AS_STR(K_A());
+			if (aupT_set(&vm->globals, name, K_B())) {
 				aupT_delete(&vm->globals, name);
 				runtimeError(vm, "undefined variable '%s'.", name->chars);
 				return AUP_RUNTIME_ERR;
