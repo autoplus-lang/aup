@@ -122,19 +122,19 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 
 		code(ADD) {
-
+			printf("R[%d] = R[%d] + R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 		code(SUB) {
-
+			printf("R[%d] = R[%d] - R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 		code(MUL) {
-
+			printf("R[%d] = R[%d] * R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 		code(DIV) {
-
+			printf("R[%d] = R[%d] / R[%d]", GET_A(), GET_B(), GET_C());
 			next;
 		}
 		code(MOD) {
