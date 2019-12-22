@@ -208,7 +208,7 @@ static aupTk identifier()
 
 static aupTk number(char c)
 {
-	if (c == '0' && peek() == 'x') {
+	if (c == '0') {
 		switch (advance()) {
 			case 'b': case 'B':
 				while (isDigit(peek()) || isAlpha(peek()))
