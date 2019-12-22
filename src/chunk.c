@@ -88,8 +88,12 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 	dispatch() {
 		code(NOP) next;
 		code(RET) next;
+		code(LDK) {
+			printf("R[%d] = K[%d]", GET_A(), GET_B());
+			next;
+		}
 		code(DEF) {
-			printf("G[%d] = ", GET_A());
+			printf("G.K[%d] = ", GET_A());
 			if (GET_sB()) printf("nil");
 			else printf("K[%d]", GET_B());
 			next;
@@ -105,14 +109,21 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
 void aupCh_dasm(aupCh *chunk, const char *name)
 {
-	printf("\n");
+	printf("\n>> disassembling chunk: <%s>\n", name);
 
-	printf("off  ln col  op  A  Bx  Cx  disassemble\n");
+	for (int i = 0; i < chunk->constants.count; i++) {
+		printf("K[%d] = ", i); aupV_print(chunk->constants.values[i]);
+		printf("\n");
+	}
+
+	printf("------------------------------------------------\n");
+
+	printf("off  ln col  op  A  Bx  Cx  description\n");
 	printf("--- --- ---  -------------  --------------------\n");
 
 	for (int offset = 0; offset < chunk->count; offset++) {
 		aupCh_dasmInst(chunk, offset);
 	}
 
-	printf("===> %s\n", name);
+	printf("------------------------------------------------\n");
 }
