@@ -37,6 +37,9 @@ enum {
 
 	AUP_OP_LD,
 	AUP_OP_ST,
+
+	AUP_OP_JMP,
+	AUP_OP_JMPF,
 };
 
 /*
