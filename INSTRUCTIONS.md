@@ -37,3 +37,20 @@ OpAsBsC |`opcode`|`A`  [8]|`sB` [1]|`sC` [1]
 - `DEF %k, %r/k`
 - `GLD %r, %r/k`
 - `GST %r, %r/k`
+
+### Example
+
+```go
+a = 10
+puts a + 5
+```
+
+```c
+.k[0] = a
+.k[1] = 10
+.k[2] = 5
+GST k[0], k[1]          ; a = 10
+GLD r[0], k[0]          ; r[0] = a
+ADD r[0], r[0], k[2]    ; r[0] = r[0] + 5
+PUT r[0]                ; puts r[0]
+```
