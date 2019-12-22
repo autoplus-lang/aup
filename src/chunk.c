@@ -86,9 +86,17 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 	printf("%02x %2x %3x %3x  ", GET_Op(), GET_A(), GET_Bx(), GET_Cx());
 
 	dispatch() {
-		code(NOP) next;
+		code(NOP) {
+			next;
+		}
 
-		code(RET) next;
+		code(RET) {
+			if (GET_sB())
+				printf("R[%d]", GET_A());
+			else
+				printf("nil");
+			next;
+		}
 		code(CALL) {
 			printf("R[%d] = R[%d](", GET_A(), GET_A());
 			if (GET_B() <= 0) {
