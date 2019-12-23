@@ -790,15 +790,6 @@ static void ifStatement()
 
 static void putsStatement()
 {
-	REG src = expression(-1);
-	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
-
-	POP();
-	EMIT_OpABx(PUT, 0, src);
-}
-
-static void putsStatement_()
-{
 	int nvalues = 1;
 	REG src = expression(-1);
 

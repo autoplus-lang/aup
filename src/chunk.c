@@ -131,8 +131,6 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 
 		code(PUT) {
-			RK_B();
-			next;
 			if (GET_B() > 1) {
 				printf("R[%d]..R[%d]", GET_A(), GET_A() + GET_B() - 1);		
 			}

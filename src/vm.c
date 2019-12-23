@@ -201,9 +201,6 @@ static int exec(aupVM *vm)
 		}
 
 		code(PUT) {
-			aupV_print(RK_B());
-			printf("\n");
-			next;
 			int rA = GET_A(), nvalues = GET_B();
 			for (int i = 0; i < nvalues; i++) {
 				aupV_print(R(rA + i));
