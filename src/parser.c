@@ -526,10 +526,10 @@ static REG namedVariable(aupTk name, REG dest, bool canAssign)
 		arg = identifierConstant(&name);
 		if (canAssign && match(TOKEN_EQUAL)) {
 			REG src = expression(dest);
-			EMIT_OpAB(GST, arg, src);	//emitBytes(OP_SET_GLOBAL, arg);
+			EMIT_OpABx(GST, arg, src);	//emitBytes(OP_SET_GLOBAL, arg);
 		}
 		else {
-			EMIT_OpAB(GLD, dest, arg);	//emitBytes(OP_GET_GLOBAL, arg);
+			EMIT_OpABx(GLD, dest, arg);	//emitBytes(OP_GET_GLOBAL, arg);
 		}
 	}
 

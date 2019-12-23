@@ -350,17 +350,18 @@ static int exec(aupVM *vm)
 		code(GLD) {
 			aupOs *name = AUP_AS_STR(K_B());
 			if (!aupT_get(&vm->globals, name, &R_A())) {
-				runtimeError(vm, "undefined variable '%s'.", name->chars);
-				return AUP_RUNTIME_ERR;
+				R_A() = AUP_NIL;
+				//runtimeError(vm, "undefined variable '%s'.", name->chars);
+				//return AUP_RUNTIME_ERR;
 			}
 			next;
 		}
 		code(GST) {
 			aupOs *name = AUP_AS_STR(K_A());
 			if (aupT_set(&vm->globals, name, RK_B())) {
-				aupT_delete(&vm->globals, name);
-				runtimeError(vm, "undefined variable '%s'.", name->chars);
-				return AUP_RUNTIME_ERR;
+				//aupT_delete(&vm->globals, name);
+				//runtimeError(vm, "undefined variable '%s'.", name->chars);
+				//return AUP_RUNTIME_ERR;
 			}
 			next;
 		}
