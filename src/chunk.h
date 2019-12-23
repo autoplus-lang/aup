@@ -46,32 +46,32 @@ typedef enum {
 
 typedef union {
     struct {
-		aupOp    op : 6;
-        unsigned A  : 8;
-        unsigned Bx : 9;
-        unsigned Cx : 9;
+		aupOp    op :  6;
+        unsigned  A :  8;
+        unsigned Bx :  9;
+        unsigned Cx :  9;
     };
     struct {
         unsigned    : 14;
-        unsigned B  : 8;
-        bool     sB : 1;
-        unsigned C  : 8;
-        bool     sC : 1;
+        unsigned  B :  8;
+        bool     sB :  1;
+        unsigned  C :  8;
+        bool     sC :  1;
     };
     struct {
-        unsigned    : 6;
+        unsigned    :  6;
         signed   Ax : 16;
     };
     unsigned int raw;
 } aupI;
 
 /*
-						 32-bits instruction
-	 0 1 2 3 4 5 6 7 8 9 ...                                   ... 31
-	[- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -]
-	 \_6_op____/ \_8_A_________/ \_9_B___________/ \_9_C___________/
-				 \_16_Ax_______________________/ \                 \
-												 sB                sC
+        0 1 2 3 4 5 6 7 8 9 ...                                   ... 31
+        [_6_op____] [_8_A_________] [_9_Bx__________] [_9_Cx__________]
+                                    [_8_B_________] [ [_8_C_________] [
+                    [_16_Ax_______________________] sB]               sC]
+
+					        32-bits instruction
 */
 
 #define AUP_SET_OpA(op, A)  \
