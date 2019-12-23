@@ -494,8 +494,9 @@ static REG number(REG dest, bool canAssign)
 			break;
 	}
 
-	//emitConstant(AUP_NUM(value), dest);
-	return makeConstant(AUP_NUM(value)) + 256;
+	emitConstant(AUP_NUM(value), dest);
+	return dest;
+	//return makeConstant(AUP_NUM(value)) + 256;
 }
 
 static REG string(REG dest, bool canAssign)
@@ -503,8 +504,9 @@ static REG string(REG dest, bool canAssign)
 	aupOs *value = aupOs_copy(currentVM(),
 		parser.previous.start + 1, parser.previous.length - 2);
 
-	//emitConstant(AUP_OBJ(value), dest);
-	return makeConstant(AUP_OBJ(value)) + 256;
+	emitConstant(AUP_OBJ(value), dest);
+	return dest;
+	//return makeConstant(AUP_OBJ(value)) + 256;
 }
 
 static REG namedVariable(aupTk name, REG dest, bool canAssign)
