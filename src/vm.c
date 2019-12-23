@@ -115,6 +115,7 @@ static bool callValue(AUP_VM, aupV callee, int argCount)
 
 #define TOF(v)	aupV_typeOf(v)
 #define PUSH(v)	(*((vm)->top++) = (v))
+#define POP()   (--(vm)->top)
 
 static int exec(aupVM *vm)
 {
@@ -388,12 +389,8 @@ int aup_interpret(aupVM *vm, const char *source)
 	aupOf *function = aup_compile(vm, source);
 	if (function == NULL) return AUP_COMPILE_ERR;
 
-	PUSH(AUP_OBJ(function));
+	PUSH(AUP_OBJ(function)); POP();
 	callValue(vm, AUP_OBJ(function), 0);
-	//aupCf *frame = &vm->frames[vm->frameCount++];
-	//frame->function = function;
-	//frame->ip = function->chunk.code;
-	//frame->slots = vm->stack;
 
 	return exec(vm);
 }
