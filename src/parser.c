@@ -207,6 +207,11 @@ static void emit(uint32_t i)
 				i = AUP_SET_OpABxCx(GET_Op(), GET_A(), PREV_Bx(2), PREV_Bx(1));
 				UNDO(), UNDO();
 			}
+			else if (PREV_Op(1) == CODE(LD))
+			{
+				i = AUP_SET_OpABxCx(GET_Op(), GET_A(), GET_Bx(), PREV_Bx(1));
+				UNDO();
+			}
 			break;
 		}
 	}

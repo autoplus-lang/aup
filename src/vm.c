@@ -121,14 +121,12 @@ static int exec(aupVM *vm)
 {
 	register uint32_t *ip;
 	register aupCf *frame;
-	register aupV *stack;
 
 #define STORE_FRAME() \
 	frame->ip = ip
 
 #define LOAD_FRAME() \
 	frame = &vm->frames[vm->frameCount - 1]; \
-	stack = frame->stack; \
 	ip = frame->ip
 
 #define GET_Op()	AUP_GET_Op(ip[-1])
@@ -139,7 +137,7 @@ static int exec(aupVM *vm)
 #define GET_sB()	AUP_GET_sB(ip[-1])
 #define GET_sC()	AUP_GET_sC(ip[-1])
 
-#define R(i)		(stack[i])
+#define R(i)		(frame->stack[i])
 #define K(i)		(frame->function->chunk.constants.values[i])
 
 #define R_A()		R(GET_A())
