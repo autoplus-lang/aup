@@ -165,6 +165,15 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(PUSH) {
+			PUSH(RK_B());
+			next;
+		}
+		code(POP) {
+			POP();
+			next;
+		}
+
 		code(RET) {
 			R(0) = GET_sB() ? R_A() : AUP_NIL;
 
