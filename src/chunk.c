@@ -122,6 +122,11 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 
+		code(PUSH) {
+			RK_B();
+			next;
+		}
+
 		code(MOV) {
 			printf("R[%d] = R[%d]", GET_A(), GET_B());
 			next;
