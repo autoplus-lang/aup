@@ -75,7 +75,22 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 #define GET_Bx()	AUP_GET_Bx(i)
 #define GET_Cx()	AUP_GET_Cx(i)
 
-#define REG_K(i)	(chunk->constants.values[i])
+#define R(i)		printf("R[%d]", i)
+#define K(i)		printf("K[%d]", i)
+
+#define R_A()		R(GET_A())
+#define R_B()		R(GET_B())
+#define R_C()		R(GET_C())
+
+#define K_A()		K(GET_A())
+#define K_B()		K(GET_B())
+#define K_C()		K(GET_C())
+
+#define RK_B()		GET_sB() ? K_B() : R_B()
+#define RK_C()		GET_sC() ? K_C() : R_C()
+
+#define PUT(x)      printf(x)
+#define PUTF(f,...) printf(f, ##__VA_ARGS__)
 
 #define dispatch()  switch (GET_Op())
 #define code(x)		case (AUP_OP_##x): printf("%-5s ", #x);
@@ -86,10 +101,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 	printf("%02x %2x %3x %3x  ", GET_Op(), GET_A(), GET_Bx(), GET_Cx());
 
 	dispatch() {
-		code(NOP) {
-			next;
-		}
-
+		code(NOP) { next; }
 		code(RET) {
 			if (GET_sB())
 				printf("R[%d]", GET_A());
@@ -116,6 +128,8 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 
 		code(PUT) {
+			RK_B();
+			next;
 			if (GET_B() > 1) {
 				printf("R[%d]..R[%d]", GET_A(), GET_A() + GET_B() - 1);		
 			}
@@ -134,57 +148,56 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 		code(LDK) {
-			printf("R[%d] = K[%d]", GET_A(), GET_B());
+			R_A(), PUT(" = "), K_B();
 			next;
 		}
 
 		code(NOT) {
-			printf("R[%d] = !R[%d]", GET_A(), GET_B());
+			R_A(), PUT(" = !"), RK_B();
 			next;
 		}
 		code(NEG) {
-			printf("R[%d] = -R[%d]", GET_A(), GET_B());
+			R_A(), PUT(" = -"), RK_B();
 			next;
 		}
 
 		code(LT) {
-			printf("R[%d] = R[%d] < R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" < "), RK_C();
 			next;
 		}
 		code(LE) {
-			printf("R[%d] = R[%d] <= R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" <= "), RK_C();
 			next;
 		}
 		code(EQ) {
-			printf("R[%d] = R[%d] == R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" == "), RK_C();
 			next;
 		}
 
 		code(ADD) {
-			printf("R[%d] = R[%d] + R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" + "), RK_C();
 			next;
 		}
 		code(SUB) {
-			printf("R[%d] = R[%d] - R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" - "), RK_C();
 			next;
 		}
 		code(MUL) {
-			printf("R[%d] = R[%d] * R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" * "), RK_C();
 			next;
 		}
 		code(DIV) {
-			printf("R[%d] = R[%d] / R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" / "), RK_C();
 			next;
 		}
 		code(MOD) {
-			printf("R[%d] = R[%d] %% R[%d]", GET_A(), GET_B(), GET_C());
+			R_A(), PUT(" = "), RK_B(), PUT(" %% "), RK_C();
 			next;
 		}
 
 		code(DEF) {
-			printf("G.K[%d] = ", GET_A());
-			if (GET_sB()) printf("nil");
-			else printf("R[%d]", GET_B());
+			PUT("G."), K_A(), PUT(" = ");
+			GET_sC() ? PUT("nil") : RK_B();
 			next;
 		}
 		code(GLD) {

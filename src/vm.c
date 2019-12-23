@@ -149,8 +149,8 @@ static int exec(aupVM *vm)
 #define K_B()		K(GET_B())
 #define K_C()		K(GET_C())
 
-#define RK_B()		(GET_sB() ? K(GET_B()) : R(GET_B()))
-#define RK_C()		(GET_sC() ? K(GET_C()) : R(GET_C()))
+#define RK_B()		(GET_sB() ? K_B() : R_B())
+#define RK_C()		(GET_sC() ? K_C() : R_C())
 
 #define dispatch()	for (;;) switch (AUP_GET_Op((*ip++)))
 #define code(x)		case (AUP_OP_##x):
@@ -194,6 +194,9 @@ static int exec(aupVM *vm)
 		}
 
 		code(PUT) {
+			aupV_print(RK_B());
+			printf("\n");
+			next;
 			int rA = GET_A(), nvalues = GET_B();
 			for (int i = 0; i < nvalues; i++) {
 				aupV_print(R(rA + i));
@@ -223,13 +226,12 @@ static int exec(aupVM *vm)
 		}
 
 		code(NOT) {
-			aupV value = R_B();
+			aupV value = RK_B();
 			R_A() = AUP_BOOL(AUP_IS_FALSE(value));
 			next;
 		}
-
 		code(NEG) {
-			aupV value = R_B();
+			aupV value = RK_B();
 			if (AUP_IS_NUM(value)) {
 				R_A() = AUP_NUM(-AUP_AS_NUM(value));
 			}
@@ -240,9 +242,8 @@ static int exec(aupVM *vm)
 			next;
 		}
 
-
 		code(LT) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_BOOL(AUP_AS_NUM(left) < AUP_AS_NUM(right));
 			}
@@ -253,7 +254,7 @@ static int exec(aupVM *vm)
 			next;
 		}
 		code(LE) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_BOOL(AUP_AS_NUM(left) <= AUP_AS_NUM(right));
 			}
@@ -264,7 +265,7 @@ static int exec(aupVM *vm)
 			next;
 		}
 		code(EQ) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_BOOL(AUP_AS_NUM(left) == AUP_AS_NUM(right));
 			}
@@ -276,7 +277,7 @@ static int exec(aupVM *vm)
 		}
 
 		code(ADD) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_NUM(AUP_AS_NUM(left) + AUP_AS_NUM(right));
 			}
@@ -287,7 +288,7 @@ static int exec(aupVM *vm)
 			next;
 		}
 		code(SUB) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_NUM(AUP_AS_NUM(left) - AUP_AS_NUM(right));
 			}
@@ -298,7 +299,7 @@ static int exec(aupVM *vm)
 			next;
 		}
 		code(MUL) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_NUM(AUP_AS_NUM(left) * AUP_AS_NUM(right));
 			}
@@ -309,7 +310,7 @@ static int exec(aupVM *vm)
 			next;
 		}
 		code(DIV) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_NUM(AUP_AS_NUM(left) / AUP_AS_NUM(right));
 			}
@@ -320,7 +321,7 @@ static int exec(aupVM *vm)
 			next;
 		}
 		code(MOD) {
-			aupV left = R_B(), right = R_C();
+			aupV left = RK_B(), right = RK_C();
 			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
 				R_A() = AUP_NUM((long)AUP_AS_NUM(left) % (long)AUP_AS_NUM(right));
 			}
@@ -333,7 +334,7 @@ static int exec(aupVM *vm)
 
 		code(DEF) {
 			aupOs *name = AUP_AS_STR(K_A());
-			aupT_set(&vm->globals, name, GET_sB() ? AUP_NIL : R_B());
+			aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
 			next;
 		}
 		code(GLD) {
