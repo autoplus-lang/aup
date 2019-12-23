@@ -4,7 +4,7 @@
 
 #include "value.h"
 
-enum {
+typedef enum {
 	AUP_OP_NOP = 0,
 
 	AUP_OP_CALL,
@@ -42,7 +42,28 @@ enum {
 
 	AUP_OP_JMP,
 	AUP_OP_JMPF,
-};
+} aupOp;
+
+typedef union {
+    struct {
+		aupOp    op : 6;
+        unsigned A  : 8;
+        unsigned Bx : 9;
+        unsigned Cx : 9;
+    };
+    struct {
+        unsigned    : 14;
+        unsigned B  : 8;
+        bool     sB : 1;
+        unsigned C  : 8;
+        bool     sC : 1;
+    };
+    struct {
+        unsigned    : 6;
+        signed   Ax : 16;
+    };
+    unsigned int raw;
+} aupI;
 
 /*
 						 32-bits instruction
