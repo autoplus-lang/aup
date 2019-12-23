@@ -29,7 +29,7 @@ typedef enum {
 } Precedence;
 
 #define REG	int
-typedef REG (* ParseFn)(REG dest, bool canAssign);
+typedef void (* ParseFn)(REG dest, bool canAssign);
 
 typedef struct {
 	ParseFn prefix;
@@ -135,18 +135,86 @@ static bool match(aupTkt type)
 	return true;
 }
 
-static void emit(uint32_t instruction)
-{
-	aupCh_write(currentChunk(), instruction,
-		parser.previous.line, parser.previous.column);
-}
-
 static  REG		currentReg;
 
 #define PUSH()	currentReg++
 #define POP()	--currentReg
 #define POPN(n) currentReg -= (n)
 #define RESET()	currentReg = current->localCount
+
+static void emit(uint32_t i)
+{
+	aupCh *ch = currentChunk();
+	if (ch->count <= 0)
+		goto _emit;
+
+#define PREV(i)		ch->code[ch->count-(i)]
+#define PREV_Op(i)	AUP_GET_Op(PREV(i))
+#define PREV_A(i)	AUP_GET_A(PREV(i))
+#define PREV_Bx(i)	AUP_GET_Bx(PREV(i))
+#define PREV_Cx(i)	AUP_GET_Cx(PREV(i))
+#define PREV_sB(i)  AUP_GET_sB(PREV(i))
+#define PREV_sC(i)  AUP_GET_sC(PREV(i))
+
+#define GET_Op()	AUP_GET_Op(i)
+#define GET_A()		AUP_GET_A(i)
+#define GET_Bx()	AUP_GET_Bx(i)
+#define GET_Cx()	AUP_GET_Cx(i)
+#define GET_sB()	AUP_GET_sB(i)
+#define GET_sC()	AUP_GET_sC(i)
+
+#define CODE(x)		AUP_OP_##x
+#define UNDO()		ch->count--
+
+	switch (GET_Op())
+	{
+		case CODE(RET):
+		{
+			if (GET_A() == true &&
+				PREV_Op(1) == CODE(LD))
+			{
+				i = AUP_SET_OpABx(GET_Op(), GET_A(), PREV_Bx(1));
+				UNDO();
+			}
+			break;
+		}
+		case CODE(DEF):
+		{
+			if (GET_sC() == false &&
+				PREV_Op(1) == CODE(LD))
+			{
+				i = AUP_SET_OpABx(GET_Op(), GET_A(), PREV_Bx(1));
+				UNDO();
+			}
+			break;
+		}
+		case CODE(GST):
+		case CODE(NOT): case CODE(NEG):
+		{
+			if (PREV_Op(1) == CODE(LD))
+			{
+				i = AUP_SET_OpABx(GET_Op(), GET_A(), PREV_Bx(1));
+				UNDO();
+			}
+			break;
+		}
+		case CODE(LT): case CODE(LE): case CODE(EQ):
+		case CODE(ADD): case CODE(SUB): case CODE(MUL): case CODE(DIV): case CODE(MOD):
+		{
+			if (PREV_Op(1) == CODE(LD) &&
+				PREV_Op(2) == CODE(LD))
+			{
+				i = AUP_SET_OpABxCx(GET_Op(), GET_A(), PREV_Bx(2), PREV_Bx(1));
+				UNDO(), UNDO();
+			}
+			break;
+		}
+	}
+
+_emit:
+	aupCh_write(currentChunk(), i,
+		parser.previous.line, parser.previous.column);
+}
 
 #define _OPCODE(x)					AUP_OP_##x
 
@@ -178,8 +246,8 @@ static uint8_t makeConstant(aupV value)
 
 static void emitConstant(aupV value, REG dest)
 {
-	uint8_t k = makeConstant(value);
-	EMIT_OpAB(LDK, dest, k);
+	int k = makeConstant(value) + 256;
+	EMIT_OpABx(LD, dest, k);
 }
 
 static void emitReturn(REG src)
@@ -191,7 +259,7 @@ static void emitReturn(REG src)
 			EMIT_Op(RET);
 		}
 		else {
-			EMIT_OpAsB(RET, src, true);
+			EMIT_OpABx(RET, true, src);
 		}
 	}
 }
@@ -386,7 +454,7 @@ static uint8_t argumentList()
 	return argCount;
 }
 
-static REG and_(REG dest, bool canAssign)
+static void and_(REG dest, bool canAssign)
 {
 	int endJump = emitJump(true, dest);
 
@@ -394,11 +462,9 @@ static REG and_(REG dest, bool canAssign)
 	parsePrecedence(PREC_AND, dest);
 
 	patchJump(endJump);
-
-	return dest;
 }
 
-static REG binary(REG dest, bool canAssign)
+static void binary(REG dest, bool canAssign)
 {
 	REG left = dest;
 
@@ -408,60 +474,51 @@ static REG binary(REG dest, bool canAssign)
 	// Compile the right operand.                            
 	ParseRule* rule = getRule(operatorType);
 	REG right = parsePrecedence((Precedence)(rule->precedence + 1), -1);
-	dest = POP();
+	POP();
 
 	// Emit the operator instruction.                        
 	switch (operatorType) {
-		case TOKEN_EQUAL_EQUAL:		EMIT_OpABxCx(EQ, dest, left, right); break;	//emitByte(OP_EQUAL); break;
-		case TOKEN_LESS:			EMIT_OpABxCx(LT, dest, left, right); break;	//emitByte(OP_LESS); break;
-		case TOKEN_LESS_EQUAL:		EMIT_OpABxCx(LE, dest, left, right); break;	//emitBytes(OP_GREATER, OP_NOT); break;
+		case TOKEN_EQUAL_EQUAL:		EMIT_OpABxCx(EQ, dest, left, right); break;
+		case TOKEN_LESS:			EMIT_OpABxCx(LT, dest, left, right); break;
+		case TOKEN_LESS_EQUAL:		EMIT_OpABxCx(LE, dest, left, right); break;
 
-		case TOKEN_BANG_EQUAL:		EMIT_OpABxCx(EQ, dest, left, right);
-									EMIT_OpABx(NOT, dest, dest); break;			//emitBytes(OP_EQUAL, OP_NOT); break;
-		case TOKEN_GREATER:			EMIT_OpABxCx(LE, dest, left, right);
-									EMIT_OpABx(NOT, dest, dest); break;			//emitByte(OP_GREATER); break;
-		case TOKEN_GREATER_EQUAL:	EMIT_OpABxCx(LT, dest, left, right);
-									EMIT_OpABx(NOT, dest, dest); break;			//emitBytes(OP_LESS, OP_NOT); break;
+		case TOKEN_BANG_EQUAL:		EMIT_OpABxCx(EQ, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_GREATER:			EMIT_OpABxCx(LE, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_GREATER_EQUAL:	EMIT_OpABxCx(LT, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
 
-		case TOKEN_PLUS:			EMIT_OpABxCx(ADD, dest, left, right); break;	//emitByte(OP_ADD); break;
-		case TOKEN_MINUS:			EMIT_OpABxCx(SUB, dest, left, right); break;	//emitByte(OP_SUBTRACT); break;
-		case TOKEN_STAR:			EMIT_OpABxCx(MUL, dest, left, right); break;	//emitByte(OP_MULTIPLY); break;
-		case TOKEN_SLASH:			EMIT_OpABxCx(DIV, dest, left, right); break;	//emitByte(OP_DIVIDE); break;
+		case TOKEN_PLUS:			EMIT_OpABxCx(ADD, dest, left, right); break;
+		case TOKEN_MINUS:			EMIT_OpABxCx(SUB, dest, left, right); break;
+		case TOKEN_STAR:			EMIT_OpABxCx(MUL, dest, left, right); break;
+		case TOKEN_SLASH:			EMIT_OpABxCx(DIV, dest, left, right); break;
 		case TOKEN_PERCENT:			EMIT_OpABxCx(MOD, dest, left, right); break;
 	}
-
-	return dest;
 }
 
-static REG call(REG dest, bool canAssign)
+static void call(REG dest, bool canAssign)
 {
 	uint8_t argCount = argumentList();
 	EMIT_OpAB(CALL, dest, argCount);
 
-	return dest;
+	POPN(argCount);
 }
 
-static REG literal(REG dest, bool canAssign)
+static void literal(REG dest, bool canAssign)
 {
 	switch (parser.previous.type) {
-		case TOKEN_NIL:		EMIT_OpA(NIL, dest); break;			//emitByte(OP_NIL); break;
-		case TOKEN_FALSE:	EMIT_OpAsB(BOL, dest, 0); break;	//emitByte(OP_FALSE); break;
-		case TOKEN_TRUE:	EMIT_OpAsB(BOL, dest, 1); break;	//emitByte(OP_TRUE); break;
+		case TOKEN_NIL:		EMIT_OpA(NIL, dest); break;
+		case TOKEN_FALSE:	EMIT_OpAsB(BOL, dest, 0); break;
+		case TOKEN_TRUE:	EMIT_OpAsB(BOL, dest, 1); break;
 		case TOKEN_FUN:     EMIT_OpAB(MOV, dest, 0); break;             
 	}
-
-	return dest;
 }
 
-static REG grouping(REG dest, bool canAssign)
+static void grouping(REG dest, bool canAssign)
 {
 	expression(dest);
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
-
-	return dest;
 }
 
-static REG or_(REG dest, bool canAssign)
+static void or_(REG dest, bool canAssign)
 {
 	int elseJump = emitJump(true, dest);
 	int endJump = emitJump(false, -1);
@@ -471,11 +528,9 @@ static REG or_(REG dest, bool canAssign)
 
 	parsePrecedence(PREC_OR, dest);
 	patchJump(endJump);
-
-	return dest;
 }
 
-static REG number(REG dest, bool canAssign)
+static void number(REG dest, bool canAssign)
 {
 	double value;
 
@@ -494,22 +549,18 @@ static REG number(REG dest, bool canAssign)
 			break;
 	}
 
-	//emitConstant(AUP_NUM(value), dest);
-	//return dest;
-	return makeConstant(AUP_NUM(value)) + 256;
+	emitConstant(AUP_NUM(value), dest);
 }
 
-static REG string(REG dest, bool canAssign)
+static void string(REG dest, bool canAssign)
 {
 	aupOs *value = aupOs_copy(currentVM(),
 		parser.previous.start + 1, parser.previous.length - 2);
 
 	emitConstant(AUP_OBJ(value), dest);
-	return dest;
-	//return makeConstant(AUP_OBJ(value)) + 256;
 }
 
-static REG namedVariable(aupTk name, REG dest, bool canAssign)
+static void namedVariable(aupTk name, REG dest, bool canAssign)
 {
 	int arg = resolveLocal(current, &name);
 
@@ -532,16 +583,14 @@ static REG namedVariable(aupTk name, REG dest, bool canAssign)
 			EMIT_OpABx(GLD, dest, arg);	//emitBytes(OP_GET_GLOBAL, arg);
 		}
 	}
-
-	return dest;
 }
 
-static REG variable(REG dest, bool canAssign)
+static void variable(REG dest, bool canAssign)
 {
-	return namedVariable(parser.previous, dest, canAssign);
+	namedVariable(parser.previous, dest, canAssign);
 }
 
-static REG unary(REG dest, bool canAssign)
+static void unary(REG dest, bool canAssign)
 {
 	aupTkt operatorType = parser.previous.type;
 
@@ -550,11 +599,9 @@ static REG unary(REG dest, bool canAssign)
 
 	// Emit the operator instruction.              
 	switch (operatorType) {
-		case TOKEN_BANG:	EMIT_OpABx(NOT, dest, src); break;	//emitByte(OP_NOT);
-		case TOKEN_MINUS:	EMIT_OpABx(NEG, dest, src); break;	//emitByte(OP_NEGATE);                 
+		case TOKEN_BANG:	EMIT_OpABx(NOT, dest, src); break;
+		case TOKEN_MINUS:	EMIT_OpABx(NEG, dest, src); break;
 	}
-
-	return dest;
 }
 
 static ParseRule rules[] = {
@@ -621,12 +668,12 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 	}
 
 	bool canAssign = precedence <= PREC_ASSIGNMENT;
-	dest = prefixRule(dest, canAssign);
+	prefixRule(dest, canAssign);
 
 	while (precedence <= getRule(parser.current.type)->precedence) {
 		advance();
 		ParseFn infixRule = getRule(parser.previous.type)->infix;
-		dest = infixRule(dest, canAssign);
+		infixRule(dest, canAssign);
 	}
 
 	if (canAssign && match(TOKEN_EQUAL)) {

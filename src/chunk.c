@@ -102,11 +102,9 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
 	dispatch() {
 		code(NOP) { next; }
+
 		code(RET) {
-			if (GET_sB())
-				printf("R[%d]", GET_A());
-			else
-				printf("nil");
+			GET_A() ? RK_B() : PUT("nil");
 			next;
 		}
 		code(CALL) {
@@ -128,7 +126,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 
 		code(MOV) {
-			printf("R[%d] = R[%d]", GET_A(), GET_B());
+			R_A(), PUT(" = "), R_B();
 			next;
 		}
 
@@ -145,15 +143,11 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 
 		code(NIL) {
-			printf("R[%d] = nil", GET_A());
+			R_A(), PUT(" = nil");
 			next;
 		}
 		code(BOL) {
-			printf("R[%d] = %s", GET_A(), GET_sB() ? "true" : "false");
-			next;
-		}
-		code(LDK) {
-			R_A(), PUT(" = "), K_B();
+			R_A(), PUTF(" = %s", GET_sB() ? "true" : "false");
 			next;
 		}
 
@@ -215,25 +209,25 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 
 		code(LD) {
-			printf("R[%d] = R[%d]", GET_A(), GET_B());
+			R_A(), PUT(" = "), RK_B();
 			next;
 		}
 		code(ST) {
-			printf("R[%d] = R[%d]", GET_A(), GET_B());
+			R_A(), PUT(" = "), R_B();
 			next;
 		}
 
 		code(JMP) {
-			printf("ip -> %03d", offset + GET_Ax() + 1);
+			PUTF("-> %03d", offset + GET_Ax() + 1);
 			next;
 		}
 		code(JMPF) {
-			printf("ip -> %03d, if !R[%d]", offset + GET_Ax() + 1, GET_C());
+			PUTF("-> %03d, if !", offset + GET_Ax() + 1), RK_C();
 			next;
 		}
 
 		code_err() {
-			printf("bad opcode, got %d", GET_Op());
+			PUTF("bad opcode, got %d", GET_Op());
 			next;
 		}
 	}

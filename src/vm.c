@@ -175,17 +175,14 @@ static int exec(aupVM *vm)
 		}
 
 		code(RET) {
-			R(0) = GET_sB() ? R_A() : AUP_NIL;
+			R(0) = GET_A() ? RK_B() : AUP_NIL;
 
 			vm->frameCount--;
 			if (vm->frameCount == 0) {
 				//pop();
 				return AUP_OK;
 			}
-
 			//vm->top = frame->stack;
-			//push(result);
-
 			LOAD_FRAME();
 			next;
 		}
@@ -228,10 +225,6 @@ static int exec(aupVM *vm)
 		}
 		code(BOL) {
 			R_A() = AUP_BOOL(GET_sB());
-			next;
-		}
-		code(LDK) {
-			R_A() = K_B();
 			next;
 		}
 
@@ -367,7 +360,7 @@ static int exec(aupVM *vm)
 		}
 
 		code(LD) {
-			R_A() = R_B();
+			R_A() = RK_B();
 			next;
 		}
 		code(ST) {
