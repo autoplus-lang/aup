@@ -10,7 +10,7 @@ typedef enum {
 	AUP_OP_CALL,
 	AUP_OP_RET,
 
-	AUP_OP_PSH,
+	AUP_OP_PUSH,
 	AUP_OP_POP,
 	AUP_OP_PUT,
 
