@@ -19,7 +19,15 @@ typedef struct _aupO aupO;
 typedef struct _aupOs aupOs;
 typedef struct _aupOf aupOf;
 
-typedef uint64_t aupV;
+typedef struct {
+	aupVt type;
+	union {
+		bool Bool : 1;
+		double Num;
+		aupO *Obj;
+		uint64_t _;
+	};
+} aupV;
 
 typedef struct {
 	int count;
@@ -27,38 +35,23 @@ typedef struct {
 	aupV *values;
 } aupVa;
 
-typedef union {
-	uint64_t b;
-	uint32_t bs[2];
-	double f;
-} aupVn;
+#define AUP_NIL         ((aupV){ .type = AUP_TNIL })
+#define AUP_FALSE       ((aupV){ .type = AUP_TBOOL, .Bool = 0 })
+#define AUP_TRUE        ((aupV){ .type = AUP_TBOOL, .Bool = 1 })
+#define AUP_BOOL(b)     ((aupV){ .type = AUP_TBOOL, .Bool = (b) })
+#define AUP_NUM(n)      ((aupV){ .type = AUP_TNUM, .Num = (n) })
+#define AUP_OBJ(o)      ((aupV){ .type = AUP_TOBJ, .Obj = (aupO *)(o) })
 
-#define AUP_SBIT        ((uint64_t)1 << 63)
-#define AUP_QNAN        ((uint64_t)0x7ffc000000000000ULL)
+#define AUP_IS_NIL(v)   ((v).type == AUP_TNIL)
+#define AUP_IS_BOOL(v)  ((v).type == AUP_TBOOL)
+#define AUP_IS_NUM(v)   ((v).type == AUP_TNUM)
+#define AUP_IS_OBJ(v)   ((v).type == AUP_TOBJ)
 
-#define AUP_TAG_NIL     1
-#define AUP_TAG_FALSE   2
-#define AUP_TAG_TRUE    3
+#define AUP_AS_BOOL(v)  ((v).Bool)
+#define AUP_AS_NUM(v)   ((v).Num)
+#define AUP_AS_OBJ(v)   ((v).Obj)
 
-#define AUP_NIL         ((aupV)(uint64_t)(AUP_QNAN | AUP_TAG_NIL))
-#define AUP_FALSE       ((aupV)(uint64_t)(AUP_QNAN | AUP_TAG_FALSE))
-#define AUP_TRUE        ((aupV)(uint64_t)(AUP_QNAN | AUP_TAG_TRUE))
-#define AUP_BOOL(b)     ((b) ? AUP_TRUE : AUP_FALSE)
-#define AUP_NUM(n)      ((aupVn){ .f =(n) }).b
-#define AUP_OBJ(o)      (aupV)(AUP_SBIT | AUP_QNAN | (uint64_t)(uintptr_t)(o))
-
-#define AUP_IS_NIL(v)   ((v) == AUP_NIL)
-#define AUP_IS_BOOL(v)  (((v) & (AUP_QNAN | AUP_TAG_FALSE)) == (AUP_QNAN | AUP_TAG_FALSE))
-#define AUP_IS_NUM(v)   (((v) & AUP_QNAN) != AUP_QNAN)
-#define AUP_IS_OBJ(v)   (((v) & (AUP_QNAN | AUP_SBIT)) == (AUP_QNAN | AUP_SBIT))
-
-#define AUP_AS_BOOL(v)  ((v) == AUP_TRUE)
-#define AUP_AS_NUM(v)   ((aupVn){ .b=(v) }).f
-#define AUP_AS_OBJ(v)   ((aupO *)(uintptr_t)((v) & ~(AUP_SBIT | AUP_QNAN)))
-
-#define AUP_IS_FALSE(v) (!(v) || AUP_IS_NIL(v) \
-	|| (AUP_IS_BOOL(v) && AUP_AS_BOOL(v) == false) \
-	|| (AUP_IS_OBJ(v) && AUP_AS_OBJ(v) == NULL))
+#define AUP_IS_FALSEY(v) (!(bool)((v)._))
 
 void aupVa_init(aupVa *array);
 void aupVa_free(aupVa *array);

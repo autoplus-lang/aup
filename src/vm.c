@@ -225,7 +225,7 @@ static int exec(aupVM *vm)
 
 		code(NOT) {
 			aupV value = RK_B();
-			R_A() = AUP_BOOL(AUP_IS_FALSE(value));
+			R_A() = AUP_BOOL(AUP_IS_FALSEY(value));
 			next;
 		}
 		code(NEG) {
@@ -369,7 +369,7 @@ static int exec(aupVM *vm)
 		}
 		code(JMPF) {
 			aupV value = R_C();
-			if (AUP_IS_FALSE(value)) ip += GET_Ax();
+			if (AUP_IS_FALSEY(value)) ip += GET_Ax();
 			next;
 		}
 
