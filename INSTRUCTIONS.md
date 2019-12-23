@@ -7,12 +7,11 @@
             [_16_Ax_______________________] sB]               sC]
 ```
 
-Mode    | 6-bits | 8-bits | 9-bits | 9-bits
-:------ |:------:|:------:|:------:|:------:
-OpAx    |`opcode`|`Ax` [8]|`Ax` [8]|
-OpABC   |`opcode`|`A`  [8]|`B`  [8]|`C`  [8]
-OpABxCx |`opcode`|`A`  [8]|`Bx` [9]|`Cx` [9]
-OpAsBsC |`opcode`|`A`  [8]|`sB` [1]|`sC` [1]
+ 6-bits | 8-bits | 9-bits | 9-bits
+:------:|:------:|:------:|:------:
+`op`    |`Ax` [8]|`Ax` [8]|
+        |        |`B`  [8] + `sB` [1]|`C`  [8] + `sC` [1]
+        |        |`Bx` [9]|`Cx` [9]
 
 ### Instruction listings
 
@@ -45,6 +44,23 @@ OpAsBsC |`opcode`|`A`  [8]|`sB` [1]|`sC` [1]
 a = 10
 puts a + 5
 ```
+
+Disassemble:
+
+```
+.k[0] = a
+.k[1] = 10
+.k[2] = a
+.k[3] = 5
+LDK r[0], k[1]          ; r[0] = 10
+GST k[0], r[0]          ; a = r[0]
+GLD r[0], k[2]          ; r[0] = a
+LDK r[1], k[3]          ; r[1] = 5
+ADD r[0], r[0], r[1]    ; r[0] = r[0] + r[1]
+PUT r[0]                ; puts r[0]
+```
+
+Optimized:
 
 ```c
 .k[0] = a
