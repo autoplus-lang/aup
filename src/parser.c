@@ -408,7 +408,7 @@ static REG binary(REG dest, bool canAssign)
 	// Compile the right operand.                            
 	ParseRule* rule = getRule(operatorType);
 	REG right = parsePrecedence((Precedence)(rule->precedence + 1), -1);
-	POP();
+	dest = POP();
 
 	// Emit the operator instruction.                        
 	switch (operatorType) {
@@ -494,9 +494,9 @@ static REG number(REG dest, bool canAssign)
 			break;
 	}
 
-	emitConstant(AUP_NUM(value), dest);
-	return dest;
-	//return makeConstant(AUP_NUM(value)) + 256;
+	//emitConstant(AUP_NUM(value), dest);
+	//return dest;
+	return makeConstant(AUP_NUM(value)) + 256;
 }
 
 static REG string(REG dest, bool canAssign)
@@ -626,7 +626,7 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 	while (precedence <= getRule(parser.current.type)->precedence) {
 		advance();
 		ParseFn infixRule = getRule(parser.previous.type)->infix;
-		infixRule(dest, canAssign);
+		dest = infixRule(dest, canAssign);
 	}
 
 	if (canAssign && match(TOKEN_EQUAL)) {

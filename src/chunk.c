@@ -206,11 +206,11 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 		code(GLD) {
-			printf("R[%d] = G.K[%d]", GET_A(), GET_B());
+			R_A(), PUT(" = G."), K_B();
 			next;
 		}
 		code(GST) {
-			printf("G.K[%d] = R[%d]", GET_A(), GET_B());
+			PUT("G."), K_A(), PUT(" = "), RK_B();
 			next;
 		}
 
