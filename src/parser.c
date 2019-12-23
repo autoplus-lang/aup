@@ -682,8 +682,7 @@ static REG function(FunType type)
 	// Create the function object.                                
 	aupOf *function = endCompiler();
 	//emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
-	emitConstant(AUP_OBJ(function), PUSH());
-	return POP();
+	return makeConstant(AUP_OBJ(function)) + 256;
 }
 
 static void funDeclaration()
