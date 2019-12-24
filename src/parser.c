@@ -708,7 +708,7 @@ static void block()
 	consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
-static REG function(FunType type)
+static void function(FunType type, REG dest)
 {
 	Compiler compiler;
 	initCompiler(&compiler, type);
@@ -735,15 +735,16 @@ static REG function(FunType type)
 
 	// Create the function object.                                
 	aupOf *function = endCompiler();
+	emitConstant(AUP_OBJ(function), dest);
 	//emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
-	return makeConstant(AUP_OBJ(function)) + 256;
 }
 
 static void funDeclaration()
 {
 	uint8_t global = parseVariable("Expect function name.");
 	markInitialized();
-	REG src = function(TYPE_FUNCTION);
+	REG src = PUSH();
+	function(TYPE_FUNCTION, src);
 	defineVariable(global, src);
 }
 
