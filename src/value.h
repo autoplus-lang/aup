@@ -7,6 +7,7 @@
 typedef enum {
 	AUP_TNIL,
 	AUP_TBOOL,
+	AUP_TINT,
 	AUP_TNUM,
 	AUP_TOBJ,
 
@@ -23,6 +24,7 @@ typedef struct {
 	aupVt type;
 	union {
 		bool Bool : 1;
+		int64_t Int;
 		double Num;
 		aupO *Obj;
 		uint64_t _;
@@ -39,15 +41,18 @@ typedef struct {
 #define AUP_FALSE       ((aupV){ .type = AUP_TBOOL, .Bool = 0 })
 #define AUP_TRUE        ((aupV){ .type = AUP_TBOOL, .Bool = 1 })
 #define AUP_BOOL(b)     ((aupV){ .type = AUP_TBOOL, .Bool = (b) })
+#define AUP_INT(i)      ((aupV){ .type = AUP_TINT, .Int = (i) })
 #define AUP_NUM(n)      ((aupV){ .type = AUP_TNUM, .Num = (n) })
 #define AUP_OBJ(o)      ((aupV){ .type = AUP_TOBJ, .Obj = (aupO *)(o) })
 
 #define AUP_IS_NIL(v)   ((v).type == AUP_TNIL)
 #define AUP_IS_BOOL(v)  ((v).type == AUP_TBOOL)
+#define AUP_IS_INT(v)   ((v).type == AUP_TINT)
 #define AUP_IS_NUM(v)   ((v).type == AUP_TNUM)
 #define AUP_IS_OBJ(v)   ((v).type == AUP_TOBJ)
 
 #define AUP_AS_BOOL(v)  ((v).Bool)
+#define AUP_AS_INT(v)   ((v).Int)
 #define AUP_AS_NUM(v)   ((v).Num)
 #define AUP_AS_OBJ(v)   ((v).Obj)
 #define AUP_AS_RAW(v)	((v)._)

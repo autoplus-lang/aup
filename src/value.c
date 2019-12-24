@@ -7,6 +7,7 @@
 static const char
 	__nil[]  = "nil",
 	__bool[] = "bool",
+	__int[]  = "int",
 	__num[]  = "num";
 
 const char *aupV_typeOf(aupV value)
@@ -16,6 +17,9 @@ const char *aupV_typeOf(aupV value)
 	}
 	else if (AUP_IS_BOOL(value)) {
 		return __bool;
+	}
+	else if (AUP_IS_INT(value)) {
+		return __int;
 	}
 	else if (AUP_IS_NUM(value)) {
 		return __num;
@@ -34,6 +38,9 @@ void aupV_print(aupV value)
 	}
 	else if (AUP_IS_BOOL(value)) {
 		printf(AUP_AS_BOOL(value) ? "true" : "false");
+	}
+	else if (AUP_IS_INT(value)) {
+		printf("%lld", AUP_AS_INT(value));
 	}
 	else if (AUP_IS_NUM(value)) {
 		printf("%.14g", AUP_AS_NUM(value));
