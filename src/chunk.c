@@ -41,6 +41,9 @@ int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t colu
 
 int aupCh_addK(aupCh *chunk, aupV value)
 {
+	int k = aupVa_find(&chunk->constants, value);
+	if (k != -1) return k;
+
 	return aupVa_write(&chunk->constants, value);
 }
 
