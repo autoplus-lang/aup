@@ -12,41 +12,40 @@ static const char
 
 const char *aupV_typeOf(aupV value)
 {
-	if (AUP_IS_NIL(value)) {
-		return __nil;
+	switch (AUP_VAL_TYPE(value)) {
+		default:
+		case AUP_TNIL:
+			return __nil;
+		case AUP_TBOOL:
+			return __bool;
+		case AUP_TINT:
+			return __int;
+		case AUP_TNUM:
+			return __num;
+		case AUP_TOBJ:
+			return aupO_typeOf(AUP_AS_OBJ(value));
 	}
-	else if (AUP_IS_BOOL(value)) {
-		return __bool;
-	}
-	else if (AUP_IS_INT(value)) {
-		return __int;
-	}
-	else if (AUP_IS_NUM(value)) {
-		return __num;
-	}
-	else if (AUP_IS_OBJ(value)) {
-		return aupO_typeOf(AUP_AS_OBJ(value));
-	}
-
-	return __nil;
 }
 
 void aupV_print(aupV value)
 {
-	if (AUP_IS_NIL(value)) {
-		printf("nil");
-	}
-	else if (AUP_IS_BOOL(value)) {
-		printf(AUP_AS_BOOL(value) ? "true" : "false");
-	}
-	else if (AUP_IS_INT(value)) {
-		printf("%lld", AUP_AS_INT(value));
-	}
-	else if (AUP_IS_NUM(value)) {
-		printf("%.14g", AUP_AS_NUM(value));
-	}
-	else if (AUP_IS_OBJ(value)) {
-		aupO_print(AUP_AS_OBJ(value));
+	switch (AUP_VAL_TYPE(value)) {
+		default:
+		case AUP_TNIL:
+			printf("nil");
+			break;
+		case AUP_TBOOL:
+			printf(AUP_AS_BOOL(value) ? "true" : "false");
+			break;
+		case AUP_TINT:
+			printf("%lld", AUP_AS_INT(value));
+			break;
+		case AUP_TNUM:
+			printf("%.14g", AUP_AS_NUM(value));
+			break;
+		case AUP_TOBJ:
+			aupO_print(AUP_AS_OBJ(value));
+			break;
 	}
 }
 
