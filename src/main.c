@@ -40,20 +40,20 @@ int main(int argc, char *argv[])
 		puts("usage: aup [file]");
 		return 0;
 	}
-
-	clock_t clk = clock();
 	
 	char *source = readFile(argv[argc - 1]);
 	aupVM *vm = aupVM_new();
+
+	clock_t clk = clock();
 
 	int ret = aup_interpret(vm, source);
 
 	if (ret != AUP_OK)
 		printf("\n%s error!\n", ret == AUP_COMPILE_ERR ? "Compile" : "Runtime");
 
+	printf("\ndone in %3gs!\n", (clock() - clk) / (double)CLOCKS_PER_SEC);
+
 	aupVM_free(vm);
 	free(source);
-
-	printf("\ndone in %dms!\n", clock() - clk);
 	return 0;
 }

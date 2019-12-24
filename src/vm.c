@@ -97,25 +97,24 @@ static bool call(AUP_VM, aupOf *function, int argCount)
 	return true;
 }
 
+#define TOF(v)	aupV_typeOf(v)
+#define PUSH(v)	(*((vm)->top++) = (v))
+#define POP()   (--(vm)->top)
+
 static bool callValue(AUP_VM, aupV callee, int argCount)
 {
 	if (AUP_IS_OBJ(callee)) {
 		switch (AUP_OBJ_TYPE(callee)) {
 			case AUP_TFUN:
 				return call(vm, AUP_AS_FUN(callee), argCount);
-			default:
-				// Non-callable object type.                   
+			default:               
 				break;
 		}
 	}
 
-	runtimeError(vm, "Can only call functions and classes.");
+	runtimeError(vm, "cannot perform call, got <%s>.", TOF(callee));
 	return false;
 }
-
-#define TOF(v)	aupV_typeOf(v)
-#define PUSH(v)	(*((vm)->top++) = (v))
-#define POP()   (--(vm)->top)
 
 static int exec(aupVM *vm)
 {
@@ -151,7 +150,7 @@ static int exec(aupVM *vm)
 #define RK_B()		(GET_sB() ? K_B() : R_B())
 #define RK_C()		(GET_sC() ? K_C() : R_C())
 
-#define dispatch()	for (;;) switch (AUP_GET_Op((*ip++)))
+#define dispatch()	for (;;) switch (AUP_GET_Op(*ip++))
 #define code(x)		case (AUP_OP_##x):
 #define code_err()	default:
 #define next		continue
@@ -173,14 +172,12 @@ static int exec(aupVM *vm)
 		}
 
 		code(RET) {
-			R(0) = GET_A() ? RK_B() : AUP_NIL;
-
-			vm->frameCount--;
-			if (vm->frameCount == 0) {
+			if (--vm->frameCount == 0) {
 				//pop();
 				return AUP_OK;
 			}
 			//vm->top = frame->stack;
+			R(0) = GET_A() ? RK_B() : AUP_NIL;
 			LOAD_FRAME();
 			next;
 		}
@@ -188,9 +185,9 @@ static int exec(aupVM *vm)
 			int argCount = GET_B();
 
 			STORE_FRAME();
-			vm->top = &R_A();
+			//vm->top = &R_A();
 
-			if (!callValue(vm, R_A(), argCount)) {
+			if (!callValue(vm, *(vm->top = &R_A()), argCount)) {
 				return AUP_RUNTIME_ERR;
 			}
 			
@@ -387,8 +384,9 @@ int aup_interpret(aupVM *vm, const char *source)
 	aupOf *function = aup_compile(vm, source);
 	if (function == NULL) return AUP_COMPILE_ERR;
 
-	PUSH(AUP_OBJ(function)); POP();
-	callValue(vm, AUP_OBJ(function), 0);
+	aupV script = AUP_OBJ(function);
+	PUSH(script); POP();
+	callValue(vm, script, 0);
 
 	return exec(vm);
 }
