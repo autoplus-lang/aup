@@ -128,13 +128,16 @@ static int exec(aupVM *vm)
 	frame = &vm->frames[vm->frameCount - 1]; \
 	ip = frame->ip
 
-#define GET_Op()	AUP_GET_Op(ip[-1])
-#define GET_A()		AUP_GET_A(ip[-1])
-#define GET_Ax()	AUP_GET_Ax(ip[-1])
-#define GET_B()		AUP_GET_B(ip[-1])
-#define GET_C()		AUP_GET_C(ip[-1])
-#define GET_sB()	AUP_GET_sB(ip[-1])
-#define GET_sC()	AUP_GET_sC(ip[-1])
+#define READ()		(ip[-1])
+#define EVAL()		AUP_GET_Op(*ip++)
+
+#define GET_Op()	AUP_GET_Op(READ())
+#define GET_A()		AUP_GET_A(READ())
+#define GET_Ax()	AUP_GET_Ax(READ())
+#define GET_B()		AUP_GET_B(READ())
+#define GET_C()		AUP_GET_C(READ())
+#define GET_sB()	AUP_GET_sB(READ())
+#define GET_sC()	AUP_GET_sC(READ())
 
 #define R(i)		(frame->stack[i])
 #define K(i)		(frame->function->chunk.constants.values[i])
@@ -150,7 +153,7 @@ static int exec(aupVM *vm)
 #define RK_B()		(GET_sB() ? K_B() : R_B())
 #define RK_C()		(GET_sC() ? K_C() : R_C())
 
-#define dispatch()	for (;;) switch (AUP_GET_Op(*ip++))
+#define dispatch()	for (;;) switch (EVAL())
 #define code(x)		case (AUP_OP_##x):
 #define code_err()	default:
 #define next		continue

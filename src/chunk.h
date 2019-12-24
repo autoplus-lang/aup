@@ -53,9 +53,9 @@ typedef union {
     struct {
         unsigned    : 14;
         unsigned  B :  8;
-        bool     sB :  1;
+		unsigned sB :  1;
         unsigned  C :  8;
-        bool     sC :  1;
+		unsigned sC :  1;
     };
     struct {
         unsigned    :  6;
@@ -97,18 +97,18 @@ typedef union {
 #define AUP_SET_OpAsBsC(op, A, sB, sC)    \
     ((uint32_t)( (op) | (((A) & 0xFF) << 6) | (((sB) & 1) << 22) | (((sC) & 1) << 31) ))
 
-#define AUP_GET_Op(i)   ((int)((i) & 0x3F))
+#define AUP_GET_Op(i)   ((aupOp)((i) & 0x3F))
 
-#define AUP_GET_A(i)    ((int)(((i) >> 6) & 0xFF))
-#define AUP_GET_Ax(i)   ((short)((i) >> 6))
+#define AUP_GET_A(i)    ((uint8_t)((i) >> 6))
+#define AUP_GET_Ax(i)   ((int16_t)((i) >> 6))
 
-#define AUP_GET_B(i)    ((int)(((i) >> 14) & 0xFF))
-#define AUP_GET_Bx(i)   ((int)(((i) >> 14) & 0x1FF))
-#define AUP_GET_sB(i)   ((int)(((i) >> 22) & 1))
+#define AUP_GET_B(i)    ((uint8_t)((i) >> 14))
+#define AUP_GET_Bx(i)   ((unsigned)(((i) >> 14) & 0x1FF))
+#define AUP_GET_sB(i)   ((unsigned)(((i) >> 22) & 1))
 
-#define AUP_GET_C(i)    ((int)(((i) >> 23) & 0xFF))
-#define AUP_GET_Cx(i)   ((int)(((i) >> 23) & 0x1FF))
-#define AUP_GET_sC(i)   ((int)(((i) >> 31) & 1))
+#define AUP_GET_C(i)    ((uint8_t)((i) >> 23))
+#define AUP_GET_Cx(i)   ((unsigned)(((i) >> 23) & 0x1FF))
+#define AUP_GET_sC(i)   ((unsigned)(((i) >> 31) & 1))
 
 typedef struct {
 	int count;
