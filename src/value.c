@@ -67,3 +67,18 @@ void aupVa_free(aupVa *array)
 	AUP_FREE_ARR(aupV, array->values, array->capacity);
 	aupVa_init(array);
 }
+
+int aupVa_find(aupVa *array, aupV value)
+{
+#define IS_EQUAL(v1, v2) \
+	AUP_VAL_TYPE(v1) == AUP_VAL_TYPE(v2) && \
+	AUP_AS_RAW(v1) == AUP_AS_RAW(v2)
+
+	for (int i = 0; i < array->count; i++) {
+		if (IS_EQUAL(array->values[i], value)) {
+			return i;
+		}
+	}
+
+	return -1;
+}

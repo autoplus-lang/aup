@@ -50,12 +50,15 @@ typedef struct {
 #define AUP_AS_BOOL(v)  ((v).Bool)
 #define AUP_AS_NUM(v)   ((v).Num)
 #define AUP_AS_OBJ(v)   ((v).Obj)
+#define AUP_AS_RAW(v)	((v)._)
 
+#define AUP_VAL_TYPE(v) ((v).type)
 #define AUP_IS_FALSEY(v) (!(bool)((v)._))
 
 void aupVa_init(aupVa *array);
 void aupVa_free(aupVa *array);
 int aupVa_write(aupVa *array, aupV value);
+int aupVa_find(aupVa *array, aupV value);
 
 const char *aupV_typeOf(aupV value);
 void aupV_print(aupV value);
