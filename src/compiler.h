@@ -21,7 +21,7 @@ typedef enum {
 
 	// Literals.                                        
 	TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_NUMBER,
-	TOKEN_BINARY, TOKEN_OCTAL, TOKEN_HEXADECIMAL,
+	TOKEN_INTEGER, TOKEN_BINARY, TOKEN_OCTAL, TOKEN_HEXADECIMAL,
 
 	// Keywords.                                        
 	TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_FALSE,
