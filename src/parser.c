@@ -537,24 +537,27 @@ static void or_(REG dest, bool canAssign)
 
 static void number(REG dest, bool canAssign)
 {
-	double value;
+	double value = strtod(parser.previous.start, NULL);
+
+	emitConstant(AUP_NUM(value), dest);
+}
+
+static void integer(REG dest, bool canAssign)
+{
+	int64_t value; int radix;
 
 	switch (parser.previous.type) {
-		case TOKEN_BINARY:
-			value = strtol(parser.previous.start + 2, NULL, 2);
+		case TOKEN_BINARY:		radix = 2; goto _m;
+		case TOKEN_OCTAL:		radix = 8; goto _m;
+		case TOKEN_HEXADECIMAL:	radix = 16;
+		_m: value = strtoll(parser.previous.start + 2, NULL, radix);
 			break;
-		case TOKEN_OCTAL:
-			value = strtol(parser.previous.start + 2, NULL, 8);
-			break;
-		case TOKEN_HEXADECIMAL:
-			value = strtol(parser.previous.start + 2, NULL, 16);
-			break;
-		case TOKEN_NUMBER: default:
-			value = strtod(parser.previous.start, NULL);
+		case TOKEN_INTEGER:
+			value = strtoll(parser.previous.start, NULL, 0);
 			break;
 	}
 
-	emitConstant(AUP_NUM(value), dest);
+	emitConstant(AUP_INT(value), dest);
 }
 
 static void string(REG dest, bool canAssign)
@@ -636,9 +639,10 @@ static ParseRule rules[] = {
     [TOKEN_IDENTIFIER]      = { variable, NULL,    PREC_NONE },
     [TOKEN_STRING]          = { string,   NULL,    PREC_NONE },
     [TOKEN_NUMBER]          = { number,   NULL,    PREC_NONE },
-    [TOKEN_BINARY]          = { number,   NULL,    PREC_NONE },
-    [TOKEN_OCTAL]           = { number,   NULL,    PREC_NONE },
-    [TOKEN_HEXADECIMAL]     = { number,   NULL,    PREC_NONE },
+    [TOKEN_INTEGER]         = { integer,  NULL,    PREC_NONE },
+    [TOKEN_BINARY]          = { integer,  NULL,    PREC_NONE },
+    [TOKEN_OCTAL]           = { integer,  NULL,    PREC_NONE },
+    [TOKEN_HEXADECIMAL]     = { integer,  NULL,    PREC_NONE },
 
     [TOKEN_AND]             = { NULL,     and_,    PREC_AND  },
     [TOKEN_CLASS]           = { NULL,     NULL,    PREC_NONE },
