@@ -5,15 +5,16 @@
 #include "util.h"
 
 typedef enum {
+	// General value types
 	AUP_TNIL,
 	AUP_TBOOL,
 	AUP_TINT,
 	AUP_TNUM,
 	AUP_TOBJ,
-
+	// Object types
 	AUP_TSTR,
-	AUP_TFUN
-
+	AUP_TFUN,
+	AUP_TUPV
 } aupVt;
 
 typedef enum {
@@ -51,6 +52,7 @@ typedef enum {
 typedef struct _aupO aupO;
 typedef struct _aupOs aupOs;
 typedef struct _aupOf aupOf;
+typedef struct _aupOu aupOu;
 
 typedef struct {
 	aupVt type;

@@ -17,11 +17,19 @@ struct _aupOs {
 	uint32_t hash;
 };
 
+struct _aupOu {
+	struct _aupO obj;
+	aupV *value;
+	aupV closed;
+};
+
 struct _aupOf {
 	struct _aupO obj;
 	int arity;
+	int upvalueCount;
 	aupCh chunk;
 	aupOs *name;
+	aupOu **upvalues;
 };
 
 static inline bool aupO_isType(aupV value, aupVt type) {
@@ -40,6 +48,9 @@ aupOs *aupOs_take(AUP_VM, char *chars, int length);
 aupOs *aupOs_copy(AUP_VM, const char *chars, int length);
 
 aupOf *aupOf_new(AUP_VM);
+void aupOf_closure(aupOf *function);
+
+aupOu *aupOu_new(AUP_VM, aupV *slot);
 
 const char *aupO_typeOf(aupO *object);
 void aupO_print(aupO *object);

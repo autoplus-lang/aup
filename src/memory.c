@@ -27,7 +27,12 @@ static void freeObject(aupO *object)
 		case AUP_TFUN: {
 			aupOf *function = (aupOf*)object;
 			aupCh_free(&function->chunk);
+			AUP_FREE_ARR(aupOu *, function->upvalues, function->upvalueCount);
 			AUP_FREE(aupOf, object);
+			break;
+		}
+		case AUP_TUPV: {
+			AUP_FREE(aupOu, object);
 			break;
 		}
 	}

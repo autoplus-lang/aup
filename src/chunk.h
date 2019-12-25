@@ -39,6 +39,10 @@ typedef enum {
 	AUP_OP_LD,
 	AUP_OP_ST,
 
+	AUP_OP_CLO,
+	AUP_OP_ULD,
+	AUP_OP_UST,
+
 	AUP_OP_JMP,
 	AUP_OP_JMPF,
 } aupOp;

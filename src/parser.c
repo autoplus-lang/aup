@@ -42,6 +42,11 @@ typedef struct {
 	int depth;
 } Local;
 
+typedef struct {
+	uint8_t index;
+	bool isLocal;
+} Upvalue;
+
 typedef enum {
 	TYPE_FUNCTION,
 	TYPE_SCRIPT
@@ -54,6 +59,7 @@ typedef struct Compiler {
 
 	Local locals[AUP_MAX_LOCALS];
 	int localCount;
+	Upvalue upvalues[AUP_MAX_LOCALS];
 	int scopeDepth;
 } Compiler;
 
@@ -249,10 +255,11 @@ static uint8_t makeConstant(aupV value)
 	return (uint8_t)constant;
 }
 
-static void emitConstant(aupV value, REG dest)
+static uint8_t emitConstant(aupV value, REG dest)
 {
-	int k = makeConstant(value) + 256;
-	EMIT_OpABx(LD, dest, k);
+	uint8_t k = makeConstant(value);
+	EMIT_OpABx(LD, dest, k + 256);
+	return k;
 }
 
 static void emitReturn(REG src)
@@ -375,6 +382,44 @@ static int resolveLocal(Compiler *compiler, aupTk *name)
 			}
 			return i;
 		}
+	}
+
+	return -1;
+}
+
+static int addUpvalue(Compiler *compiler, uint8_t index, bool isLocal)
+{
+	int upvalueCount = compiler->function->upvalueCount;
+
+	for (int i = 0; i < upvalueCount; i++) {
+		Upvalue *upvalue = &compiler->upvalues[i];
+		if (upvalue->index == index && upvalue->isLocal == isLocal) {
+			return i;
+		}
+	}
+
+	if (upvalueCount == AUP_MAX_ARGS) {
+		error("Too many closure variables in function.");
+		return 0;
+	}
+
+	compiler->upvalues[upvalueCount].isLocal = isLocal;
+	compiler->upvalues[upvalueCount].index = index;
+	return compiler->function->upvalueCount++;
+}
+
+static int resolveUpvalue(Compiler *compiler, aupTk *name)
+{
+	if (compiler->enclosing == NULL) return -1;
+
+	int local = resolveLocal(compiler->enclosing, name);
+	if (local != -1) {
+		return addUpvalue(compiler, (uint8_t)local, true);
+	}
+
+	int upvalue = resolveUpvalue(compiler->enclosing, name);
+	if (upvalue != -1) {
+		return addUpvalue(compiler, (uint8_t)upvalue, false);
 	}
 
 	return -1;
@@ -575,10 +620,19 @@ static void namedVariable(aupTk name, REG dest, bool canAssign)
 	if (arg != -1) {
 		if (canAssign && match(TOKEN_EQUAL)) {
 			REG src = expression(dest);
-			EMIT_OpAB(ST, arg, src);	//setOp = OP_SET_LOCAL;
+			EMIT_OpABx(ST, arg, src);	//setOp = OP_SET_LOCAL;
 		}
 		else {
-			EMIT_OpAB(LD, dest, arg);	//getOp = OP_GET_LOCAL;
+			EMIT_OpABx(LD, dest, arg);	//getOp = OP_GET_LOCAL;
+		}
+	}
+	else if ((arg = resolveUpvalue(current, &name)) != -1) {
+		if (canAssign && match(TOKEN_EQUAL)) {
+			REG src = expression(dest);
+			EMIT_OpABx(UST, arg, src);	//setOp = OP_SET_LOCAL;
+		}
+		else {
+			EMIT_OpABx(ULD, dest, arg);	//getOp = OP_GET_LOCAL;
 		}
 	}
 	else {
@@ -739,7 +793,17 @@ static void function(FunType type, REG dest)
 
 	// Create the function object.                                
 	aupOf *function = endCompiler();
-	emitConstant(AUP_OBJ(function), dest);
+	
+	uint8_t k = makeConstant(AUP_OBJ(function));
+
+	EMIT_OpA(CLO, k);
+	for (int i = 0; i < function->upvalueCount; i++) {
+		EMIT_OpAsB(NOP, compiler.upvalues[i].index,
+			compiler.upvalues[i].isLocal);
+	}
+
+	EMIT_OpABx(LD, dest, k + 256);
+
 	//emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
 }
 

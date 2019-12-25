@@ -116,6 +116,12 @@ static bool callValue(AUP_VM, aupV callee, int argCount)
 	return false;
 }
 
+static aupOu *captureUpvalue(AUP_VM, aupV *local)
+{
+	aupOu *createdUpvalue = aupOu_new(vm, local);
+	return createdUpvalue;
+}
+
 static int exec(aupVM *vm)
 {
 	register uint32_t *ip;
@@ -360,6 +366,30 @@ static int exec(aupVM *vm)
 		}
 		code(ST) {
 			R_A() = R_B();
+			next;
+		}
+
+		code(CLO) {
+			aupOf *function = AUP_AS_FUN(K_A());
+			aupOf_closure(function);
+
+			for (int i = 0; i < function->upvalueCount; i++) {
+				EVAL(); int index = GET_A();
+				if (GET_sB()) {
+					function->upvalues[i] = captureUpvalue(vm, frame->stack + index);
+				}
+				else {
+					function->upvalues[i] = frame->function->upvalues[index];
+				}
+			}
+			next;
+		}
+		code(ULD) {
+			R_A() = *frame->function->upvalues[GET_B()]->value;
+			next;
+		}
+		code(UST) {
+			*frame->function->upvalues[GET_A()]->value = R_B();
 			next;
 		}
 

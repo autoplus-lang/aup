@@ -104,7 +104,9 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 	printf("%02x %2x %3x %3x  ", GET_Op(), GET_A(), GET_Bx(), GET_Cx());
 
 	dispatch() {
-		code(NOP) { next; }
+		code(NOP) {
+			next;
+		}
 
 		code(RET) {
 			GET_A() ? RK_B() : PUT("nil");
@@ -211,6 +213,19 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 		}
 		code(ST) {
 			R_A(), PUT(" = "), R_B();
+			next;
+		}
+
+		code(CLO) {
+			K_A(); PUTF(", %d", GET_B());
+			next;
+		}
+		code(ULD) {
+			R_A(), PUTF(" = U[%d]", GET_B());
+			next;
+		}
+		code(UST) {
+			PUTF("U[%d] = ", GET_A()), R_B();
 			next;
 		}
 

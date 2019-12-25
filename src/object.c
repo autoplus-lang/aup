@@ -132,8 +132,30 @@ aupOf *aupOf_new(AUP_VM)
 	aupOf *function = ALLOC_OBJ(vm, aupOf, AUP_TFUN);
 
 	function->arity = 0;
+	function->upvalueCount = 0;
+	function->upvalues = NULL;
 	function->name = NULL;
 	aupCh_init(&function->chunk);
 
 	return function;
+}
+
+void aupOf_closure(aupOf *function)
+{
+	int count = function->upvalueCount;
+	aupOu **upvalues = AUP_ALLOC(aupOu *, count);
+
+	for (int i = 0; i < count; i++) {
+		upvalues[i] = NULL;
+	}
+
+	function->upvalues = upvalues;
+}
+
+aupOu *aupOu_new(AUP_VM, aupV *slot)
+{
+	aupOu *upvalue = ALLOC_OBJ(vm, aupOu, AUP_TUPV);
+	upvalue->value = slot;
+
+	return upvalue;
 }
