@@ -230,8 +230,8 @@ static int exec(aupVM *vm)
 		}
 		code(NEG) {
 			aupV value = RK_B();
-			if (AUP_IS_NUM(value)) {
-				R_A() = AUP_NUM(-AUP_AS_NUM(value));
+			if (AUP_IS_INT(value)) {
+				R_A() = AUP_INT(-AUP_AS_INT(value));
 			}
 			else {
 				runtimeError(vm, "cannot perform '-', got <%s>.", TOF(value));
@@ -242,8 +242,8 @@ static int exec(aupVM *vm)
 
 		code(LT) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_BOOL(AUP_AS_NUM(left) < AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_BOOL(AUP_AS_INT(left) < AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
@@ -253,8 +253,8 @@ static int exec(aupVM *vm)
 		}
 		code(LE) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_BOOL(AUP_AS_NUM(left) <= AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_BOOL(AUP_AS_INT(left) <= AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
@@ -264,8 +264,8 @@ static int exec(aupVM *vm)
 		}
 		code(EQ) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_BOOL(AUP_AS_NUM(left) == AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_BOOL(AUP_AS_INT(left) == AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
@@ -276,8 +276,8 @@ static int exec(aupVM *vm)
 
 		code(ADD) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_NUM(AUP_AS_NUM(left) + AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_INT(AUP_AS_INT(left) + AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
@@ -287,8 +287,8 @@ static int exec(aupVM *vm)
 		}
 		code(SUB) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_NUM(AUP_AS_NUM(left) - AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_INT(AUP_AS_INT(left) - AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
@@ -298,8 +298,8 @@ static int exec(aupVM *vm)
 		}
 		code(MUL) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_NUM(AUP_AS_NUM(left) * AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
@@ -309,8 +309,8 @@ static int exec(aupVM *vm)
 		}
 		code(DIV) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_NUM(AUP_AS_NUM(left) / AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_INT(AUP_AS_INT(left) / AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
@@ -320,8 +320,8 @@ static int exec(aupVM *vm)
 		}
 		code(MOD) {
 			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_NUM(left) && AUP_IS_NUM(right)) {
-				R_A() = AUP_NUM((long)AUP_AS_NUM(left) % (long)AUP_AS_NUM(right));
+			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+				R_A() = AUP_INT((long)AUP_AS_INT(left) % (long)AUP_AS_INT(right));
 			}
 			else {
 				runtimeError(vm, "cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
