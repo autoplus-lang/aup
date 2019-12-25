@@ -17,26 +17,30 @@
 
 - `NOP`, do nothing.
 
-- `RET` %r, return `r`.
+- `RET %r/k`, return `r`.
 
 - `PUT %r, n`, print `n` values from `r`.
 
-- `MOV %r, %r/k`
+- `MOV %r, %r/k`, copy value to `r`.
 
 - `NOT %r, %r/k`
 - `LT %r, %r/k, %r/k`
 - `LE %r, %r/k, %r/k`
 - `EQ %r, %r/k, %r/k`
 
-- `NEG %r, %r/k`, 
+- `NEG %r, %r/k`
 - `ADD %r, %r/k, %r/k`
 - `SUB %r, %r/k, %r/k`
 - `MUL %r, %r/k, %r/k`
 - `DIV %r, %r/k, %r/k`
 
-- `DEF %k, %r/k`
-- `GLD %r, %r/k`
-- `GST %r, %r/k`
+- `DEF %k, %r/k/[s]`, define global `k`, as nil value if `s`.
+- `GLD %r, %k`, load global `k`.
+- `GST %k, %r/k`, store value to global `k`.
+
+- `CLO %k [<i, s>, ...]`, make closure function in `k` constant index.
+- `ULD %r %u`, load upvalue from `u` to `r`.
+- `UST %u %r/k`, store value to `u`.
 
 ### Example
 
