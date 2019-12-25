@@ -15,7 +15,7 @@ typedef enum {
 	AUP_OP_PUT,
 
 	AUP_OP_NIL,
-	AUP_OP_BOL,
+	AUP_OP_BOOL,
 
 	AUP_OP_NOT,
 	AUP_OP_NEG,

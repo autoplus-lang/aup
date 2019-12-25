@@ -511,8 +511,8 @@ static void literal(REG dest, bool canAssign)
 {
 	switch (parser.previous.type) {
 		case TOKEN_NIL:		EMIT_OpA(NIL, dest); break;
-		case TOKEN_FALSE:	EMIT_OpAsB(BOL, dest, 0); break;
-		case TOKEN_TRUE:	EMIT_OpAsB(BOL, dest, 1); break;
+		case TOKEN_FALSE:	EMIT_OpAsB(BOOL, dest, 0); break;
+		case TOKEN_TRUE:	EMIT_OpAsB(BOOL, dest, 1); break;
 		case TOKEN_FUN:     EMIT_OpAB(MOV, dest, 0); break;             
 	}
 }

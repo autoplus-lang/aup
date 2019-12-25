@@ -143,7 +143,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			R_A(), PUT(" = nil");
 			next;
 		}
-		code(BOL) {
+		code(BOOL) {
 			R_A(), PUTF(" = %s", GET_sB() ? "true" : "false");
 			next;
 		}

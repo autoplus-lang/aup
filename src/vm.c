@@ -218,7 +218,7 @@ static int exec(aupVM *vm)
 			R_A() = AUP_NIL;
 			next;
 		}
-		code(BOL) {
+		code(BOOL) {
 			R_A() = AUP_BOOL(GET_sB());
 			next;
 		}
