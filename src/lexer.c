@@ -238,9 +238,11 @@ static aupTk number(char c)
 		advance();
 
 		while (isDigit(peek())) advance();
+
+		return makeToken(TOKEN_NUMBER);
 	}
 
-	return makeToken(TOKEN_NUMBER);
+	return makeToken(TOKEN_INTEGER);
 }
 
 static aupTk string(char c)
