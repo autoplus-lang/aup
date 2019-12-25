@@ -216,6 +216,10 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 
+		code(CLU) {
+			R_A();
+			next;
+		}
 		code(CLO) {
 			K_A(); PUTF(", %d", GET_B());
 			next;

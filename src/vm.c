@@ -13,6 +13,7 @@ static void resetStack(aupVM *vm)
 {
 	vm->top = vm->stack;
 	vm->frameCount = 0;
+	vm->openUpvalues = NULL;
 }
 
 static void runtimeError(aupVM *vm, const char* format, ...)
@@ -118,8 +119,37 @@ static bool callValue(AUP_VM, aupV callee, int argCount)
 
 static aupOu *captureUpvalue(AUP_VM, aupV *local)
 {
+	aupOu *prevUpvalue = NULL;
+	aupOu *upvalue = vm->openUpvalues;
+
+	while (upvalue != NULL && upvalue->value > local) {
+		prevUpvalue = upvalue;
+		upvalue = upvalue->next;
+	}
+
+	if (upvalue != NULL && upvalue->value == local) return upvalue;
+
 	aupOu *createdUpvalue = aupOu_new(vm, local);
+	createdUpvalue->next = upvalue;
+
+	if (prevUpvalue == NULL) {
+		vm->openUpvalues = createdUpvalue;
+	}
+	else {
+		prevUpvalue->next = createdUpvalue;
+	}
+
 	return createdUpvalue;
+}
+
+static void closeUpvalues(AUP_VM, aupV *last)
+{
+	while (vm->openUpvalues != NULL && vm->openUpvalues->value >= last) {
+		aupOu *upvalue = vm->openUpvalues;
+		upvalue->closed = *upvalue->value;
+		upvalue->value = &upvalue->closed;
+		vm->openUpvalues = upvalue->next;
+	}
 }
 
 static int exec(aupVM *vm)
@@ -181,6 +211,7 @@ static int exec(aupVM *vm)
 		}
 
 		code(RET) {
+			closeUpvalues(vm, frame->stack);
 			if (--vm->frameCount == 0) {
 				//pop();
 				return AUP_OK;
@@ -369,6 +400,10 @@ static int exec(aupVM *vm)
 			next;
 		}
 
+		code(CLU) {
+			closeUpvalues(vm, frame->stack + GET_A());
+			next;
+		}
 		code(CLO) {
 			aupOf *function = AUP_AS_FUN(K_A());
 			aupOf_closure(function);

@@ -156,6 +156,7 @@ aupOu *aupOu_new(AUP_VM, aupV *slot)
 {
 	aupOu *upvalue = ALLOC_OBJ(vm, aupOu, AUP_TUPV);
 	upvalue->value = slot;
+	upvalue->next = NULL;
 
 	return upvalue;
 }

@@ -24,6 +24,7 @@ struct _aupVM {
 	aupT strings;
 	aupT globals;
 
+	aupOu *openUpvalues;
 	aupO *objects;
 };
 

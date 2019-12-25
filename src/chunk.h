@@ -39,6 +39,7 @@ typedef enum {
 	AUP_OP_LD,
 	AUP_OP_ST,
 
+	AUP_OP_CLU,
 	AUP_OP_CLO,
 	AUP_OP_ULD,
 	AUP_OP_UST,
@@ -78,7 +79,7 @@ typedef union {
 */
 
 #define AUP_SET_OpA(op, A)  \
-    ((uint32_t)( (op) | (A << 6) ))
+    ((uint32_t)( (op) | ((A) << 6) ))
 #define AUP_SET_OpAx(op, Ax)    \
     ((uint32_t)( (op) | ((uint16_t)(Ax) << 6) ))
 #define AUP_SET_OpAxCx(op, Ax, Cx)    \

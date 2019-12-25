@@ -21,6 +21,7 @@ struct _aupOu {
 	struct _aupO obj;
 	aupV *value;
 	aupV closed;
+	struct _aupOu *next;
 };
 
 struct _aupOf {
