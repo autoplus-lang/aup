@@ -106,7 +106,7 @@ aupOs *aupOs_take(AUP_VM, char *chars, int length)
 
 	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
 	if (interned != NULL) {
-		AUP_FREE_ARR(char, chars, length + 1);
+		free(chars);
 		return interned;
 	}
 
@@ -120,7 +120,7 @@ aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
 	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
 	if (interned != NULL) return interned;
 
-	char *heapChars = AUP_ALLOC(char, length + 1);
+	char *heapChars = malloc(length + 1);
 	memcpy(heapChars, chars, length);
 	heapChars[length] = '\0';
 
@@ -143,7 +143,7 @@ aupOf *aupOf_new(AUP_VM)
 void aupOf_closure(aupOf *function)
 {
 	int count = function->upvalueCount;
-	aupOu **upvalues = AUP_ALLOC(aupOu *, count);
+	aupOu **upvalues = malloc(count * sizeof(aupOu *));
 
 	for (int i = 0; i < count; i++) {
 		upvalues[i] = NULL;

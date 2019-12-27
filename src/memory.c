@@ -20,14 +20,14 @@ static void freeObject(aupO *object)
 	switch (object->type) {
 		case AUP_TSTR: {
 			aupOs *string = (aupOs*)object;
-			AUP_FREE_ARR(char, string->chars, string->length + 1);
+			free(string->chars);
 			AUP_FREE(aupOs, object);
 			break;
 		}
 		case AUP_TFUN: {
 			aupOf *function = (aupOf*)object;
 			aupCh_free(&function->chunk);
-			AUP_FREE_ARR(aupOu *, function->upvalues, function->upvalueCount);
+			free(function->upvalues);
 			AUP_FREE(aupOf, object);
 			break;
 		}
