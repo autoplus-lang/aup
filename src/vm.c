@@ -165,7 +165,7 @@ static int exec(aupVM *vm)
 	ip = frame->ip
 
 #define READ()		(ip[-1])
-#define EVAL()		AUP_GET_Op(*ip++)
+#define FETCH()		AUP_GET_Op(*ip++)
 
 #define GET_Op()	AUP_GET_Op(READ())
 #define GET_A()		AUP_GET_A(READ())
@@ -189,28 +189,35 @@ static int exec(aupVM *vm)
 #define RK_B()		(GET_sB() ? K_B() : R_B())
 #define RK_C()		(GET_sC() ? K_C() : R_C())
 
-#define dispatch()	for (;;) switch (EVAL())
-#define code(x)		case (AUP_OP_##x):
-#define code_err()	default:
-#define next		continue
+#define INTERPRET() for (;;) switch (FETCH())
+#define CODE(x)     case AUP_OP_##x
+#define CODE_ERR()  default
+#define NEXT        continue
 
 	LOAD_FRAME();
 
-	dispatch() {
-		code(NOP) {
-			next;
-		}
+    INTERPRET()
+    {
+        CODE(NOP):
+        {
+            // Do nothing.
+            NEXT;
+        }
 
-		code(PUSH) {
+        CODE(PUSH):
+        {
 			PUSH(RK_B());
-			next;
-		}
-		code(POP) {
-			POP();
-			next;
+			NEXT;
 		}
 
-		code(RET) {
+        CODE(POP):
+        {
+			POP();
+			NEXT;
+		}
+
+		CODE(RET):
+        {
 			closeUpvalues(vm, frame->stack);
 			if (--vm->frameCount == 0) {
 				//pop();
@@ -219,226 +226,269 @@ static int exec(aupVM *vm)
 			//vm->top = frame->stack;
 			R(0) = GET_A() ? RK_B() : AUP_NIL;
 			LOAD_FRAME();
-			next;
-		}
-		code(CALL) {
-			int argCount = GET_B();
+            NEXT;
+        }
 
-			STORE_FRAME();
-			//vm->top = &R_A();
+        CODE(CALL):
+        {
+            int argCount = GET_B();
 
-			if (!callValue(vm, *(vm->top = &R_A()), argCount)) {
-				return AUP_RUNTIME_ERR;
-			}
-			
-			LOAD_FRAME();
-			next;
-		}
+            STORE_FRAME();
+            //vm->top = &R_A();
 
-		code(PUT) {
-			int rA = GET_A(), nvalues = GET_B();
-			for (int i = 0; i < nvalues; i++) {
-				aupV_print(R(rA + i));
-				if (i < nvalues - 1) printf("\t");
-			}
-			printf("\n");
-			fflush(stdout);
-			next;
-		}
+            if (!callValue(vm, *(vm->top = &R_A()), argCount)) {
+                return AUP_RUNTIME_ERR;
+            }
 
-		code(MOV) {
-			R_A() = R_B();
-			next;
-		}
+            LOAD_FRAME();
+            NEXT;
+        }
 
-		code(NIL) {
-			R_A() = AUP_NIL;
-			next;
-		}
-		code(BOOL) {
-			R_A() = AUP_BOOL(GET_sB());
-			next;
-		}
+        CODE(PUT):
+        {
+            int rA = GET_A(), nvalues = GET_B();
+            for (int i = 0; i < nvalues; i++) {
+                aupV_print(R(rA + i));
+                if (i < nvalues - 1) printf("\t");
+            }
+            printf("\n");
+            fflush(stdout);
+            NEXT;
+        }
 
-		code(NOT) {
-			aupV value = RK_B();
-			R_A() = AUP_BOOL(AUP_IS_FALSEY(value));
-			next;
-		}
-		code(NEG) {
-			aupV value = RK_B();
-			if (AUP_IS_INT(value)) {
-				R_A() = AUP_INT(-AUP_AS_INT(value));
-			}
-			else {
-				runtimeError(vm, "cannot perform '-', got <%s>.", TOF(value));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
+        CODE(MOV):
+        {
+            R_A() = R_B();
+            NEXT;
+        }
 
-		code(LT) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_BOOL(AUP_AS_INT(left) < AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
-		code(LE) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_BOOL(AUP_AS_INT(left) <= AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
-		code(EQ) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_BOOL(AUP_AS_INT(left) == AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
+        CODE(NIL):
+        {
+            R_A() = AUP_NIL;
+            NEXT;
+        }
 
-		code(ADD) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_INT(AUP_AS_INT(left) + AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
-		code(SUB) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_INT(AUP_AS_INT(left) - AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
-		code(MUL) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
-		code(DIV) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_INT(AUP_AS_INT(left) / AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
-		code(MOD) {
-			aupV left = RK_B(), right = RK_C();
-			if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-				R_A() = AUP_INT((long)AUP_AS_INT(left) % (long)AUP_AS_INT(right));
-			}
-			else {
-				runtimeError(vm, "cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
-				return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
+        CODE(BOOL):
+        {
+            R_A() = AUP_BOOL(GET_sB());
+            NEXT;
+        }
 
-		code(DEF) {
-			aupOs *name = AUP_AS_STR(K_A());
-			aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
-			next;
-		}
-		code(GLD) {
-			aupOs *name = AUP_AS_STR(K_B());
-			if (!aupT_get(&vm->globals, name, &R_A())) {
-				R_A() = AUP_NIL;
-				//runtimeError(vm, "undefined variable '%s'.", name->chars);
-				//return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
-		code(GST) {
-			aupOs *name = AUP_AS_STR(K_A());
-			if (aupT_set(&vm->globals, name, RK_B())) {
-				//aupT_delete(&vm->globals, name);
-				//runtimeError(vm, "undefined variable '%s'.", name->chars);
-				//return AUP_RUNTIME_ERR;
-			}
-			next;
-		}
+        CODE(NOT):
+        {
+            aupV value = RK_B();
+            R_A() = AUP_BOOL(AUP_IS_FALSEY(value));
+            NEXT;
+        }
 
-		code(LD) {
-			R_A() = RK_B();
-			next;
-		}
-		code(ST) {
-			R_A() = R_B();
-			next;
-		}
+        CODE(NEG):
+        {
+            aupV value = RK_B();
+            if (AUP_IS_INT(value)) {
+                R_A() = AUP_INT(-AUP_AS_INT(value));
+            }
+            else {
+                runtimeError(vm, "cannot perform '-', got <%s>.", TOF(value));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
 
-		code(CLU) {
-			closeUpvalues(vm, frame->stack + GET_A());
-			next;
-		}
-		code(CLO) {
-			aupOf *function = AUP_AS_FUN(K_A());
-			aupOf_closure(function);
+        CODE(LT):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_BOOL(AUP_AS_INT(left) < AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
 
-			for (int i = 0; i < function->upvalueCount; i++) {
-				EVAL(); int index = GET_A();
-				if (GET_sB()) {
-					function->upvalues[i] = captureUpvalue(vm, frame->stack + index);
-				}
-				else {
-					function->upvalues[i] = frame->function->upvalues[index];
-				}
-			}
-			next;
-		}
-		code(ULD) {
-			R_A() = *frame->function->upvalues[GET_B()]->value;
-			next;
-		}
-		code(UST) {
-			*frame->function->upvalues[GET_A()]->value = R_B();
-			next;
-		}
+        CODE(LE):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_BOOL(AUP_AS_INT(left) <= AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
 
-		code(JMP) {
-			ip += GET_Ax();
-			next;
-		}
-		code(JMPF) {
-			aupV value = R_C();
-			if (AUP_IS_FALSEY(value)) ip += GET_Ax();
-			next;
-		}
+        CODE(EQ):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_BOOL(AUP_AS_INT(left) == AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
 
-		code_err() {
+        CODE(ADD):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_INT(AUP_AS_INT(left) + AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
+
+        CODE(SUB):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_INT(AUP_AS_INT(left) - AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
+
+        CODE(MUL):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
+
+        CODE(DIV):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_INT(AUP_AS_INT(left) / AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
+
+        CODE(MOD):
+        {
+            aupV left = RK_B(), right = RK_C();
+            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
+                R_A() = AUP_INT((long)AUP_AS_INT(left) % (long)AUP_AS_INT(right));
+            }
+            else {
+                runtimeError(vm, "cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
+                return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
+
+        CODE(DEF):
+        {
+            aupOs *name = AUP_AS_STR(K_A());
+            aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
+            NEXT;
+        }
+
+        CODE(GLD):
+        {
+            aupOs *name = AUP_AS_STR(K_B());
+            if (!aupT_get(&vm->globals, name, &R_A())) {
+                R_A() = AUP_NIL;
+                //runtimeError(vm, "undefined variable '%s'.", name->chars);
+                //return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
+
+        CODE(GST):
+        {
+            aupOs *name = AUP_AS_STR(K_A());
+            if (aupT_set(&vm->globals, name, RK_B())) {
+                //aupT_delete(&vm->globals, name);
+                //runtimeError(vm, "undefined variable '%s'.", name->chars);
+                //return AUP_RUNTIME_ERR;
+            }
+            NEXT;
+        }
+
+        CODE(LD):
+        {
+            R_A() = RK_B();
+            NEXT;
+        }
+
+        CODE(ST):
+        {
+            R_A() = R_B();
+            NEXT;
+        }
+
+        CODE(CLU):
+        {
+            closeUpvalues(vm, frame->stack + GET_A());
+            NEXT;
+        }
+
+        CODE(CLO):
+        {
+            aupOf *function = AUP_AS_FUN(K_A());
+            aupOf_closure(function);
+
+            for (int i = 0; i < function->upvalueCount; i++) {
+                FETCH();
+                if (GET_sB()) {
+                    function->upvalues[i] = captureUpvalue(vm, frame->stack + GET_A());
+                }
+                else {
+                    function->upvalues[i] = frame->function->upvalues[GET_A()];
+                }
+            }
+            NEXT;
+        }
+
+        CODE(ULD):
+        {
+            R_A() = *frame->function->upvalues[GET_B()]->value;
+            NEXT;
+        }
+
+        CODE(UST):
+        {
+            *frame->function->upvalues[GET_A()]->value = R_B();
+            NEXT;
+        }
+
+        CODE(JMP):
+        {
+            ip += GET_Ax();
+            NEXT;
+        }
+
+        CODE(JMPF):
+        {
+            aupV value = R_C();
+            if (AUP_IS_FALSEY(value)) ip += GET_Ax();
+            NEXT;
+        }
+
+        CODE_ERR():
+        {
 			runtimeError(vm, "bad opcode, got %d.", GET_Op());
 			return AUP_RUNTIME_ERR;
 		}
