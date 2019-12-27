@@ -294,9 +294,16 @@ static int exec(aupVM *vm)
         CODE(NEG):
         {
             aupV value = RK_B();
-            if (AUP_IS_INT(value)) {
-                R_A() = AUP_INT(-AUP_AS_INT(value));
-                NEXT;
+            switch (AUP_TYPE(value)) {
+                case AUP_TINT:
+                    R_A() = AUP_INT(-AUP_AS_INT(value));
+                    NEXT;
+                case AUP_TNUM:
+                    R_A() = AUP_NUM(-AUP_AS_NUM(value));
+                    NEXT;
+                case AUP_TBOOL:
+                    R_A() = AUP_INT(-AUP_AS_BOOL(value));
+                    NEXT;
             }
             ERROR("Cannot perform '-', got <%s>.", TOF(value));
         }
@@ -304,9 +311,10 @@ static int exec(aupVM *vm)
         CODE(LT):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_BOOL(AUP_AS_INT(left) < AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_BOOL(AUP_AS_INT(left) < AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("Cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
         }
@@ -314,9 +322,10 @@ static int exec(aupVM *vm)
         CODE(LE):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_BOOL(AUP_AS_INT(left) <= AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_BOOL(AUP_AS_INT(left) <= AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("Cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
         }
@@ -324,9 +333,10 @@ static int exec(aupVM *vm)
         CODE(EQ):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_BOOL(AUP_AS_INT(left) == AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_BOOL(AUP_AS_INT(left) == AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("Cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
         }
@@ -334,9 +344,10 @@ static int exec(aupVM *vm)
         CODE(ADD):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_INT(AUP_AS_INT(left) + AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_INT(AUP_AS_INT(left) + AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("Cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
         }
@@ -344,9 +355,10 @@ static int exec(aupVM *vm)
         CODE(SUB):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_INT(AUP_AS_INT(left) - AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_INT(AUP_AS_INT(left) - AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
         }
@@ -354,9 +366,10 @@ static int exec(aupVM *vm)
         CODE(MUL):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("Cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
         }
@@ -364,9 +377,10 @@ static int exec(aupVM *vm)
         CODE(DIV):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_INT(AUP_AS_INT(left) / AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("Cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
         }
@@ -374,9 +388,10 @@ static int exec(aupVM *vm)
         CODE(MOD):
         {
             aupV left = RK_B(), right = RK_C();
-            if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
-                R_A() = AUP_INT((long)AUP_AS_INT(left) % (long)AUP_AS_INT(right));
-                NEXT;
+            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
+                case AUP_TINT_INT:
+                    R_A() = AUP_INT(AUP_AS_INT(left) % AUP_AS_INT(right));
+                    NEXT;
             }
             ERROR("Cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
         }

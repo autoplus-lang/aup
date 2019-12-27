@@ -13,7 +13,7 @@ static const char
 
 const char *aupV_typeOf(aupV value)
 {
-	switch (AUP_VAL_TYPE(value)) {
+	switch (AUP_TYPE(value)) {
 		default:
 		case AUP_TNIL:
 			return __nil;
@@ -30,7 +30,7 @@ const char *aupV_typeOf(aupV value)
 
 void aupV_print(aupV value)
 {
-	switch (AUP_VAL_TYPE(value)) {
+	switch (AUP_TYPE(value)) {
 		default:
 		case AUP_TNIL:
 			printf("nil");
@@ -78,7 +78,7 @@ void aupVa_free(aupVa *array)
 int aupVa_find(aupVa *array, aupV value)
 {
 #define IS_EQUAL(v1, v2) \
-	AUP_VAL_TYPE(v1) == AUP_VAL_TYPE(v2) && \
+	AUP_TYPE(v1) == AUP_TYPE(v2) && \
 	AUP_AS_RAW(v1) == AUP_AS_RAW(v2)
 
 	for (int i = 0; i < array->count; i++) {
