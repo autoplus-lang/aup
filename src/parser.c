@@ -805,15 +805,16 @@ static void function(FunType type, REG dest)
 	
 	uint8_t k = makeConstant(AUP_OBJ(function));
 
-	EMIT_OpA(CLO, k);
-	for (int i = 0; i < function->upvalueCount; i++) {
-		EMIT_OpAsB(NOP, compiler.upvalues[i].index,
-			compiler.upvalues[i].isLocal);
-	}
+    // Make closure if upvalues exist.
+    if (function->upvalueCount > 0) {
+        EMIT_OpA(CLO, k);
+        for (int i = 0; i < function->upvalueCount; i++) {
+            EMIT_OpAsB(NOP, compiler.upvalues[i].index,
+                compiler.upvalues[i].isLocal);
+        }
+    }
 
 	EMIT_OpABx(LD, dest, k + 256);
-
-	//emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
 }
 
 static void funDeclaration()
