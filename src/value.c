@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "value.h"
 #include "object.h"
@@ -61,7 +62,7 @@ int aupVa_write(aupVa *array, aupV value)
 	if (array->capacity < array->count + 1) {
 		int oldCapacity = array->capacity;
 		array->capacity = AUP_GROW_CAP(oldCapacity);
-		array->values = AUP_GROW_ARR(aupV, array->values, oldCapacity, array->capacity);
+		array->values = realloc(array->values, array->capacity * sizeof(aupV));
 	}
 
 	array->values[array->count] = value;
@@ -70,7 +71,7 @@ int aupVa_write(aupVa *array, aupV value)
 
 void aupVa_free(aupVa *array)
 {
-	AUP_FREE_ARR(aupV, array->values, array->capacity);
+	free(array->values);
 	aupVa_init(array);
 }
 
