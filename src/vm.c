@@ -381,13 +381,6 @@ static int exec(aupVM *vm)
             ERROR("Cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
-        CODE(DEF):
-        {
-            aupOs *name = AUP_AS_STR(K_A());
-            aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
-            NEXT;
-        }
-
         CODE(GLD):
         {
             aupOs *name = AUP_AS_STR(K_B());
@@ -400,7 +393,7 @@ static int exec(aupVM *vm)
         CODE(GST):
         {
             aupOs *name = AUP_AS_STR(K_A());
-            aupT_set(&vm->globals, name, RK_B());
+            aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
             NEXT;
         }
 

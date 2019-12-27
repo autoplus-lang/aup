@@ -193,18 +193,14 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			next;
 		}
 
-		code(DEF) {
-			PUT("G."), K_A(), PUT(" = ");
-			GET_sC() ? PUT("nil") : RK_B();
-			next;
-		}
 		code(GLD) {
 			R_A(), PUT(" = G."), K_B();
 			next;
 		}
 		code(GST) {
-			PUT("G."), K_A(), PUT(" = "), RK_B();
-			next;
+            PUT("G."), K_A(), PUT(" = ");
+            GET_sC() ? PUT("nil") : RK_B();
+            next;
 		}
 
 		code(LD) {

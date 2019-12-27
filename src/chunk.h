@@ -32,7 +32,6 @@ typedef enum {
 
 	AUP_OP_MOV,
 
-	AUP_OP_DEF,
 	AUP_OP_GLD,
 	AUP_OP_GST,
 

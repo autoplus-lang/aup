@@ -185,7 +185,7 @@ static void emit(uint32_t i)
 			}
 			break;
 		}
-		case CODE(DEF):
+		case CODE(GST):
 		{
 			if (GET_sC() == false &&
 				PREV_Op(1) == CODE(LD))
@@ -195,7 +195,6 @@ static void emit(uint32_t i)
 			}
 			break;
 		}
-		case CODE(GST):
 		case CODE(NOT): case CODE(NEG):
 		{
 			if (PREV_Op(1) == CODE(LD))
@@ -492,9 +491,9 @@ static void defineVariable(uint8_t global, REG src)
 	}
 
 	if (src == -1)
-		EMIT_OpAsC(DEF, global, true);
+		EMIT_OpAsC(GST, global, true);
 	else
-		EMIT_OpABx(DEF, global, src);
+		EMIT_OpABx(GST, global, src);
 }
 
 static uint8_t argumentList()
