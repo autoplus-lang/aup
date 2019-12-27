@@ -5,7 +5,7 @@
 #include "memory.h"
 #include "vm.h"
 
-void *aup_realloc(void *ptr, size_t oldSize, size_t newSize)
+void *aup_realloc(AUP_VM, void *ptr, size_t oldSize, size_t newSize)
 {
 	if (newSize == 0) {
 		free(ptr);
@@ -15,7 +15,7 @@ void *aup_realloc(void *ptr, size_t oldSize, size_t newSize)
 	return realloc(ptr, newSize);
 }
 
-static void freeObject(aupO *object)
+static void freeObject(AUP_VM, aupO *object)
 {
 	switch (object->type) {
 		case AUP_TSTR: {
@@ -43,7 +43,7 @@ void aup_freeObjects(AUP_VM)
 	aupO *object = vm->objects;
 	while (object != NULL) {
 		aupO* next = object->next;
-		freeObject(object);
+		freeObject(vm, object);
 		object = next;
 	}
 }

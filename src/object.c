@@ -75,12 +75,12 @@ static uint32_t hashString(const char *key, int length)
 	return hash;
 }
 
-#define ALLOC_OBJ(vm, type, objectType) \
+#define ALLOC_OBJ(type, objectType) \
 	(type *)allocObject(vm, sizeof(type), objectType)
 
 static aupO *allocObject(AUP_VM, size_t size, aupVt type)
 {
-	aupO *object = (aupO *)aup_realloc(NULL, 0, size);
+	aupO *object = (aupO *)aup_realloc(vm, NULL, 0, size);
 	object->type = type;
 
 	object->next = vm->objects;
@@ -90,7 +90,7 @@ static aupO *allocObject(AUP_VM, size_t size, aupVt type)
 
 static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 {
-	aupOs *string = ALLOC_OBJ(vm, aupOs, AUP_TSTR);
+	aupOs *string = ALLOC_OBJ(aupOs, AUP_TSTR);
 	string->length = length;
 	string->chars = chars;
 	string->hash = hash;
@@ -129,7 +129,7 @@ aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
 
 aupOf *aupOf_new(AUP_VM)
 {
-	aupOf *function = ALLOC_OBJ(vm, aupOf, AUP_TFUN);
+	aupOf *function = ALLOC_OBJ(aupOf, AUP_TFUN);
 
 	function->arity = 0;
 	function->upvalueCount = 0;
@@ -154,7 +154,7 @@ void aupOf_closure(aupOf *function)
 
 aupOu *aupOu_new(AUP_VM, aupV *slot)
 {
-	aupOu *upvalue = ALLOC_OBJ(vm, aupOu, AUP_TUPV);
+	aupOu *upvalue = ALLOC_OBJ(aupOu, AUP_TUPV);
 	upvalue->value = slot;
 	upvalue->next = NULL;
 
