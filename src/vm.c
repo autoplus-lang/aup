@@ -189,10 +189,17 @@ static int exec(aupVM *vm)
 #define RK_B()		(GET_sB() ? K_B() : R_B())
 #define RK_C()		(GET_sC() ? K_C() : R_C())
 
+#if 0
 #define INTERPRET() for (;;) switch (FETCH())
 #define CODE(x)     case AUP_OP_##x
 #define CODE_ERR()  default
 #define NEXT        continue
+#else
+#define INTERPRET() _loop: switch (FETCH())
+#define CODE(x)     case AUP_OP_##x
+#define CODE_ERR()  default
+#define NEXT        goto _loop
+#endif
 
 	LOAD_FRAME();
 
