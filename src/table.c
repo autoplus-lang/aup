@@ -16,7 +16,7 @@ void aupT_init(aupT *table)
 
 void aupT_free(aupT *table)
 {
-	AUP_FREE_ARR(aupTe, table->entries, table->capacity);
+	free(table->entries);
 	aupT_init(table);
 }
 
@@ -60,7 +60,7 @@ bool aupT_get(aupT *table, aupOs *key, aupV *value)
 
 static void adjustCapacity(aupT *table, int capacity)
 {
-	aupTe *entries = AUP_ALLOC(aupTe, capacity);
+	aupTe *entries = malloc(sizeof(aupTe) * capacity);
 	for (int i = 0; i < capacity; i++) {
 		entries[i].key = NULL;
 		entries[i].value = AUP_NIL;
@@ -78,7 +78,7 @@ static void adjustCapacity(aupT *table, int capacity)
 		table->count++;
 	}
 
-	AUP_FREE_ARR(aupTe, table->entries, table->capacity);
+	free(table->entries);
 	table->entries = entries;
 	table->capacity = capacity;
 }
