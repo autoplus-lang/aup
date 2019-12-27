@@ -165,13 +165,16 @@ static aupTkt checkKeyword(int start, int length, const char *rest, aupTkt type)
 
 static int identifierType()
 {
-	switch (lexer.start[0]) {
+#define INDEX   lexer.start
+#define LENGTH  (lexer.current - lexer.start)
+
+	switch (INDEX[0]) {
 		case 'a': return checkKeyword(1, 2, "nd", TOKEN_AND);
 		case 'c': return checkKeyword(1, 4, "lass", TOKEN_CLASS);
 		case 'e': return checkKeyword(1, 3, "lse", TOKEN_ELSE);
 		case 'f':
-			if (lexer.current - lexer.start > 1) {
-				switch (lexer.start[1]) {
+			if (LENGTH > 1) {
+				switch (INDEX[1]) {
 					case 'a': return checkKeyword(2, 3, "lse", TOKEN_FALSE);
 					case 'o': return checkKeyword(2, 1, "r", TOKEN_FOR);
 					case 'u': return checkKeyword(2, 1, "n", TOKEN_FUN);
@@ -185,8 +188,8 @@ static int identifierType()
 		case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
 		case 's': return checkKeyword(1, 4, "uper", TOKEN_SUPER);
 		case 't':
-			if (lexer.current - lexer.start > 1) {
-				switch (lexer.start[1]) {
+			if (LENGTH > 1) {
+				switch (INDEX[1]) {
 					case 'h': return checkKeyword(2, 2, "is", TOKEN_THIS);
 					case 'r': return checkKeyword(2, 2, "ue", TOKEN_TRUE);
 				}
