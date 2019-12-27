@@ -164,6 +164,9 @@ static int exec(aupVM *vm)
 	frame = &vm->frames[vm->frameCount - 1]; \
 	ip = frame->ip
 
+#define ERROR(fmt, ...) \
+    do { STORE_FRAME(); runtimeError(vm, fmt, ##__VA_ARGS__); return AUP_RUNTIME_ERR; } while (0)
+
 #define READ()		(ip[-1])
 #define FETCH()		AUP_GET_Op(*ip++)
 
@@ -293,12 +296,9 @@ static int exec(aupVM *vm)
             aupV value = RK_B();
             if (AUP_IS_INT(value)) {
                 R_A() = AUP_INT(-AUP_AS_INT(value));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '-', got <%s>.", TOF(value));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '-', got <%s>.", TOF(value));
         }
 
         CODE(LT):
@@ -306,12 +306,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_BOOL(AUP_AS_INT(left) < AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(LE):
@@ -319,12 +316,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_BOOL(AUP_AS_INT(left) <= AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(EQ):
@@ -332,12 +326,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_BOOL(AUP_AS_INT(left) == AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(ADD):
@@ -345,12 +336,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_INT(AUP_AS_INT(left) + AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(SUB):
@@ -358,12 +346,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_INT(AUP_AS_INT(left) - AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(MUL):
@@ -371,12 +356,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(DIV):
@@ -384,12 +366,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_INT(AUP_AS_INT(left) / AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(MOD):
@@ -397,12 +376,9 @@ static int exec(aupVM *vm)
             aupV left = RK_B(), right = RK_C();
             if (AUP_IS_INT(left) && AUP_IS_INT(right)) {
                 R_A() = AUP_INT((long)AUP_AS_INT(left) % (long)AUP_AS_INT(right));
+                NEXT;
             }
-            else {
-                runtimeError(vm, "cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
-                return AUP_RUNTIME_ERR;
-            }
-            NEXT;
+            ERROR("Cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
         }
 
         CODE(DEF):
@@ -417,8 +393,6 @@ static int exec(aupVM *vm)
             aupOs *name = AUP_AS_STR(K_B());
             if (!aupT_get(&vm->globals, name, &R_A())) {
                 R_A() = AUP_NIL;
-                //runtimeError(vm, "undefined variable '%s'.", name->chars);
-                //return AUP_RUNTIME_ERR;
             }
             NEXT;
         }
@@ -426,11 +400,7 @@ static int exec(aupVM *vm)
         CODE(GST):
         {
             aupOs *name = AUP_AS_STR(K_A());
-            if (aupT_set(&vm->globals, name, RK_B())) {
-                //aupT_delete(&vm->globals, name);
-                //runtimeError(vm, "undefined variable '%s'.", name->chars);
-                //return AUP_RUNTIME_ERR;
-            }
+            aupT_set(&vm->globals, name, RK_B());
             NEXT;
         }
 
@@ -496,8 +466,7 @@ static int exec(aupVM *vm)
 
         CODE_ERR():
         {
-			runtimeError(vm, "bad opcode, got %d.", GET_Op());
-			return AUP_RUNTIME_ERR;
+            ERROR("Bad opcode, got %d.", GET_Op());
 		}
 	}
 
