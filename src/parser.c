@@ -835,7 +835,6 @@ static void varDeclaration()
 	else {
 		src = -1; //emitByte(OP_NIL);
 	}
-	consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
 
 	defineVariable(global, src);
 }
