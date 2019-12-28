@@ -138,7 +138,6 @@ static bool match(aupTkt type)
 }
 
 static  REG		currentReg;
-
 #define PUSH()	currentReg++
 #define POP()	--currentReg
 #define POPN(n) currentReg -= (n)
@@ -346,7 +345,11 @@ static void endScope()
 	}
 }
 
-static int subExpCounter, callCounter;
+static struct {
+    bool hadCall;
+    bool hadAssignment;
+} exprInfo;
+
 static REG expression(REG dest);
 static void statement();
 static void declaration();
@@ -545,7 +548,7 @@ static void call(REG dest, bool canAssign)
 	EMIT_OpAB(CALL, dest, argCount);
 
 	POPN(argCount);
-    callCounter++;
+    exprInfo.hadCall = true;
 }
 
 static void literal(REG dest, bool canAssign)
@@ -631,6 +634,7 @@ static void namedVariable(aupTk name, REG dest, bool canAssign)
     if (canAssign && match(TOKEN_EQUAL)) {
         REG src = expression(dest);
         emit(AUP_SET_OpABx(storeOp, arg, src));
+        exprInfo.hadAssignment = true;
     }
     else {
         emit(AUP_SET_OpABx(loadOp, dest, arg));
@@ -727,9 +731,6 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 	bool canAssign = precedence <= PREC_ASSIGNMENT;
 	prefixRule(dest, canAssign);
 
-    callCounter = 0;
-    subExpCounter = 1;
-
 	while (precedence <= getRule(parser.current.type)->precedence) {
         if (parser.current.line > parser.previous.line) {
             // Break expression on new line.
@@ -738,7 +739,6 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 		advance();
 		ParseFn infixRule = getRule(parser.previous.type)->infix;
 		infixRule(dest, canAssign);
-        subExpCounter++;
 	}
 
 	if (canAssign && match(TOKEN_EQUAL)) {
@@ -844,10 +844,13 @@ static void varDeclaration()
 
 static void expressionStatement()
 {
+    memset(&exprInfo, 0, sizeof(exprInfo));
+
     expression(-1);
     POP();
 
-    if (subExpCounter <= 1 || callCounter <= 0) {
+    if (!exprInfo.hadCall &&
+        !exprInfo.hadAssignment) {
         error("Unexpected expression.");
     }
 }
