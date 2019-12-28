@@ -871,20 +871,18 @@ static void ifStatement()
 
 static void putsStatement()
 {
-	int nvalues = 1;
+	int count = 1;
 	REG src = expression(-1);
 
 	while (match(TOKEN_COMMA)) {
 		expression(-1);
-		if (++nvalues > AUP_MAX_ARGS) {
+		if (++count > AUP_MAX_ARGS) {
 			error("Too many values in 'puts' statement.");
 			return;
 		}
 	};
 
-	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
-
-	EMIT_OpAB(PUT, src, nvalues), POPN(nvalues);
+	EMIT_OpAB(PUT, src, count), POPN(count);
 }
 
 static void returnStatement()
