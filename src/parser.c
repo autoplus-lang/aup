@@ -636,17 +636,19 @@ static void namedVariable(aupTk name, REG dest, bool canAssign, bool isStatement
         storeOp = CODE(GST);
     }
 
-    if (canAssign && match(TOKEN_EQUAL) && isStatement) {
+    if (canAssign && match(TOKEN_EQUAL)) {
         REG src = expression(dest);
         emit(AUP_SET_OpABx(storeOp, arg, src));
-        return;
     }
     else if (!isStatement) {
         emit(AUP_SET_OpABx(loadOp, dest, arg));
-        return;
+        if (match(TOKEN_LPAREN)) {
+            call(dest, canAssign);
+        }
     }
-
-    errorAtCurrent("Unexpected expression.");
+    else {
+        errorAtCurrent("Unexpected expression.");
+    }
 }
 
 static void variable(REG dest, bool canAssign)
@@ -791,9 +793,16 @@ static void function(FunType type, REG dest)
 	}
 	consume(TOKEN_RPAREN, "Expect ')' after parameters.");
 
-	// The body.                                                  
-	consume(TOKEN_LBRACE, "Expect '{' before function body.");
-	block();
+	// The body. 
+
+    if (match(TOKEN_EQUAL)) {
+        REG src = expression(-1);
+        emitReturn(src);
+    }
+    else {
+        consume(TOKEN_LBRACE, "Expect '{' before function body.");
+        block();
+    }
 
 	// Create the function object.                                
 	aupOf *function = endCompiler();
