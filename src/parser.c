@@ -858,10 +858,9 @@ static void ifStatement()
     REG src = expression(-1);
     if (hadParen) {
         consume(TOKEN_RPAREN, "Expect ')' after condition.");
-        match(TOKEN_THEN);
     }
-    else {
-        consume(TOKEN_THEN, "Expect 'then' after condition.");
+    else if (!check(TOKEN_THEN)) {
+        error("Expect 'then' after condition.");
     }
 
 	int thenJump = emitJump(true, src);
@@ -966,6 +965,20 @@ static void statement()
 	else if (match(TOKEN_RETURN)) {
 		returnStatement();
 	}
+    else if (match(TOKEN_THEN)) {
+        beginScope();
+        if (parser.current.line == parser.previous.line) {
+            statement();
+            match(TOKEN_END);
+        }
+        else {
+            while (!check(TOKEN_END) && !check(TOKEN_EOF)) {
+                declaration();
+            }
+            consume(TOKEN_END, "Expect 'end' after block.");
+        }
+        endScope();
+    }
 	else if (match(TOKEN_LBRACE)) {
 		beginScope();
 		block();
