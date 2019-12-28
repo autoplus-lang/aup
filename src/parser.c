@@ -180,16 +180,6 @@ static void emit(uint32_t i)
 			}
 			break;
 		}
-		case CODE(GST):
-		{
-			if (GET_sC() == false &&
-				PREV_Op(1) == CODE(LD))
-			{
-				i = AUP_SET_OpABx(GET_Op(), GET_A(), PREV_Bx(1));
-				UNDO();
-			}
-			break;
-		}
 		case CODE(NOT): case CODE(NEG):
 		{
 			if (PREV_Op(1) == CODE(LD))
