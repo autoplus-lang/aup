@@ -152,6 +152,8 @@ static void emit(uint32_t i)
 #define PREV(i)		ch->code[ch->count-(i)]
 #define PREV_Op(i)	AUP_GET_Op(PREV(i))
 #define PREV_A(i)	AUP_GET_A(PREV(i))
+#define PREV_B(i)	AUP_GET_B(PREV(i))
+#define PREV_C(i)	AUP_GET_C(PREV(i))
 #define PREV_Bx(i)	AUP_GET_Bx(PREV(i))
 #define PREV_Cx(i)	AUP_GET_Cx(PREV(i))
 #define PREV_sB(i)  AUP_GET_sB(PREV(i))
@@ -159,6 +161,8 @@ static void emit(uint32_t i)
 
 #define GET_Op()	AUP_GET_Op(i)
 #define GET_A()		AUP_GET_A(i)
+#define GET_B()		AUP_GET_B(i)
+#define GET_C()		AUP_GET_C(i)
 #define GET_Bx()	AUP_GET_Bx(i)
 #define GET_Cx()	AUP_GET_Cx(i)
 #define GET_sB()	AUP_GET_sB(i)
@@ -177,6 +181,12 @@ static void emit(uint32_t i)
 				i = AUP_SET_OpABx(GET_Op(), GET_A(), PREV_Bx(1));
 				UNDO();
 			}
+            else if (PREV_Op(1) == CODE(NIL) &&
+                GET_A() == true && GET_B() == PREV_A(1))
+            {
+                i = AUP_SET_OpA(CODE(RET), 0);
+                UNDO();
+            }
 			break;
 		}
 		case CODE(NOT): case CODE(NEG):
