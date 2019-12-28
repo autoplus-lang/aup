@@ -646,6 +646,42 @@ static void namedVariable(aupTk name, REG dest, bool canAssign)
         
         exprInfo.hadAssignment = true;
     }
+    else if (canAssign && match(TOKEN_MINUS_EQ)) {
+        REG src = PUSH();
+        namedVariable(name, src, false);
+        REG exp = expression(-1); POP();
+        EMIT_OpABxCx(SUB, dest, src, exp);
+        emit(AUP_SET_OpABx(storeOp, arg, dest));
+
+        exprInfo.hadAssignment = true;
+    }
+    else if (canAssign && match(TOKEN_STAR_EQ)) {
+        REG src = PUSH();
+        namedVariable(name, src, false);
+        REG exp = expression(-1); POP();
+        EMIT_OpABxCx(MUL, dest, src, exp);
+        emit(AUP_SET_OpABx(storeOp, arg, dest));
+
+        exprInfo.hadAssignment = true;
+    }
+    else if (canAssign && match(TOKEN_SLASH_EQ)) {
+        REG src = PUSH();
+        namedVariable(name, src, false);
+        REG exp = expression(-1); POP();
+        EMIT_OpABxCx(DIV, dest, src, exp);
+        emit(AUP_SET_OpABx(storeOp, arg, dest));
+
+        exprInfo.hadAssignment = true;
+    }
+    else if (canAssign && match(TOKEN_PERCENT_EQ)) {
+        REG src = PUSH();
+        namedVariable(name, src, false);
+        REG exp = expression(-1); POP();
+        EMIT_OpABxCx(MOD, dest, src, exp);
+        emit(AUP_SET_OpABx(storeOp, arg, dest));
+
+        exprInfo.hadAssignment = true;
+    }
     else {
         emit(AUP_SET_OpABx(loadOp, dest, arg));
     }
