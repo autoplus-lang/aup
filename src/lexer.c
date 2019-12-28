@@ -293,6 +293,7 @@ aupTk aupLx_scan()
 		case '{': return makeToken(TOKEN_LBRACE);
 		case '}': return makeToken(TOKEN_RBRACE);
 
+        case ':': return makeToken(TOKEN_COLON);
 		case ';': return makeToken(TOKEN_SEMICOLON);
 		case ',': return makeToken(TOKEN_COMMA);
 		case '.': return makeToken(TOKEN_DOT);

@@ -670,9 +670,11 @@ static ParseRule rules[] = {
 
     [TOKEN_COMMA]           = { NULL,     NULL,    PREC_NONE },
     [TOKEN_DOT]             = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_COLON]           = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_SEMICOLON]       = { NULL,     NULL,    PREC_NONE },
+
     [TOKEN_MINUS]           = { unary,    binary,  PREC_TERM },
     [TOKEN_PLUS]            = { NULL,     binary,  PREC_TERM },
-    [TOKEN_SEMICOLON]       = { NULL,     NULL,    PREC_NONE },
     [TOKEN_SLASH]           = { NULL,     binary,  PREC_FACTOR },
     [TOKEN_STAR]            = { NULL,     binary,  PREC_FACTOR },
     [TOKEN_PERCENT]         = { NULL,     binary,  PREC_FACTOR },
