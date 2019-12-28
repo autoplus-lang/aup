@@ -35,6 +35,12 @@ typedef enum {
 	TOKEN_LESS,
     TOKEN_LESS_EQ,
 
+    TOKEN_PLUS_EQ,
+    TOKEN_MINUS_EQ,
+    TOKEN_STAR_EQ,
+    TOKEN_SLASH_EQ,
+    TOKEN_PERCENT_EQ,
+
 	// Literals.                                        
 	TOKEN_IDENTIFIER,
     TOKEN_STRING,

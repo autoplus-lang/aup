@@ -298,11 +298,16 @@ aupTk aupLx_scan()
 		case ',': return makeToken(TOKEN_COMMA);
 		case '.': return makeToken(TOKEN_DOT);
 
-		case '-': return makeToken(TOKEN_MINUS);
-		case '+': return makeToken(TOKEN_PLUS);
-		case '/': return makeToken(TOKEN_SLASH);
-		case '*': return makeToken(TOKEN_STAR);
-		case '%': return makeToken(TOKEN_PERCENT);
+        case '+':
+            return makeToken(match('=') ? TOKEN_PLUS_EQ : TOKEN_PLUS);
+        case '-':
+            return makeToken(match('=') ? TOKEN_MINUS_EQ : TOKEN_MINUS);
+        case '/':
+            return makeToken(match('=') ? TOKEN_SLASH_EQ : TOKEN_SLASH);
+		case '*':
+            return makeToken(match('=') ? TOKEN_STAR_EQ : TOKEN_STAR);
+		case '%':
+            return makeToken(match('=') ? TOKEN_PERCENT_EQ : TOKEN_PERCENT);
 
 		case '!':
 			return makeToken(match('=') ? TOKEN_BANG_EQ : TOKEN_BANG);
