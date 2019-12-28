@@ -607,7 +607,7 @@ static void string(REG dest, bool canAssign)
 	emitConstant(AUP_OBJ(value), dest);
 }
 
-static void namedVariable(aupTk name, REG dest, bool canAssign, bool isStatement)
+static void namedVariable(aupTk name, REG dest, bool canAssign)
 {
     aupOp loadOp, storeOp;
 	REG arg = resolveLocal(current, &name);
@@ -630,20 +630,14 @@ static void namedVariable(aupTk name, REG dest, bool canAssign, bool isStatement
         REG src = expression(dest);
         emit(AUP_SET_OpABx(storeOp, arg, src));
     }
-    else if (!isStatement) {
-        emit(AUP_SET_OpABx(loadOp, dest, arg));
-        if (match(TOKEN_LPAREN)) {
-            call(dest, canAssign);
-        }
-    }
     else {
-        errorAtCurrent("Unexpected expression.");
+        emit(AUP_SET_OpABx(loadOp, dest, arg));
     }
 }
 
 static void variable(REG dest, bool canAssign)
 {
-	namedVariable(parser.previous, dest, canAssign, false);
+	namedVariable(parser.previous, dest, canAssign);
 }
 
 static void unary(REG dest, bool canAssign)
@@ -838,9 +832,13 @@ static void varDeclaration()
 
 static void expressionStatement()
 {
-    namedVariable(parser.previous, PUSH(), true, true);
-
-	POP();
+    if (check(TOKEN_IDENTIFIER)) {
+        expression(-1);
+        POP();
+    }
+    else {
+        errorAtCurrent("Unexpected statement.");
+    }
 }
 
 static void ifStatement()
@@ -959,11 +957,8 @@ static void statement()
     else if (match(TOKEN_SEMICOLON)) {
         // Do nothing.
     }
-    else if (match(TOKEN_IDENTIFIER)) {
-        expressionStatement();
-    }
     else {
-        errorAtCurrent("Unexpected statement.");
+        expressionStatement();
     }
 }
 

@@ -113,7 +113,7 @@ static bool callValue(AUP_VM, aupV callee, int argCount)
 		}
 	}
 
-	runtimeError(vm, "cannot perform call, got <%s>.", TOF(callee));
+	runtimeError(vm, "Cannot perform call, got <%s>.", TOF(callee));
 	return false;
 }
 
