@@ -854,9 +854,15 @@ static void expressionStatement()
 
 static void ifStatement()
 {
-	consume(TOKEN_LPAREN, "Expect '(' after 'if'.");
-	REG src = expression(-1);
-	consume(TOKEN_RPAREN, "Expect ')' after condition.");
+    bool hadParen = match(TOKEN_LPAREN);
+    REG src = expression(-1);
+    if (hadParen) {
+        consume(TOKEN_RPAREN, "Expect ')' after condition.");
+        match(TOKEN_THEN);
+    }
+    else {
+        consume(TOKEN_THEN, "Expect 'then' after %s.", hadParen ? "')'" : "condition");
+    }
 
 	int thenJump = emitJump(true, src);
 	POP();	//emitByte(OP_POP);
