@@ -724,6 +724,10 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 	prefixRule(dest, canAssign);
 
 	while (precedence <= getRule(parser.current.type)->precedence) {
+        if (parser.current.line > parser.previous.line) {
+            // Break expression on new line.
+            break;
+        }
 		advance();
 		ParseFn infixRule = getRule(parser.previous.type)->infix;
 		infixRule(dest, canAssign);
