@@ -968,7 +968,7 @@ static void statement()
     else if (match(TOKEN_THEN)) {
         beginScope();
         if (parser.current.line == parser.previous.line) {
-            statement();
+            if (!check(TOKEN_END)) statement();
             match(TOKEN_END);
         }
         else {
