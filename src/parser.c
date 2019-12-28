@@ -617,43 +617,41 @@ static void string(REG dest, bool canAssign)
 	emitConstant(AUP_OBJ(value), dest);
 }
 
-static void namedVariable(aupTk name, REG dest, bool canAssign)
+static void namedVariable(aupTk name, REG dest, bool canAssign, bool isStatement)
 {
-	int arg = resolveLocal(current, &name);
+    aupOp loadOp, storeOp;
+	REG arg = resolveLocal(current, &name);
 
-	if (arg != -1) {
-		if (canAssign && match(TOKEN_EQUAL)) {
-			REG src = expression(dest);
-			EMIT_OpABx(ST, arg, src);	//setOp = OP_SET_LOCAL;
-		}
-		else {
-			EMIT_OpABx(LD, dest, arg);	//getOp = OP_GET_LOCAL;
-		}
-	}
-	else if ((arg = resolveUpvalue(current, &name)) != -1) {
-		if (canAssign && match(TOKEN_EQUAL)) {
-			REG src = expression(dest);
-			EMIT_OpABx(UST, arg, src);	//setOp = OP_SET_LOCAL;
-		}
-		else {
-			EMIT_OpABx(ULD, dest, arg);	//getOp = OP_GET_LOCAL;
-		}
-	}
-	else {
-		arg = identifierConstant(&name);
-		if (canAssign && match(TOKEN_EQUAL)) {
-			REG src = expression(dest);
-			EMIT_OpABx(GST, arg, src);	//emitBytes(OP_SET_GLOBAL, arg);
-		}
-		else {
-			EMIT_OpABx(GLD, dest, arg);	//emitBytes(OP_GET_GLOBAL, arg);
-		}
-	}
+    if (arg != -1) {
+        loadOp = CODE(LD);
+        storeOp = CODE(ST);
+    }
+    else if ((arg = resolveUpvalue(current, &name)) != -1) {
+        loadOp = CODE(ULD);
+        storeOp = CODE(UST);
+    }
+    else {
+        arg = identifierConstant(&name);
+        loadOp = CODE(GLD);
+        storeOp = CODE(GST);
+    }
+
+    if (canAssign && match(TOKEN_EQUAL) && isStatement) {
+        REG src = expression(dest);
+        emit(AUP_SET_OpABx(storeOp, arg, src));
+        return;
+    }
+    else if (!isStatement) {
+        emit(AUP_SET_OpABx(loadOp, dest, arg));
+        return;
+    }
+
+    errorAtCurrent("Unexpected expression.");
 }
 
 static void variable(REG dest, bool canAssign)
 {
-	namedVariable(parser.previous, dest, canAssign);
+	namedVariable(parser.previous, dest, canAssign, false);
 }
 
 static void unary(REG dest, bool canAssign)
@@ -841,8 +839,7 @@ static void varDeclaration()
 
 static void expressionStatement()
 {
-	expression(-1);
-	consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+    namedVariable(parser.previous, PUSH(), true, true);
 
 	POP();
 }
@@ -963,9 +960,12 @@ static void statement()
     else if (match(TOKEN_SEMICOLON)) {
         // Do nothing.
     }
-	else {
-		expressionStatement();
-	}
+    else if (match(TOKEN_IDENTIFIER)) {
+        expressionStatement();
+    }
+    else {
+        errorAtCurrent("Unexpected statement.");
+    }
 }
 
 aupOf *aup_compile(AUP_VM, const char *source)
