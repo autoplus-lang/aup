@@ -634,6 +634,16 @@ static void namedVariable(aupTk name, REG dest, bool canAssign)
     if (canAssign && match(TOKEN_EQUAL)) {
         REG src = expression(dest);
         emit(AUP_SET_OpABx(storeOp, arg, src));
+
+        exprInfo.hadAssignment = true;
+    }
+    else if (canAssign && match(TOKEN_PLUS_EQ)) {
+        REG src = PUSH();
+        namedVariable(name, src, false);
+        REG exp = expression(-1); POP();
+        EMIT_OpABxCx(ADD, dest, src, exp);
+        emit(AUP_SET_OpABx(storeOp, arg, dest));
+        
         exprInfo.hadAssignment = true;
     }
     else {
