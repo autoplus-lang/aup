@@ -499,7 +499,7 @@ static void defineVariable(uint8_t global, REG src)
 static uint8_t argumentList()
 {
 	uint8_t argCount = 0;
-	if (!check(TOKEN_RIGHT_PAREN)) {
+	if (!check(TOKEN_RPAREN)) {
 		do {
 			expression(-1);
 			if (++argCount >= AUP_MAX_ARGS) {
@@ -508,7 +508,7 @@ static uint8_t argumentList()
 		} while (match(TOKEN_COMMA));
 	}
 
-	consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+	consume(TOKEN_RPAREN, "Expect ')' after arguments.");
 	return argCount;
 }
 
@@ -536,19 +536,19 @@ static void binary(REG dest, bool canAssign)
 
 	// Emit the operator instruction.                        
 	switch (operatorType) {
-		case TOKEN_EQUAL_EQUAL:		EMIT_OpABxCx(EQ, dest, left, right); break;
-		case TOKEN_LESS:			EMIT_OpABxCx(LT, dest, left, right); break;
-		case TOKEN_LESS_EQUAL:		EMIT_OpABxCx(LE, dest, left, right); break;
+		case TOKEN_EQUAL_EQ:	EMIT_OpABxCx(EQ, dest, left, right); break;
+		case TOKEN_LESS:		EMIT_OpABxCx(LT, dest, left, right); break;
+		case TOKEN_LESS_EQ:		EMIT_OpABxCx(LE, dest, left, right); break;
 
-		case TOKEN_BANG_EQUAL:		EMIT_OpABxCx(EQ, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
-		case TOKEN_GREATER:			EMIT_OpABxCx(LE, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
-		case TOKEN_GREATER_EQUAL:	EMIT_OpABxCx(LT, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_BANG_EQ:		EMIT_OpABxCx(EQ, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_GREATER:		EMIT_OpABxCx(LE, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_GREATER_EQ:	EMIT_OpABxCx(LT, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
 
-		case TOKEN_PLUS:			EMIT_OpABxCx(ADD, dest, left, right); break;
-		case TOKEN_MINUS:			EMIT_OpABxCx(SUB, dest, left, right); break;
-		case TOKEN_STAR:			EMIT_OpABxCx(MUL, dest, left, right); break;
-		case TOKEN_SLASH:			EMIT_OpABxCx(DIV, dest, left, right); break;
-		case TOKEN_PERCENT:			EMIT_OpABxCx(MOD, dest, left, right); break;
+		case TOKEN_PLUS:		EMIT_OpABxCx(ADD, dest, left, right); break;
+		case TOKEN_MINUS:		EMIT_OpABxCx(SUB, dest, left, right); break;
+		case TOKEN_STAR:		EMIT_OpABxCx(MUL, dest, left, right); break;
+		case TOKEN_SLASH:		EMIT_OpABxCx(DIV, dest, left, right); break;
+		case TOKEN_PERCENT:		EMIT_OpABxCx(MOD, dest, left, right); break;
 	}
 }
 
@@ -566,14 +566,14 @@ static void literal(REG dest, bool canAssign)
 		case TOKEN_NIL:		EMIT_OpA(NIL, dest); break;
 		case TOKEN_FALSE:	EMIT_OpAsB(BOOL, dest, 0); break;
 		case TOKEN_TRUE:	EMIT_OpAsB(BOOL, dest, 1); break;
-		case TOKEN_FUN:     EMIT_OpAB(MOV, dest, 0); break;             
+		case TOKEN_FUNC:     EMIT_OpAB(MOV, dest, 0); break;             
 	}
 }
 
 static void grouping(REG dest, bool canAssign)
 {
 	expression(dest);
-	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+	consume(TOKEN_RPAREN, "Expect ')' after expression.");
 }
 
 static void or_(REG dest, bool canAssign)
@@ -675,12 +675,12 @@ static void unary(REG dest, bool canAssign)
 }
 
 static ParseRule rules[] = {
-    [TOKEN_LEFT_PAREN]      = { grouping, call,    PREC_CALL },
-    [TOKEN_RIGHT_PAREN]     = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_LEFT_BRACKET]    = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_RIGHT_BRACKET]   = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_LEFT_BRACE]      = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_RIGHT_BRACE]     = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_LPAREN]          = { grouping, call,    PREC_CALL },
+    [TOKEN_RPAREN]          = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_LBRACKET]        = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_RBRACKET]        = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_LBRACE]          = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_RBRACE]          = { NULL,     NULL,    PREC_NONE },
 
     [TOKEN_COMMA]           = { NULL,     NULL,    PREC_NONE },
     [TOKEN_DOT]             = { NULL,     NULL,    PREC_NONE },
@@ -692,13 +692,13 @@ static ParseRule rules[] = {
     [TOKEN_PERCENT]         = { NULL,     binary,  PREC_FACTOR },
 
     [TOKEN_BANG]            = { unary,    NULL,    PREC_NONE },
-    [TOKEN_BANG_EQUAL]      = { NULL,     binary,  PREC_EQUALITY },
+    [TOKEN_BANG_EQ]         = { NULL,     binary,  PREC_EQUALITY },
     [TOKEN_EQUAL]           = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_EQUAL_EQUAL]     = { NULL,     binary,  PREC_EQUALITY },
+    [TOKEN_EQUAL_EQ]        = { NULL,     binary,  PREC_EQUALITY },
     [TOKEN_GREATER]         = { NULL,     binary,  PREC_COMPARISON },
-    [TOKEN_GREATER_EQUAL]   = { NULL,     binary,  PREC_COMPARISON },
+    [TOKEN_GREATER_EQ]      = { NULL,     binary,  PREC_COMPARISON },
     [TOKEN_LESS]            = { NULL,     binary,  PREC_COMPARISON },
-    [TOKEN_LESS_EQUAL]      = { NULL,     binary,  PREC_COMPARISON },
+    [TOKEN_LESS_EQ]         = { NULL,     binary,  PREC_COMPARISON },
 
     [TOKEN_IDENTIFIER]      = { variable, NULL,    PREC_NONE },
     [TOKEN_STRING]          = { string,   NULL,    PREC_NONE },
@@ -713,7 +713,7 @@ static ParseRule rules[] = {
     [TOKEN_ELSE]            = { NULL,     NULL,    PREC_NONE },
     [TOKEN_FALSE]           = { literal,  NULL,    PREC_NONE },
     [TOKEN_FOR]             = { NULL,     NULL,    PREC_NONE },
-    [TOKEN_FUN]             = { literal,  NULL,    PREC_NONE },
+    [TOKEN_FUNC]            = { literal,  NULL,    PREC_NONE },
     [TOKEN_IF]              = { NULL,     NULL,    PREC_NONE },
     [TOKEN_NIL]             = { literal,  NULL,    PREC_NONE },
     [TOKEN_OR]              = { NULL,     or_,     PREC_OR   },
@@ -769,11 +769,11 @@ static REG expression(REG dest)
 
 static void block()
 {
-	while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+	while (!check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
 		declaration();
 	}
 
-	consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+	consume(TOKEN_RBRACE, "Expect '}' after block.");
 }
 
 static void function(FunType type, REG dest)
@@ -783,8 +783,8 @@ static void function(FunType type, REG dest)
 	beginScope();
 
 	// Compile the parameter list.                                
-	consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
-	if (!check(TOKEN_RIGHT_PAREN)) {
+	consume(TOKEN_LPAREN, "Expect '(' after function name.");
+	if (!check(TOKEN_RPAREN)) {
 		do {
 			current->function->arity++;
 			if (current->function->arity > 255) {
@@ -795,10 +795,10 @@ static void function(FunType type, REG dest)
 			defineVariable(paramConstant, -1);
 		} while (match(TOKEN_COMMA));
 	}
-	consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+	consume(TOKEN_RPAREN, "Expect ')' after parameters.");
 
 	// The body.                                                  
-	consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+	consume(TOKEN_LBRACE, "Expect '{' before function body.");
 	block();
 
 	// Create the function object.                                
@@ -854,9 +854,9 @@ static void expressionStatement()
 
 static void ifStatement()
 {
-	consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
+	consume(TOKEN_LPAREN, "Expect '(' after 'if'.");
 	REG src = expression(-1);
-	consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+	consume(TOKEN_RPAREN, "Expect ')' after condition.");
 
 	int thenJump = emitJump(true, src);
 	POP();	//emitByte(OP_POP);
@@ -915,7 +915,7 @@ static void returnStatement_()
 	}
 
 	if (match(TOKEN_SEMICOLON)
-		|| check(TOKEN_RIGHT_BRACE)) {
+		|| check(TOKEN_RBRACE)) {
 		EMIT_OpAsB(RET, 0, false);
 	}
 	else {
@@ -933,7 +933,7 @@ static void synchronize()
 
 		switch (parser.current.type) {
 			case TOKEN_CLASS:
-			case TOKEN_FUN:
+			case TOKEN_FUNC:
 			case TOKEN_VAR:
 			case TOKEN_FOR:
 			case TOKEN_IF:
@@ -955,7 +955,7 @@ static void declaration()
 {
 	RESET();
 
-	if (match(TOKEN_FUN)) {
+	if (match(TOKEN_FUNC)) {
 		funDeclaration();
 	}
 	else if (match(TOKEN_VAR)) {
@@ -979,7 +979,7 @@ static void statement()
 	else if (match(TOKEN_RETURN)) {
 		returnStatement();
 	}
-	else if (match(TOKEN_LEFT_BRACE)) {
+	else if (match(TOKEN_LBRACE)) {
 		beginScope();
 		block();
 		endScope();

@@ -177,7 +177,7 @@ static int identifierType()
 				switch (INDEX[1]) {
 					case 'a': return checkKeyword(2, 3, "lse", TOKEN_FALSE);
 					case 'o': return checkKeyword(2, 1, "r", TOKEN_FOR);
-					case 'u': return checkKeyword(2, 1, "n", TOKEN_FUN);
+					case 'u': return checkKeyword(2, 2, "nc", TOKEN_FUNC);
 				}
 			}
 			break;
@@ -275,12 +275,12 @@ aupTk aupLx_scan()
 	if (isDigit(c)) return number(c);
 
 	switch (c) {
-		case '(': return makeToken(TOKEN_LEFT_PAREN);
-		case ')': return makeToken(TOKEN_RIGHT_PAREN);
-		case '[': return makeToken(TOKEN_LEFT_BRACKET);
-		case ']': return makeToken(TOKEN_RIGHT_BRACKET);
-		case '{': return makeToken(TOKEN_LEFT_BRACE);
-		case '}': return makeToken(TOKEN_RIGHT_BRACE);
+		case '(': return makeToken(TOKEN_LPAREN);
+		case ')': return makeToken(TOKEN_RPAREN);
+		case '[': return makeToken(TOKEN_LBRACKET);
+		case ']': return makeToken(TOKEN_RBRACKET);
+		case '{': return makeToken(TOKEN_LBRACE);
+		case '}': return makeToken(TOKEN_RBRACE);
 
 		case ';': return makeToken(TOKEN_SEMICOLON);
 		case ',': return makeToken(TOKEN_COMMA);
@@ -293,13 +293,13 @@ aupTk aupLx_scan()
 		case '%': return makeToken(TOKEN_PERCENT);
 
 		case '!':
-			return makeToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+			return makeToken(match('=') ? TOKEN_BANG_EQ : TOKEN_BANG);
 		case '=':
-			return makeToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+			return makeToken(match('=') ? TOKEN_EQUAL_EQ : TOKEN_EQUAL);
 		case '<':
-			return makeToken(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+			return makeToken(match('=') ? TOKEN_LESS_EQ : TOKEN_LESS);
 		case '>':
-			return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+			return makeToken(match('=') ? TOKEN_GREATER_EQ : TOKEN_GREATER);
 
 		case '\'':
 		case '\"': return string(c);
