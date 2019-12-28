@@ -302,7 +302,7 @@ static int exec(aupVM *vm)
                     R_A() = AUP_NUM(-AUP_AS_NUM(value));
                     NEXT;
                 case AUP_TBOOL:
-                    R_A() = AUP_INT(-AUP_AS_BOOL(value));
+                    R_A() = AUP_INT(-(char)AUP_AS_BOOL(value));
                     NEXT;
             }
             ERROR("Cannot perform '-', got <%s>.", TOF(value));
