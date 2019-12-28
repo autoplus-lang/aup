@@ -73,11 +73,6 @@ static aupCh *currentChunk()
 	return &current->function->chunk;
 }
 
-static aupVM *currentVM()
-{
-	return runningVM;
-}
-
 static void errorAt(aupTk *token, const char *msgf, ...)
 {
 	if (parser.panicMode) return;
@@ -288,7 +283,7 @@ static int emitJump(bool isJMPF, REG srcJMPF)
 
 static void patchJump(int offset)
 {
-	// -1, backtrack after [ip++]
+	// -1, backtrack after [ip++].
 	int jump = currentChunk()->count - offset - 1;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
@@ -298,7 +293,8 @@ static void patchJump(int offset)
 	uint32_t *inst = &currentChunk()->code[offset];
 	uint8_t op = AUP_GET_Op(*inst);
 	int Cx = AUP_GET_Cx(*inst);
-	// Patch the hole
+
+	// Patch the hole.
 	*inst = AUP_SET_OpAxCx(op, jump, Cx);
 }
 
@@ -309,12 +305,12 @@ static void initCompiler(Compiler *compiler, FunType type)
 	compiler->type = type;
 	compiler->localCount = 0;
 	compiler->scopeDepth = 0;
-	compiler->function = aupOf_new(currentVM());
+	compiler->function = aupOf_new(runningVM);
 
 	current = compiler;
 
 	if (type != TYPE_SCRIPT) {
-		current->function->name = aupOs_copy(currentVM(), parser.previous.start,
+		current->function->name = aupOs_copy(runningVM, parser.previous.start,
 			parser.previous.length);
 	}
 
@@ -368,7 +364,7 @@ static REG parsePrecedence(Precedence precedence, REG dest);
 
 static uint8_t identifierConstant(aupTk *name)
 {
-	aupOs *identifier = aupOs_copy(currentVM(), name->start, name->length);
+	aupOs *identifier = aupOs_copy(runningVM, name->start, name->length);
 	return makeConstant(AUP_OBJ(identifier));
 }
 
@@ -530,7 +526,7 @@ static void binary(REG dest, bool canAssign)
 	aupTkt operatorType = parser.previous.type;
 
 	// Compile the right operand.                            
-	ParseRule* rule = getRule(operatorType);
+	ParseRule *rule = getRule(operatorType);
 	REG right = parsePrecedence((Precedence)(rule->precedence + 1), -1);
 	POP();
 
@@ -615,7 +611,7 @@ static void integer(REG dest, bool canAssign)
 
 static void string(REG dest, bool canAssign)
 {
-	aupOs *value = aupOs_copy(currentVM(),
+	aupOs *value = aupOs_copy(runningVM,
 		parser.previous.start + 1, parser.previous.length - 2);
 
 	emitConstant(AUP_OBJ(value), dest);
