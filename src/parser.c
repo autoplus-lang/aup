@@ -346,6 +346,7 @@ static void endScope()
 	}
 }
 
+static int subExpCounter, callCounter;
 static REG expression(REG dest);
 static void statement();
 static void declaration();
@@ -544,6 +545,7 @@ static void call(REG dest, bool canAssign)
 	EMIT_OpAB(CALL, dest, argCount);
 
 	POPN(argCount);
+    callCounter++;
 }
 
 static void literal(REG dest, bool canAssign)
@@ -723,6 +725,9 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 	bool canAssign = precedence <= PREC_ASSIGNMENT;
 	prefixRule(dest, canAssign);
 
+    callCounter = 0;
+    subExpCounter = 1;
+
 	while (precedence <= getRule(parser.current.type)->precedence) {
         if (parser.current.line > parser.previous.line) {
             // Break expression on new line.
@@ -731,6 +736,7 @@ static REG parsePrecedence(Precedence precedence, REG dest)
 		advance();
 		ParseFn infixRule = getRule(parser.previous.type)->infix;
 		infixRule(dest, canAssign);
+        subExpCounter++;
 	}
 
 	if (canAssign && match(TOKEN_EQUAL)) {
@@ -838,6 +844,10 @@ static void expressionStatement()
 {
     expression(-1);
     POP();
+
+    if (subExpCounter <= 1 || callCounter <= 0) {
+        error("Unexpected expression.");
+    }
 }
 
 static void ifStatement()
