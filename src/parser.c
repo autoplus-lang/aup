@@ -832,13 +832,8 @@ static void varDeclaration()
 
 static void expressionStatement()
 {
-    if (check(TOKEN_IDENTIFIER)) {
-        expression(-1);
-        POP();
-    }
-    else {
-        errorAtCurrent("Unexpected statement.");
-    }
+    expression(-1);
+    POP();
 }
 
 static void ifStatement()
