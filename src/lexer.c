@@ -171,15 +171,18 @@ static int identifierType()
 	switch (INDEX[0]) {
 		case 'a': return checkKeyword(1, 2, "nd", TOKEN_AND);
 		case 'c': return checkKeyword(1, 4, "lass", TOKEN_CLASS);
-		case 'e': return checkKeyword(1, 3, "lse", TOKEN_ELSE);
-		case 'f':
-			if (LENGTH > 1) {
-				switch (INDEX[1]) {
-					case 'a': return checkKeyword(2, 3, "lse", TOKEN_FALSE);
-					case 'o': return checkKeyword(2, 1, "r", TOKEN_FOR);
-					case 'u': return checkKeyword(2, 2, "nc", TOKEN_FUNC);
-				}
+		case 'e':
+            if (LENGTH > 1) switch (INDEX[1]) {				
+		        case 'l': return checkKeyword(2, 2, "se", TOKEN_ELSE);
+                case 'n': return checkKeyword(2, 1, "d", TOKEN_END);
 			}
+			break;
+		case 'f':
+			if (LENGTH > 1) switch (INDEX[1]) {
+                case 'a': return checkKeyword(2, 3, "lse", TOKEN_FALSE);
+                case 'o': return checkKeyword(2, 1, "r", TOKEN_FOR);
+                case 'u': return checkKeyword(2, 2, "nc", TOKEN_FUNC);
+            }
 			break;
 		case 'i': return checkKeyword(1, 1, "f", TOKEN_IF);
 		case 'n': return checkKeyword(1, 2, "il", TOKEN_NIL);
@@ -188,12 +191,15 @@ static int identifierType()
 		case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
 		case 's': return checkKeyword(1, 4, "uper", TOKEN_SUPER);
 		case 't':
-			if (LENGTH > 1) {
-				switch (INDEX[1]) {
-					case 'h': return checkKeyword(2, 2, "is", TOKEN_THIS);
-					case 'r': return checkKeyword(2, 2, "ue", TOKEN_TRUE);
-				}
-			}
+            if (LENGTH > 1) switch (INDEX[1]) {
+                case 'h':
+                    if (LENGTH > 2) switch (INDEX[2]) {
+                        case 'e': return checkKeyword(3, 1, "n", TOKEN_THEN);
+                        case 'i': return checkKeyword(3, 1, "s", TOKEN_THIS);
+                    }
+                    break;
+                case 'r': return checkKeyword(2, 2, "ue", TOKEN_TRUE);
+            }
 			break;
 		case 'v': return checkKeyword(1, 2, "ar", TOKEN_VAR);
 		case 'w': return checkKeyword(1, 4, "hile", TOKEN_WHILE);
