@@ -861,11 +861,11 @@ static void ifStatement()
         match(TOKEN_THEN);
     }
     else {
-        consume(TOKEN_THEN, "Expect 'then' after %s.", hadParen ? "')'" : "condition");
+        consume(TOKEN_THEN, "Expect 'then' after condition.");
     }
 
 	int thenJump = emitJump(true, src);
-	POP();	//emitByte(OP_POP);
+	POP();
 	statement();
 
 	if (match(TOKEN_ELSE)) {
