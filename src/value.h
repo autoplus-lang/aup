@@ -6,11 +6,11 @@
 
 typedef enum {
 	// General value types
-	AUP_TNIL,
-	AUP_TBOOL,
-	AUP_TINT,
-	AUP_TNUM,
-	AUP_TOBJ,
+	AUP_TNIL  = 0,
+    AUP_TOBJ  = 1,
+	AUP_TBOOL = 2,
+	AUP_TINT  = 4,
+	AUP_TNUM  = 6,
 	// Object types
 	AUP_TSTR,
 	AUP_TFUN,
@@ -55,7 +55,11 @@ typedef struct _aupOf aupOf;
 typedef struct _aupOu aupOu;
 
 typedef struct {
-	aupVt type;
+    union {
+        aupVt type;
+        unsigned notNil : 4;
+        unsigned isObj  : 1;
+    };
 	union {
 		bool Bool : 1;
 		int64_t Int;
@@ -77,13 +81,13 @@ typedef struct {
 #define AUP_BOOL(b)     ((aupV){ .type = AUP_TBOOL, .Bool = (b) })
 #define AUP_INT(i)      ((aupV){ .type = AUP_TINT, .Int = (i) })
 #define AUP_NUM(n)      ((aupV){ .type = AUP_TNUM, .Num = (n) })
-#define AUP_OBJ(o)      ((aupV){ .type = AUP_TOBJ, .Obj = (aupO *)(o) })
+#define AUP_OBJ(o)      ((aupV){ .isObj = true, .Obj = (aupO *)(o) })
 
-#define AUP_IS_NIL(v)   ((v).type == AUP_TNIL)
+#define AUP_IS_NIL(v)   (!(v).notNil)
 #define AUP_IS_BOOL(v)  ((v).type == AUP_TBOOL)
 #define AUP_IS_INT(v)   ((v).type == AUP_TINT)
 #define AUP_IS_NUM(v)   ((v).type == AUP_TNUM)
-#define AUP_IS_OBJ(v)   ((v).type == AUP_TOBJ)
+#define AUP_IS_OBJ(v)   ((v).isObj)
 
 #define AUP_AS_BOOL(v)  ((v).Bool)
 #define AUP_AS_INT(v)   ((v).Int)
