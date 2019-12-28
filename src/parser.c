@@ -891,32 +891,15 @@ static void returnStatement()
 {
 	if (current->type == TYPE_SCRIPT) {
 		error("Cannot return from top-level code.");
-		return;
-	}
-
-	if (match(TOKEN_SEMICOLON)) {
-		emitReturn(-1);
-	}
-	else {
-		REG src = expression(-1);
-		consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
-		emitReturn(src);
-	}
-}
-
-static void returnStatement_()
-{
-	if (current->type == TYPE_SCRIPT) {
-		error("Cannot return from top-level code.");
 	}
 
 	if (match(TOKEN_SEMICOLON)
 		|| check(TOKEN_RBRACE)) {
-		EMIT_OpAsB(RET, 0, false);
+        emitReturn(-1);
 	}
 	else {
 		REG src = expression(-1);
-		EMIT_OpAsB(RET, src, true);
+        emitReturn(src);
 	}
 }
 
