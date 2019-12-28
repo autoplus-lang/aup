@@ -960,6 +960,9 @@ static void statement()
 		block();
 		endScope();
 	}
+    else if (match(TOKEN_SEMICOLON)) {
+        // Do nothing.
+    }
 	else {
 		expressionStatement();
 	}
