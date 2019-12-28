@@ -17,23 +17,23 @@ void aupCh_init(aupCh *chunk)
 void aupCh_free(aupCh *chunk)
 {
 	free(chunk->code);
-	free(chunk->lines);
-	free(chunk->columns);
-	aupVa_free(&chunk->constants);
+    free(chunk->lines);
+    free(chunk->columns);
+    aupVa_free(&chunk->constants);
 
-	aupCh_init(chunk);
+    aupCh_init(chunk);
 }
 
 int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t column)
 {
-	if (chunk->capacity < chunk->count + 1) {
-		int cap = (chunk->capacity += AUP_CODE_PAGE);
-		chunk->code = realloc(chunk->code, cap * sizeof(uint32_t));
-		chunk->lines = realloc(chunk->lines, cap * sizeof(uint16_t));
-		chunk->columns = realloc(chunk->columns, cap * sizeof(uint16_t));
-	}
+    if (chunk->capacity < chunk->count + 1) {
+        int cap = (chunk->capacity += AUP_CODE_PAGE);
+        chunk->code = realloc(chunk->code, cap * sizeof(uint32_t));
+        chunk->lines = realloc(chunk->lines, cap * sizeof(uint16_t));
+        chunk->columns = realloc(chunk->columns, cap * sizeof(uint16_t));
+    }
 
-	chunk->code[chunk->count] = instruction;
+    chunk->code[chunk->count] = instruction;
 	chunk->lines[chunk->count] = line;
 	chunk->columns[chunk->count] = column;
 	return chunk->count++;
@@ -50,7 +50,7 @@ int aupCh_addK(aupCh *chunk, aupV value)
 void aupCh_dasmInst(aupCh *chunk, int offset)
 {
 	uint32_t i;
-	printf("%03d ", offset);
+	printf("%03d.", offset);
 
 	if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
 		printf("  | ");
@@ -61,10 +61,10 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
 	if (offset > 0 && (chunk->columns[offset] == chunk->columns[offset - 1])
 		&& (chunk->lines[offset] == chunk->lines[offset - 1])) {
-		printf("|    ");
+		printf("|   ");
 	}
 	else {
-		printf("%-3d  ", chunk->columns[offset]);
+		printf("%-3d ", chunk->columns[offset]);
 	}
 
 #define GET_Op()	AUP_GET_Op(i)
@@ -95,152 +95,194 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 #define PUT(x)      printf(x)
 #define PUTF(f,...) printf(f, ##__VA_ARGS__)
 
-#define dispatch()  switch (GET_Op())
-#define code(x)		case (AUP_OP_##x): printf("%-5s ", #x);
-#define code_err()  default:
-#define next		break
+#define DISPATCH()  switch (GET_Op())
+#define CODE(x)		case (AUP_OP_##x): printf("%-5s ", #x);
+#define CODE_ERR()  default:
+#define NEXT		break
 
 	i = chunk->code[offset];
-	printf("%02x %2x %3x %3x  ", GET_Op(), GET_A(), GET_Bx(), GET_Cx());
+	printf("[%02x %2x %3x %3x] -> ", GET_Op(), GET_A(), GET_Bx(), GET_Cx());
 
-	dispatch() {
-		code(NOP) {
-			next;
+    DISPATCH()
+    {
+		CODE(NOP)
+        {
+			NEXT;
 		}
 
-		code(RET) {
+		CODE(RET)
+        {
 			GET_A() ? RK_B() : PUT("nil");
-			next;
+			NEXT;
 		}
-		code(CALL) {
+
+		CODE(CALL)
+        {
 			int A = GET_A(), argc = GET_B();
-			printf("R[%d] = R[%d](", A, A);
-			if (argc > 0) {
-				for (int i = 1; i <= argc; i++) {
-					printf("R[%d]", A + i);
-					if (i < argc) printf(", ");
-				}
+            PUTF("R[%d] = R[%d](", A, A);
+		    for (int i = 1; i <= argc; i++) {
+                PUTF("R[%d]", A + i);
+                if (i < argc) PUT(", ");
 			}
-			printf(")");
-			next;
+			PUT(")");
+			NEXT;
 		}
 
-		code(PUSH) {
+		CODE(PUSH)
+        {
 			RK_B();
-			next;
+			NEXT;
 		}
 
-		code(MOV) {
+		CODE(MOV)
+        {
 			R_A(), PUT(" = "), R_B();
-			next;
+			NEXT;
 		}
 
-		code(PUT) {
+		CODE(PUT)
+        {
 			R_A();
 			GET_B() > 1 ? PUT(".."), R(GET_A() + GET_B() - 1) : 0;
-			next;
+			NEXT;
 		}
 
-		code(NIL) {
+		CODE(NIL)
+        {
 			R_A(), PUT(" = nil");
-			next;
+			NEXT;
 		}
-		code(BOOL) {
+
+		CODE(BOOL)
+        {
 			R_A(), PUTF(" = %s", GET_sB() ? "true" : "false");
-			next;
+			NEXT;
 		}
 
-		code(NOT) {
+		CODE(NOT)
+        {
 			R_A(), PUT(" = !"), RK_B();
-			next;
+			NEXT;
 		}
-		code(NEG) {
+
+		CODE(NEG)
+        {
 			R_A(), PUT(" = -"), RK_B();
-			next;
+			NEXT;
 		}
 
-		code(LT) {
+		CODE(LT)
+        {
 			R_A(), PUT(" = "), RK_B(), PUT(" < "), RK_C();
-			next;
+			NEXT;
 		}
-		code(LE) {
+
+		CODE(LE)
+        {
 			R_A(), PUT(" = "), RK_B(), PUT(" <= "), RK_C();
-			next;
+			NEXT;
 		}
-		code(EQ) {
+
+		CODE(EQ)
+        {
 			R_A(), PUT(" = "), RK_B(), PUT(" == "), RK_C();
-			next;
+			NEXT;
 		}
 
-		code(ADD) {
+		CODE(ADD)
+        {
 			R_A(), PUT(" = "), RK_B(), PUT(" + "), RK_C();
-			next;
-		}
-		code(SUB) {
-			R_A(), PUT(" = "), RK_B(), PUT(" - "), RK_C();
-			next;
-		}
-		code(MUL) {
-			R_A(), PUT(" = "), RK_B(), PUT(" * "), RK_C();
-			next;
-		}
-		code(DIV) {
-			R_A(), PUT(" = "), RK_B(), PUT(" / "), RK_C();
-			next;
-		}
-		code(MOD) {
-			R_A(), PUT(" = "), RK_B(), PUT(" %% "), RK_C();
-			next;
+			NEXT;
 		}
 
-		code(GLD) {
-			R_A(), PUT(" = G."), K_B();
-			next;
+		CODE(SUB)
+        {
+			R_A(), PUT(" = "), RK_B(), PUT(" - "), RK_C();
+			NEXT;
 		}
-		code(GST) {
+
+		CODE(MUL)
+        {
+			R_A(), PUT(" = "), RK_B(), PUT(" * "), RK_C();
+			NEXT;
+		}
+
+		CODE(DIV)
+        {
+			R_A(), PUT(" = "), RK_B(), PUT(" / "), RK_C();
+			NEXT;
+		}
+
+		CODE(MOD)
+        {
+			R_A(), PUT(" = "), RK_B(), PUT(" %% "), RK_C();
+			NEXT;
+		}
+
+		CODE(GLD)
+        {
+			R_A(), PUT(" = G."), K_B();
+			NEXT;
+		}
+
+		CODE(GST)
+        {
             PUT("G."), K_A(), PUT(" = ");
             GET_sC() ? PUT("nil") : RK_B();
-            next;
+            NEXT;
 		}
 
-		code(LD) {
+		CODE(LD)
+        {
 			R_A(), PUT(" = "), RK_B();
-			next;
+			NEXT;
 		}
-		code(ST) {
+
+		CODE(ST)
+        {
 			R_A(), PUT(" = "), R_B();
-			next;
+			NEXT;
 		}
 
-		code(CLU) {
+		CODE(CLU)
+        {
 			R_A();
-			next;
+			NEXT;
 		}
-		code(CLO) {
+
+		CODE(CLO)
+        {
 			K_A(); PUTF(", %d", GET_B());
-			next;
+			NEXT;
 		}
-		code(ULD) {
+
+		CODE(ULD)
+        {
 			R_A(), PUTF(" = U[%d]", GET_B());
-			next;
+			NEXT;
 		}
-		code(UST) {
+
+		CODE(UST)
+        {
 			PUTF("U[%d] = ", GET_A()), R_B();
-			next;
+			NEXT;
 		}
 
-		code(JMP) {
+		CODE(JMP)
+        {
 			PUTF("-> %03d", offset + GET_Ax() + 1);
-			next;
-		}
-		code(JMPF) {
-			PUTF("-> %03d, if !", offset + GET_Ax() + 1), RK_C();
-			next;
+			NEXT;
 		}
 
-		code_err() {
-			PUTF("bad opcode, got %d", GET_Op());
-			next;
+		CODE(JMPF)
+        {
+			PUTF("-> %03d, if !", offset + GET_Ax() + 1), RK_C();
+			NEXT;
+		}
+
+        CODE_ERR() {
+			PUTF("Bad opcode, got %d", GET_Op());
+			NEXT;
 		}
 	}
 
@@ -249,21 +291,18 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
 void aupCh_dasm(aupCh *chunk, const char *name)
 {
-	printf(">> disassembling chunk: <%s>\n", name);
+	printf("=== %s ===\n", name);
 
 	for (int i = 0; i < chunk->constants.count; i++) {
-		printf("K[%d] = ", i); aupV_print(chunk->constants.values[i]);
+		printf("K[%d] = ", i);
+        aupV_print(chunk->constants.values[i]);
 		printf("\n");
 	}
-
-	printf("------------------------------------------------\n");
-
-	printf("off  ln col  op  A  Bx  Cx  description\n");
-	printf("--- --- ---  -------------  --------------------\n");
 
 	for (int offset = 0; offset < chunk->count; offset++) {
 		aupCh_dasmInst(chunk, offset);
 	}
 
-	printf("------------------------------------------------\n\n");
+	printf("================================================\n\n");
+    fflush(stdout);
 }
