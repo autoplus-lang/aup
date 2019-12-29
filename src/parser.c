@@ -867,13 +867,16 @@ static void function(FunType type, REG dest)
 	}
 	consume(TOKEN_RPAREN, "Expect ')' after parameters.");
 
-	// The body. 
+	// The function body. 
 
-    if (match(TOKEN_EQUAL)) {
+    if (match(TOKEN_EQUAL)) {       // = expr
         REG src = expression(-1);
         emitReturn(src);
     }
-    else {
+    else if (match(TOKEN_COLON)) {  // : decl
+        block_colon();
+    }
+    else {                          // [{] decl [end | }]
         aupTkt ending = TOKEN_END;
         if (match(TOKEN_LBRACE)) ending = TOKEN_RBRACE;        
 
