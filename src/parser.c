@@ -836,9 +836,9 @@ static void function(FunType type, REG dest)
 	consume(TOKEN_LPAREN, "Expect '(' after function name.");
 	if (!check(TOKEN_RPAREN)) {
 		do {
-			current->function->arity++;
-			if (current->function->arity > 255) {
-				errorAtCurrent("Cannot have more than 255 parameters.");
+			int arity = current->function->arity++;
+			if (arity > AUP_MAX_ARGS) {
+				errorAtCurrent("Cannot have more than %d parameters.", AUP_MAX_ARGS);
 			}
 
 			uint8_t paramConstant = parseVariable("Expect parameter name.");
@@ -952,8 +952,10 @@ static void putsStatement()
 	REG src = expression(-1);
 
 	while (match(TOKEN_COMMA)) {
+        count++;
 		expression(-1);
-		if (++count > AUP_MAX_ARGS) {
+
+		if (count > AUP_MAX_ARGS) {
 			error("Too many values in 'puts' statement.");
 			return;
 		}
