@@ -826,6 +826,25 @@ static void block()
 	consume(TOKEN_RBRACE, "Expect '}' after block.");
 }
 
+static void block_colon()
+{
+    int line = parser.previous.line;
+    int column = -1;
+
+    while (!check(TOKEN_EOF)) {
+        if (parser.current.line == line) {
+            statement();
+            break;
+        }
+        else if (column == -1) {
+            column = parser.current.column;
+        }
+
+        if (parser.current.column < column) break;
+        declaration();
+    }
+}
+
 static void function(FunType type, REG dest)
 {
 	Compiler compiler;
@@ -1047,6 +1066,11 @@ static void statement()
             }
             consume(TOKEN_END, "Expect 'end' after block.");
         }
+        endScope();
+    }
+    else if (match(TOKEN_COLON)) {
+        beginScope();
+        block_colon();
         endScope();
     }
 	else if (match(TOKEN_LBRACE)) {
