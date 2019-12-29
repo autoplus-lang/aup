@@ -19,4 +19,6 @@ typedef struct _aupVM aupVM;
 #define AUP_CMB_L(c)	(char)(((c) & 0xF))
 #define AUP_CMB_R(c)	(char)((((c) >> 4) & 0xF))
 
+char *aup_readFile(const char *path, size_t *size);
+
 #endif
