@@ -15,21 +15,20 @@ typedef struct {
 } aupCf;
 
 struct _aupVM {
+    aupCtx *ctx;
+
 	aupCf frames[AUP_MAX_FRAMES];
 	int frameCount;
 
 	aupV *top;
 	aupV stack[AUP_MAX_STACK];
 
-	aupT strings;
-	aupT globals;
-
 	aupOu *openUpvalues;
 	aupO *objects;
 };
 
-aupVM *aupVM_new();
+aupVM *aupVM_new(aupCtx *ctx);
 void aupVM_free(aupVM *vm);
-int aup_interpret(aupVM *vm, const char *source);
+int aupVM_interpret(aupVM *vm, const char *source);
 
 #endif

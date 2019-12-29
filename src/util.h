@@ -4,9 +4,10 @@
 #include "aup.h"
 
 typedef enum {
-	AUP_OK = 0,
-	AUP_COMPILE_ERR,
-	AUP_RUNTIME_ERR
+    AUP_INVALID       = -1,
+	AUP_OK            =  0,
+	AUP_COMPILE_ERROR =  1,
+	AUP_RUNTIME_ERROR =  2
 } aupStt;
 
 typedef struct _aupCtx aupCtx;

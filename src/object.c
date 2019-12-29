@@ -5,6 +5,7 @@
 #include "object.h"
 #include "memory.h"
 #include "vm.h"
+#include "context.h"
 
 #define TYPE(o)		((o)->type)
 #define AS_STR(o)	((aupOs *)(o))
@@ -95,7 +96,7 @@ static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 	string->chars = chars;
 	string->hash = hash;
 
-	aupT_set(&vm->strings, string, AUP_NIL);
+	aupT_set(&vm->ctx->strings, string, AUP_NIL);
 
 	return string;
 }
@@ -104,7 +105,7 @@ aupOs *aupOs_take(AUP_VM, char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
 
-	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
+	aupOs *interned = aupT_findString(&vm->ctx->strings, chars, length, hash);
 	if (interned != NULL) {
 		free(chars);
 		return interned;
@@ -117,7 +118,7 @@ aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
 
-	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
+	aupOs *interned = aupT_findString(&vm->ctx->strings, chars, length, hash);
 	if (interned != NULL) return interned;
 
 	char *heapChars = malloc(length + 1);

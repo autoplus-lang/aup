@@ -4,10 +4,9 @@
 #include <string.h>
 
 #include "vm.h"
+#include "context.h"
 #include "object.h"
 #include "memory.h"
-
-static aupVM g_vm, *g_pvm = NULL;
 
 static void resetStack(aupVM *vm)
 {
@@ -43,38 +42,24 @@ static void runtimeError(aupVM *vm, const char* format, ...)
 	resetStack(vm);
 }
 
-aupVM *aupVM_new()
+aupVM *aupVM_new(aupCtx *ctx)
 {
-	aupVM *vm;
-	if (g_pvm == NULL) {
-		vm = &g_vm;
-		g_pvm = vm;
-	}
-	else {
-		vm = malloc(sizeof(aupVM));
-		if (vm == NULL) return NULL;
-		memset(vm, '\0', sizeof(aupVM));
-	}
-	{
-		vm->objects = NULL;
-		aupT_init(&vm->globals);
-		aupT_init(&vm->strings);
-		resetStack(vm);
-	}
+    aupVM *vm = malloc(sizeof(aupVM));
+
+    if (vm != NULL) {
+        memset(vm, '\0', sizeof(aupVM));
+
+        vm->ctx = ctx;
+        vm->objects = NULL;
+        resetStack(vm);
+    }
+
 	return vm;
 }
 
 void aupVM_free(aupVM *vm)
 {
-	if (vm == NULL && g_pvm != NULL)
-		vm = g_pvm;
-	{
-		aupT_free(&vm->globals);
-		aupT_free(&vm->strings);
-		aup_freeObjects(vm);
-	}
-	if (vm != g_pvm) free(vm);
-	else g_pvm = NULL;
+    free(vm);
 }
 
 static bool call(AUP_VM, aupOf *function, int argCount)
@@ -165,7 +150,7 @@ static int exec(aupVM *vm)
 	ip = frame->ip
 
 #define ERROR(fmt, ...) \
-    do { STORE_FRAME(); runtimeError(vm, fmt, ##__VA_ARGS__); return AUP_RUNTIME_ERR; } while (0)
+    do { STORE_FRAME(); runtimeError(vm, fmt, ##__VA_ARGS__); return AUP_RUNTIME_ERROR; } while (0)
 
 #define READ()		(ip[-1])
 #define FETCH()		AUP_GET_Op(*ip++)
@@ -247,7 +232,7 @@ static int exec(aupVM *vm)
             //vm->top = &R_A();
 
             if (!callValue(vm, *(vm->top = &R_A()), argCount)) {
-                return AUP_RUNTIME_ERR;
+                return AUP_RUNTIME_ERROR;
             }
 
             LOAD_FRAME();
@@ -399,7 +384,7 @@ static int exec(aupVM *vm)
         CODE(GLD):
         {
             aupOs *name = AUP_AS_STR(K_B());
-            if (!aupT_get(&vm->globals, name, &R_A())) {
+            if (!aupT_get(&vm->ctx->globals, name, &R_A())) {
                 R_A() = AUP_NIL;
             }
             NEXT;
@@ -408,7 +393,7 @@ static int exec(aupVM *vm)
         CODE(GST):
         {
             aupOs *name = AUP_AS_STR(K_A());
-            aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
+            aupT_set(&vm->ctx->globals, name, GET_sC() ? AUP_NIL : RK_B());
             NEXT;
         }
 
@@ -484,7 +469,7 @@ static int exec(aupVM *vm)
 int aup_interpret(aupVM *vm, const char *source)
 {
 	aupOf *function = aup_compile(vm, source);
-	if (function == NULL) return AUP_COMPILE_ERR;
+	if (function == NULL) return AUP_COMPILE_ERROR;
 
 	aupV script = AUP_OBJ(function);
 	PUSH(script); POP();
