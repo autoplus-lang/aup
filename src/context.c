@@ -32,7 +32,7 @@ aupStt aup_doString(aupCtx *ctx, const char *source)
     if (source == NULL) return AUP_COMPILE_ERROR;
 
     aupVM *vm = aupVM_new(ctx);
-    if (vm != NULL) return AUP_INVALID;
+    if (vm == NULL) return AUP_INVALID;
 
     int ret = aupVM_interpret(vm, source);
     aupVM_free(vm);
