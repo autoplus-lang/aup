@@ -854,8 +854,15 @@ static void function(FunType type, REG dest)
         emitReturn(src);
     }
     else {
-        consume(TOKEN_LBRACE, "Expect '{' before function body.");
-        block();
+        aupTkt ending = TOKEN_END;
+        if (match(TOKEN_LBRACE)) ending = TOKEN_RBRACE;        
+
+        while (!check(ending) && !check(TOKEN_EOF)) {
+            declaration();
+        }
+
+        consume(ending, "Expect '%s' after function body.",
+            ending == TOKEN_END ? "end" : "}");
     }
 
 	// Create the function object.                                
