@@ -171,6 +171,7 @@ static int identifierType()
 	switch (INDEX[0]) {
 		case 'a': return checkKeyword(1, 2, "nd", TOKEN_AND);
 		case 'c': return checkKeyword(1, 4, "lass", TOKEN_CLASS);
+		case 'd': return checkKeyword(1, 1, "o", TOKEN_DO);
 
 		case 'e':
             if (LENGTH > 1) switch (INDEX[1]) {				

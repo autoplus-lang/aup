@@ -754,6 +754,7 @@ static ParseRule rules[] = {
 
     [TOKEN_AND]             = { NULL,     and_,    PREC_AND  },
     [TOKEN_CLASS]           = { NULL,     NULL,    PREC_NONE },
+    [TOKEN_DO]              = { NULL,     NULL,    PREC_NONE },
     [TOKEN_ELSE]            = { NULL,     NULL,    PREC_NONE },
     [TOKEN_END]             = { NULL,     NULL,    PREC_NONE },
     [TOKEN_FALSE]           = { literal,  NULL,    PREC_NONE },
