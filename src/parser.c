@@ -981,9 +981,14 @@ static void whileStatement()
 {
     int loopStart = currentChunk()->count;
 
-    consume(TOKEN_LPAREN, "Expect '(' after 'while'.");
+    bool hadParen = match(TOKEN_LPAREN);
     REG src = expression(-1);
-    consume(TOKEN_RPAREN, "Expect ')' after condition.");
+    if (hadParen) {
+        consume(TOKEN_RPAREN, "Expect ')' after condition.");
+    }
+    else if (!check(TOKEN_DO)) {
+        error("Expect 'do' after condition.");
+    }
 
     int exitJump = emitJump(true, src);
     POP();
@@ -1087,7 +1092,7 @@ static void statement()
 	else if (match(TOKEN_RETURN)) {
 		returnStatement();
 	}
-    else if (match(TOKEN_THEN)) {
+    else if (match(TOKEN_THEN) || match(TOKEN_DO)) {
         beginScope();
         if (parser.current.line == parser.previous.line) {
             if (!check(TOKEN_END)) statement();
