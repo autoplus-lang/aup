@@ -9,6 +9,7 @@ typedef enum {
 	AUP_RUNTIME_ERR
 } aupStt;
 
+typedef struct _aupCtx aupCtx;
 typedef struct _aupVM aupVM;
 
 #define AUP_VM	aupVM *vm
