@@ -955,8 +955,12 @@ static void ifStatement()
 {
     bool hadParen = match(TOKEN_LPAREN);
     REG src = expression(-1);
+
     if (hadParen) {
         consume(TOKEN_RPAREN, "Expect ')' after condition.");
+    }
+    else if (check(TOKEN_COLON)) {
+        // Do nothing.
     }
     else if (!check(TOKEN_THEN)) {
         error("Expect 'then' after condition.");
@@ -986,17 +990,18 @@ static void whileStatement()
     if (hadParen) {
         consume(TOKEN_RPAREN, "Expect ')' after condition.");
     }
+    else if (check(TOKEN_COLON)) {
+        // Do nothing.
+    }
     else if (!check(TOKEN_DO)) {
         error("Expect 'do' after condition.");
     }
 
     int exitJump = emitJump(true, src);
     POP();
-
     statement();
 
     emitLoop(loopStart);
-
     patchJump(exitJump);
 }
 
