@@ -4,6 +4,7 @@
 #include "compiler.h"
 
 typedef struct {
+    const char *source;
 	const char *start;
 	const char *current;
 	int line;
@@ -14,6 +15,7 @@ static aupLx lexer;
 
 void aupLx_init(const char *source)
 {
+    lexer.source = source;
 	lexer.start = source;
 	lexer.current = source;
 	lexer.line = 1;
