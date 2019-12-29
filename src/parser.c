@@ -280,12 +280,20 @@ static int emitJump(bool isJMPF, REG srcJMPF)
 	return currentChunk()->count - 1;
 }
 
+static void emitLoop(int loopStart)
+{
+    int offset =  loopStart - currentChunk()->count - 1;
+    if (offset < INT16_MIN) error("Loop body too large.");
+
+    EMIT_OpAx(JMP, offset);
+}
+
 static void patchJump(int offset)
 {
 	// -1, backtrack after [ip++].
 	int jump = currentChunk()->count - offset - 1;
 
-	if (jump > INT16_MAX || jump < INT16_MIN) {
+	if (jump > INT16_MAX) {
 		error("Too much code to jump over.");
 	}
 
@@ -969,6 +977,24 @@ static void ifStatement()
 	}
 }
 
+static void whileStatement()
+{
+    int loopStart = currentChunk()->count;
+
+    consume(TOKEN_LPAREN, "Expect '(' after 'while'.");
+    REG src = expression(-1);
+    consume(TOKEN_RPAREN, "Expect ')' after condition.");
+
+    int exitJump = emitJump(true, src);
+    POP();
+
+    statement();
+
+    emitLoop(loopStart);
+
+    patchJump(exitJump);
+}
+
 static void putsStatement()
 {
 	int count = 1;
@@ -1054,6 +1080,9 @@ static void statement()
 	}
 	else if (match(TOKEN_IF)) {
 		ifStatement();
+    }
+    else if (match(TOKEN_WHILE)) {
+        whileStatement();
 	}
 	else if (match(TOKEN_RETURN)) {
 		returnStatement();
