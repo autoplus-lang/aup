@@ -466,7 +466,7 @@ static int exec(aupVM *vm)
 	return AUP_OK;
 }
 
-int aup_interpret(aupVM *vm, const char *source)
+int aupVM_interpret(aupVM *vm, const char *source)
 {
 	aupOf *function = aup_compile(vm, source);
 	if (function == NULL) return AUP_COMPILE_ERROR;
