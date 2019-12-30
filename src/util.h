@@ -3,17 +3,15 @@
 
 #include "aup.h"
 
-typedef enum {
+enum {
     AUP_INVALID       = -1,
 	AUP_OK            =  0,
 	AUP_COMPILE_ERROR =  1,
 	AUP_RUNTIME_ERROR =  2
-} aupStt;
+};
 
-typedef struct _aupCtx aupCtx;
 typedef struct _aupVM aupVM;
 
-#define AUP_CTX	aupCtx *ctx
 #define AUP_VM	aupVM  *vm
 
 // Combine two low bytes

@@ -1,6 +1,5 @@
 #include <stdio.h>
-
-#include "context.h"
+#include "vm.h"
 
 int main(int argc, char *argv[])
 {
@@ -12,15 +11,15 @@ int main(int argc, char *argv[])
     int ret = 0;
     const char *file = argv[argc - 1];
 
-    aupCtx *ctx = aup_create();
+    aupVM *vm = aup_create();
 
-    if (ctx != NULL) {
-        ret = aup_doFile(ctx, file);
-        aup_close(ctx);
+    if (vm != NULL) {
+        ret = aup_doFile(vm, file);
+        aup_close(vm);
     }
     else {
         ret = 1;
-        fprintf(stderr, "Could not create new context!\n");
+        fprintf(stderr, "Could not create new virtual machine instance!\n");
     }
 	
 	return ret;
