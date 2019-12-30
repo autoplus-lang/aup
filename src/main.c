@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 
     aupCtx *ctx = aup_create();
 
-    if (!ctx == NULL) {
+    if (ctx != NULL) {
         ret = aup_doFile(ctx, file);
         aup_close(ctx);
     }

@@ -177,11 +177,25 @@ static int exec(aupVM *vm)
 #define RK_B()		(GET_sB() ? K_B() : R_B())
 #define RK_C()		(GET_sC() ? K_C() : R_C())
 
-#if 0
-#define INTERPRET() for (;;) switch (FETCH())
-#define CODE(x)     case AUP_OP_##x
-#define CODE_ERR()  default
-#define NEXT        continue
+#if defined(__GNUC__) || defined(__clang__) || defined(__MINGW32__) || defined(__MINGW64__)
+#define INTERPRET() NEXT;
+#define CODE(x)     _AUP_OP_##x
+#define CODE_ERR()  _err
+#define NEXT        goto *_jtbl[FETCH()]
+    static void *_jtbl[] = {
+        &&CODE(NOP),
+        &&CODE(CALL),   &&CODE(RET),
+        &&CODE(PUSH),   &&CODE(POP),    &&CODE(PUT),
+        &&CODE(NIL),    &&CODE(BOOL),
+        &&CODE(NOT),    &&CODE(NEG),
+        &&CODE(LT),     &&CODE(LE),     &&CODE(EQ),
+        &&CODE(ADD),    &&CODE(SUB),    &&CODE(MUL),    &&CODE(DIV),    &&CODE(MOD),
+        &&CODE(MOV),
+        &&CODE(GLD),    &&CODE(GST),
+        &&CODE(LD),     &&CODE(ST),
+        &&CODE(CLU),    &&CODE(CLO),    &&CODE(ULD),    &&CODE(UST),
+        &&CODE(JMP),    &&CODE(JMPF),
+    };
 #else
 #define INTERPRET() _loop: switch (FETCH())
 #define CODE(x)     case AUP_OP_##x
