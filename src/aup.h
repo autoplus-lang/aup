@@ -32,4 +32,9 @@
 #error "This architecture is not supported!"
 #endif
 
+// debug mode
+#if (defined(DEBUG) || defined(_DEBUG)) && !(defined(NDEBUG) || defined(_NDEBUG))
+#define AUP_DEBUG
+#endif
+
 #endif

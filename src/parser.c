@@ -333,9 +333,12 @@ static aupOf *endCompiler()
 	emitReturn(-1);
 	aupOf *function = current->function;
 
+#ifdef AUP_DEBUG
 	if (!parser.hadError) {
-		aupCh_dasm(currentChunk(), function->name != NULL ? function->name->chars : "<script>");
+		aupCh_dasm(currentChunk(), function->name != NULL ?
+            function->name->chars : "<script>");
 	}
+#endif
 
 	current = current->enclosing;
 	return function;
