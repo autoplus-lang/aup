@@ -6,6 +6,7 @@
 #include "compiler.h"
 #include "object.h"
 #include "vm.h"
+#include "memory.h"
 
 typedef struct {
 	aupTk current;
@@ -1154,4 +1155,13 @@ aupOf *aup_compile(AUP_VM, const char *source)
 
 	aupOf *function = endCompiler();
 	return parser.hadError ? NULL : function;
+}
+
+void aup_markCompilerRoots()
+{
+    Compiler *compiler = current;
+    while (compiler != NULL) {
+        aup_markObject((aupO *)compiler->function);
+        compiler = compiler->enclosing;
+    }
 }

@@ -92,4 +92,6 @@ aupTk aupLx_scan();
 
 aupOf *aup_compile(AUP_VM, const char *source);
 
+void aup_markCompilerRoots();
+
 #endif

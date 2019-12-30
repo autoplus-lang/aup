@@ -23,4 +23,7 @@ bool aupT_delete(aupT *table, aupOs *key);
 void aupT_addAll(aupT *from, aupT *to);
 aupOs *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash);
 
+void aup_tableRemoveWhite(AUP_VM, aupT *table);
+void aup_markTable(AUP_VM, aupT *table);
+
 #endif

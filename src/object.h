@@ -6,7 +6,8 @@
 #include "chunk.h"
 
 struct _aupO {
-	aupVt type;
+    unsigned isMarked : 1;
+	aupVt type : 8;
 	struct _aupO *next;
 };
 

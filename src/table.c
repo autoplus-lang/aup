@@ -149,3 +149,22 @@ aupOs *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash
 
     return NULL;
 }
+
+void aup_tableRemoveWhite(aupT *table)
+{
+    for (int i = 0; i < table->capacity; i++) {
+        aupTe *entry = &table->entries[i];
+        if (entry->key != NULL && !entry->key->obj.isMarked) {
+            aupT_delete(table, entry->key);
+        }
+    }
+}
+
+void aup_markTable(AUP_VM, aupT *table)
+{
+    for (int i = 0; i < table->capacity; i++) {
+        aupTe *entry = &table->entries[i];
+        aup_markObject((aupO *)entry->key);
+        aup_markValue(entry->value);
+    }
+}

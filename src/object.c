@@ -83,9 +83,14 @@ static aupO *allocObject(AUP_VM, size_t size, aupVt type)
 {
 	aupO *object = (aupO *)aup_realloc(vm, NULL, 0, size);
 	object->type = type;
+    object->isMarked = false;
 
 	object->next = vm->objects;
 	vm->objects = object;
+
+#ifdef DEBUG_LOG_GC                                             
+    printf("%p allocate %ld for %d\n", (void*)object, size, type);
+#endif
 	return object;
 }
 

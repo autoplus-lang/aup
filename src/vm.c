@@ -51,6 +51,11 @@ aupVM *aupVM_new(aupCtx *ctx)
 
         vm->ctx = ctx;
         vm->objects = NULL;
+
+        vm->grayCount = 0;
+        vm->grayCapacity = 0;
+        vm->grayStack = NULL;
+
         resetStack(vm);
     }
 
@@ -59,6 +64,7 @@ aupVM *aupVM_new(aupCtx *ctx)
 
 void aupVM_free(aupVM *vm)
 {
+    aup_freeObjects(vm);
     free(vm);
 }
 

@@ -25,6 +25,9 @@ struct _aupVM {
 
 	aupOu *openUpvalues;
 	aupO *objects;
+    int grayCount;
+    int grayCapacity;
+    aupO **grayStack;
 };
 
 aupVM *aupVM_new(aupCtx *ctx);

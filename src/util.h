@@ -13,7 +13,8 @@ typedef enum {
 typedef struct _aupCtx aupCtx;
 typedef struct _aupVM aupVM;
 
-#define AUP_VM	aupVM *vm
+#define AUP_CTX	aupCtx *ctx
+#define AUP_VM	aupVM  *vm
 
 // Combine two low bytes
 #define AUP_CMB(l, r)	(uint8_t)(((char)(l) & 0xF) | ((char)(r) & 0xF) << 4)
