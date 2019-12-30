@@ -354,8 +354,7 @@ static void endScope()
 	current->scopeDepth--;
 
 	while (current->localCount > 0 &&
-		current->locals[current->localCount - 1].depth >
-		current->scopeDepth) {
+		current->locals[current->localCount - 1].depth > current->scopeDepth) {
 		if (current->locals[current->localCount - 1].isCaptured) {
 			EMIT_OpA(CLU, current->localCount-1);
 		}
@@ -551,9 +550,12 @@ static void binary(REG dest, bool canAssign)
 		case TOKEN_LESS:		EMIT_OpABxCx(LT, dest, left, right); break;
 		case TOKEN_LESS_EQ:		EMIT_OpABxCx(LE, dest, left, right); break;
 
-		case TOKEN_BANG_EQ:		EMIT_OpABxCx(EQ, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
-		case TOKEN_GREATER:		EMIT_OpABxCx(LE, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
-		case TOKEN_GREATER_EQ:	EMIT_OpABxCx(LT, dest, left, right); EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_BANG_EQ:		EMIT_OpABxCx(EQ, dest, left, right);
+                                EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_GREATER:		EMIT_OpABxCx(LE, dest, left, right);
+                                EMIT_OpABx(NOT, dest, dest); break;
+		case TOKEN_GREATER_EQ:	EMIT_OpABxCx(LT, dest, left, right);
+                                EMIT_OpABx(NOT, dest, dest); break;
 
 		case TOKEN_PLUS:		EMIT_OpABxCx(ADD, dest, left, right); break;
 		case TOKEN_MINUS:		EMIT_OpABxCx(SUB, dest, left, right); break;
@@ -902,18 +904,18 @@ static void function(FunType type, REG dest)
 	// Create the function object.                                
 	aupOf *function = endCompiler();
 	
-	uint8_t k = makeConstant(AUP_OBJ(function));
+	uint8_t constant = makeConstant(AUP_OBJ(function));
 
     // Make closure if upvalues exist.
     if (function->upvalueCount > 0) {
-        EMIT_OpA(CLO, k);
+        EMIT_OpA(CLO, constant);
         for (int i = 0; i < function->upvalueCount; i++) {
             EMIT_OpAsB(NOP, compiler.upvalues[i].index,
                 compiler.upvalues[i].isLocal);
         }
     }
 
-	EMIT_OpABx(LD, dest, k + 256);
+	EMIT_OpABx(LD, dest, constant + 256);
 }
 
 static void funDeclaration()
@@ -1023,7 +1025,8 @@ static void putsStatement()
 		}
 	};
 
-	EMIT_OpAB(PUT, src, count), POPN(count);
+    EMIT_OpAB(PUT, src, count);
+    POPN(count);
 }
 
 static void returnStatement()
@@ -1060,8 +1063,7 @@ static void synchronize()
 			case TOKEN_RETURN:
 				return;
 
-			default:
-				// Do nothing.                                  
+			default: // Do nothing.                                  
 				;
 		}
 
