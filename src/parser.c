@@ -1035,8 +1035,8 @@ static void returnStatement()
 		error("Cannot return from top-level code.");
 	}
 
-	if (match(TOKEN_SEMICOLON)
-		|| check(TOKEN_RBRACE)) {
+    if (match(TOKEN_SEMICOLON) || check(TOKEN_RBRACE) || check(TOKEN_END) ||
+        (parser.current.line > parser.previous.line)) {
         emitReturn(-1);
 	}
 	else {
