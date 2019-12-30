@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "vm.h"
-#include "context.h"
 #include "object.h"
 #include "memory.h"
 
@@ -42,15 +41,16 @@ static void runtimeError(aupVM *vm, const char* format, ...)
 	resetStack(vm);
 }
 
-aupVM *aupVM_new(aupCtx *ctx)
+aupVM *aup_create()
 {
     aupVM *vm = malloc(sizeof(aupVM));
 
     if (vm != NULL) {
         memset(vm, '\0', sizeof(aupVM));
 
-        vm->ctx = ctx;
         vm->objects = NULL;
+        aupT_init(&vm->globals);
+        aupT_init(&vm->strings);
 
         vm->grayCount = 0;
         vm->grayCapacity = 0;
@@ -62,9 +62,14 @@ aupVM *aupVM_new(aupCtx *ctx)
 	return vm;
 }
 
-void aupVM_free(aupVM *vm)
+void aup_close(aupVM *vm)
 {
+    if (vm == NULL) return;
+
+    aupT_free(&vm->globals);
+    aupT_free(&vm->strings);
     aup_freeObjects(vm);
+
     free(vm);
 }
 
@@ -404,7 +409,7 @@ static int exec(aupVM *vm)
         CODE(GLD):
         {
             aupOs *name = AUP_AS_STR(K_B());
-            if (!aupT_get(&vm->ctx->globals, name, &R_A())) {
+            if (!aupT_get(&vm->globals, name, &R_A())) {
                 R_A() = AUP_NIL;
             }
             NEXT;
@@ -413,7 +418,7 @@ static int exec(aupVM *vm)
         CODE(GST):
         {
             aupOs *name = AUP_AS_STR(K_A());
-            aupT_set(&vm->ctx->globals, name, GET_sC() ? AUP_NIL : RK_B());
+            aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
             NEXT;
         }
 
@@ -486,7 +491,7 @@ static int exec(aupVM *vm)
 	return AUP_OK;
 }
 
-int aupVM_interpret(aupVM *vm, const char *source)
+int aup_doString(aupVM *vm, const char *source)
 {
 	aupOf *function = aup_compile(vm, source);
 	if (function == NULL) return AUP_COMPILE_ERROR;
@@ -496,4 +501,19 @@ int aupVM_interpret(aupVM *vm, const char *source)
 	callValue(vm, script, 0);
 
 	return exec(vm);
+}
+
+aupStt aup_doFile(aupVM *vm, const char *name)
+{
+    if (vm == NULL) return AUP_INVALID;
+
+    char *source = aup_readFile(name, NULL);
+
+    if (source != NULL) {
+        int ret = aup_doString(vm, source);
+        free(source);
+        return ret;
+    }
+
+    return AUP_COMPILE_ERROR;
 }

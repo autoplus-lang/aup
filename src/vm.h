@@ -15,13 +15,14 @@ typedef struct {
 } aupCf;
 
 struct _aupVM {
-    aupCtx *ctx;
+    aupV *top;
+    aupV stack[AUP_MAX_STACK];
 
 	aupCf frames[AUP_MAX_FRAMES];
 	int frameCount;
 
-	aupV *top;
-	aupV stack[AUP_MAX_STACK];
+    aupT strings;
+    aupT globals;
 
 	aupOu *openUpvalues;
 	aupO *objects;
@@ -30,8 +31,9 @@ struct _aupVM {
     aupO **grayStack;
 };
 
-aupVM *aupVM_new(aupCtx *ctx);
-void aupVM_free(aupVM *vm);
-int aupVM_interpret(aupVM *vm, const char *source);
+aupVM *aup_create();
+void aup_close(aupVM *vm);
+int aup_doString(aupVM *vm, const char *source);
+int aup_doFile(aupVM *vm, const char *name);
 
 #endif
