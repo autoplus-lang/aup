@@ -13,6 +13,16 @@
 
 #define GC_HEAP_GROW_FACTOR     2
 
+void *aup_defaultAlloc(void *ptr, size_t size)
+{
+    if (size == 0) {
+        free(ptr);
+        return NULL;
+    }
+
+    return realloc(ptr, size);
+}
+
 void *aup_realloc(AUP_VM, void *ptr, size_t oldSize, size_t newSize)
 {
     vm->bytesAllocated += newSize - oldSize;
@@ -26,12 +36,7 @@ void *aup_realloc(AUP_VM, void *ptr, size_t oldSize, size_t newSize)
         }
     }
 
-	if (newSize == 0) {
-		free(ptr);
-		return NULL;
-	}
-
-	return realloc(ptr, newSize);
+    return vm->alloc(ptr, newSize);
 }
 
 void aup_markObject(AUP_VM, aupO *object)

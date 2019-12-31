@@ -23,6 +23,7 @@ struct _aupVM {
 
     aupT strings;
     aupT globals;
+    aupAlloc alloc;
 
 	aupOu *openUpvalues;
 
@@ -35,7 +36,7 @@ struct _aupVM {
     aupO **grayStack;
 };
 
-aupVM *aup_create();
+aupVM *aup_create(aupAlloc allocator);
 void aup_close(aupVM *vm);
 int aup_doString(aupVM *vm, const char *source);
 int aup_doFile(aupVM *vm, const char *name);

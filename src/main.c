@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     int ret = 0;
     const char *file = argv[argc - 1];
 
-    aupVM *vm = aup_create();
+    aupVM *vm = aup_create(NULL);
 
     if (vm != NULL) {
         ret = aup_doFile(vm, file);

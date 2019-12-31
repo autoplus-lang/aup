@@ -10,6 +10,7 @@ enum {
 	AUP_RUNTIME_ERROR =  2
 };
 
+typedef void * (*aupAlloc)(void *ptr, size_t size);
 typedef struct _aupVM aupVM;
 
 #define AUP_VM	aupVM  *vm

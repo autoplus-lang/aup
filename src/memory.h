@@ -13,6 +13,8 @@
 #define AUP_GROW_CAP(capacity) \
 	((capacity) < 8 ? 8 : (capacity) * 2)
 
+void *aup_defaultAlloc(void *ptr, size_t size);
+
 void *aup_realloc(AUP_VM, void *previous, size_t oldSize, size_t newSize);
 void aup_freeObjects(AUP_VM);
 

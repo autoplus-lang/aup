@@ -41,12 +41,15 @@ static void runtimeError(aupVM *vm, const char* format, ...)
 	resetStack(vm);
 }
 
-aupVM *aup_create()
+aupVM *aup_create(aupAlloc alloc)
 {
     aupVM *vm = malloc(sizeof(aupVM));
 
     if (vm != NULL) {
         memset(vm, '\0', sizeof(aupVM));
+
+        vm->alloc = (alloc == NULL) ?
+            aup_defaultAlloc : alloc;
 
         vm->objects = NULL;
         vm->bytesAllocated = 0;
@@ -55,9 +58,9 @@ aupVM *aup_create()
         vm->grayCount = 0;
         vm->grayCapacity = 0;
         vm->grayStack = NULL;
-
+       
         aupT_init(&vm->globals);
-        aupT_init(&vm->strings);
+        aupT_init(&vm->strings);       
 
         resetStack(vm);
     }
