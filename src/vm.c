@@ -49,12 +49,15 @@ aupVM *aup_create()
         memset(vm, '\0', sizeof(aupVM));
 
         vm->objects = NULL;
-        aupT_init(&vm->globals);
-        aupT_init(&vm->strings);
+        vm->bytesAllocated = 0;
+        vm->nextGC = 1024 * 1024;
 
         vm->grayCount = 0;
         vm->grayCapacity = 0;
         vm->grayStack = NULL;
+
+        aupT_init(&vm->globals);
+        aupT_init(&vm->strings);
 
         resetStack(vm);
     }

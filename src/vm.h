@@ -25,6 +25,10 @@ struct _aupVM {
     aupT globals;
 
 	aupOu *openUpvalues;
+
+    size_t bytesAllocated;
+    size_t nextGC;
+
 	aupO *objects;
     int grayCount;
     int grayCapacity;
