@@ -87,7 +87,7 @@ static aupO *allocObject(AUP_VM, size_t size, aupVt type)
 	object->next = vm->objects;
 	vm->objects = object;
 
-#ifdef DEBUG_LOG_GC                                             
+#ifdef AUP_DEBUG
     printf("%p allocate %ld for %d\n", (void*)object, size, type);
 #endif
 	return object;
