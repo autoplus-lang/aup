@@ -523,3 +523,13 @@ int aup_doFile(aupVM *vm, const char *name)
 
     return AUP_COMPILE_ERROR;
 }
+
+void aup_pushRoot(aupVM *vm, aupO *object)
+{
+    vm->tempRoots[vm->numTempRoots++] = object;
+}
+
+void aup_popRoot(aupVM *vm)
+{
+    vm->numTempRoots--;
+}

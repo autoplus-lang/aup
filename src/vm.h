@@ -5,8 +5,10 @@
 #include "compiler.h"
 #include "table.h"
 
-#define AUP_MAX_FRAMES	(64)
-#define AUP_MAX_STACK	(AUP_MAX_LOCALS + AUP_MAX_ARGS) * AUP_MAX_FRAMES
+#define AUP_MAX_FRAMES	    (64)
+#define AUP_MAX_STACK	    (AUP_MAX_LOCALS + AUP_MAX_ARGS) * AUP_MAX_FRAMES
+
+#define AUP_MAX_TEMP_ROOTS  5
 
 typedef struct {
 	aupOf *function;
@@ -34,11 +36,17 @@ struct _aupVM {
     int grayCount;
     int grayCapacity;
     aupO **grayStack;
+
+    aupO *tempRoots[AUP_MAX_TEMP_ROOTS];
+    int numTempRoots;
 };
 
 aupVM *aup_create(aupAlloc allocator);
 void aup_close(aupVM *vm);
 int aup_doString(aupVM *vm, const char *source);
 int aup_doFile(aupVM *vm, const char *name);
+
+void aup_pushRoot(aupVM *vm, aupO *object);
+void aup_popRoot(aupVM *vm);
 
 #endif
