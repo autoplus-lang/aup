@@ -48,6 +48,7 @@ aupVM *aup_create(aupAlloc alloc)
     if (vm != NULL) {
         memset(vm, '\0', sizeof(aupVM));
 
+        vm->numTempRoots = 0;
         vm->alloc = (alloc == NULL) ?
             aup_defaultAlloc : alloc;
 

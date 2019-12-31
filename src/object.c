@@ -100,7 +100,9 @@ static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 	string->chars = chars;
 	string->hash = hash;
 
+    aup_pushRoot(vm, (aupO *)string);
 	aupT_set(&vm->strings, string, AUP_NIL);
+    aup_popRoot(vm);
 
 	return string;
 }

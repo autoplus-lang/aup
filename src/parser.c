@@ -241,7 +241,10 @@ _emit:
 
 static uint8_t makeConstant(aupV value)
 {
+    if (AUP_IS_OBJ(value)) aup_pushRoot(runningVM, AUP_AS_OBJ(value));
 	int constant = aupCh_addK(currentChunk(), value);
+    if (AUP_IS_OBJ(value)) aup_popRoot(runningVM);
+
 	if (constant > AUP_MAX_CONSTS) {
 		error("Too many constants in one chunk.");
 		return 0;

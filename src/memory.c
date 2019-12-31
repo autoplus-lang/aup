@@ -131,6 +131,10 @@ static void freeObject(AUP_VM, aupO *object)
 
 static void markRoots(AUP_VM)
 {
+    for (int i = 0; i < vm->numTempRoots; i++) {
+        aup_markObject(vm, vm->tempRoots[i]);
+    }
+
     for (aupV *slot = vm->stack; slot < vm->top; slot++) {
         aup_markValue(vm, *slot);
     }
