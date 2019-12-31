@@ -183,6 +183,7 @@ static int exec(aupVM *vm)
 
 #define R(i)		(frame->stack[i])
 #define K(i)		(frame->function->chunk.constants.values[i])
+#define U(i)        *(frame->function->upvalues[i]->value)
 
 #define R_A()		R(GET_A())
 #define R_B()		R(GET_B())
@@ -194,6 +195,9 @@ static int exec(aupVM *vm)
 
 #define RK_B()		(GET_sB() ? K_B() : R_B())
 #define RK_C()		(GET_sC() ? K_C() : R_C())
+
+#define U_A()       U(GET_A())
+#define U_B()       U(GET_B())
 
 #if defined(__GNUC__) || defined(__clang__) || defined(__MINGW32__) || defined(__MINGW64__)
 #define INTERPRET() NEXT;
@@ -474,13 +478,13 @@ static int exec(aupVM *vm)
 
         CODE(ULD):
         {
-            R_A() = *frame->function->upvalues[GET_B()]->value;
+            R_A() = U_B();
             NEXT;
         }
 
         CODE(UST):
         {
-            *frame->function->upvalues[GET_A()]->value = R_B();
+            U_A() = RK_B();
             NEXT;
         }
 

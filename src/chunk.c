@@ -264,7 +264,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
 		CODE(UST)
         {
-			PUTF("U[%d] = ", GET_A()), R_B();
+			PUTF("U[%d] = ", GET_A()), RK_B();
 			NEXT;
 		}
 
