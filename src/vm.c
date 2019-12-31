@@ -23,7 +23,7 @@ static void runtimeError(aupVM *vm, const char* format, ...)
 	fputs("\n", stderr);
 
 	for (int i = vm->frameCount - 1; i >= 0; i--) {
-		aupCf *frame = &vm->frames[i];
+        aupCallFrame *frame = &vm->frames[i];
 		aupOf *function = frame->function;
 		// -1 because the IP is sitting on the next instruction to be
 		// executed.                                                 
@@ -86,7 +86,7 @@ static bool call(AUP_VM, aupOf *function, int argCount)
 		return false;
 	}
 
-	aupCf *frame = &vm->frames[vm->frameCount++];
+    aupCallFrame *frame = &vm->frames[vm->frameCount++];
 	frame->function = function;
 	frame->ip = function->chunk.code;
 
@@ -151,7 +151,7 @@ static void closeUpvalues(AUP_VM, aupV *last)
 static int exec(aupVM *vm)
 {
 	register uint32_t *ip;
-	register aupCf *frame;
+	register aupCallFrame *frame;
 
 #define STORE_FRAME() \
 	frame->ip = ip

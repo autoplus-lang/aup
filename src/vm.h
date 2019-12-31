@@ -12,13 +12,13 @@ typedef struct {
 	aupOf *function;
 	uint32_t *ip;
 	aupV *stack;
-} aupCf;
+} aupCallFrame;
 
 struct _aupVM {
     aupV *top;
     aupV stack[AUP_MAX_STACK];
 
-	aupCf frames[AUP_MAX_FRAMES];
+    aupCallFrame frames[AUP_MAX_FRAMES];
 	int frameCount;
 
     aupT strings;
