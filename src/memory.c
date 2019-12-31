@@ -6,9 +6,8 @@
 #include "vm.h"
 #include "compiler.h"
 
-#ifdef DEBUG_LOG_GC                                               
-#include <stdio.h>                                                
-#include "debug.h"                                                
+#ifdef AUP_DEBUG
+#include <stdio.h>
 #endif
 
 #define GC_HEAP_GROW_FACTOR     2
@@ -28,7 +27,7 @@ void *aup_realloc(AUP_VM, void *ptr, size_t oldSize, size_t newSize)
     vm->bytesAllocated += newSize - oldSize;
 
     if (newSize > oldSize) {
-#ifdef DEBUG_STRESS_GC
+#ifdef AUP_DEBUG
         aup_gc(vm);
 #endif
         if (vm->bytesAllocated > vm->nextGC) {
@@ -44,7 +43,7 @@ void aup_markObject(AUP_VM, aupO *object)
     if (object == NULL) return;
     if (object->isMarked) return;
 
-#ifdef DEBUG_LOG_GC                 
+#ifdef AUP_DEBUG
     printf("%p mark ", (void*)object);
     aupV_print(AUP_OBJ(object));
     printf("\n");
@@ -76,9 +75,9 @@ static void markArray(AUP_VM, aupVa *array)
 
 static void blackenObject(AUP_VM, aupO *object)
 {
-#ifdef DEBUG_LOG_GC                     
+#ifdef AUP_DEBUG
     printf("%p blacken ", (void*)object);
-    printValue(OBJ_VAL(object));
+    aupV_print(AUP_OBJ(object));
     printf("\n");
 #endif
 
@@ -105,7 +104,7 @@ static void blackenObject(AUP_VM, aupO *object)
 
 static void freeObject(AUP_VM, aupO *object)
 {
-#ifdef DEBUG_LOG_GC                                        
+#ifdef AUP_DEBUG
     printf("%p free type %d\n", (void*)object, object->type);
 #endif
 
@@ -187,9 +186,9 @@ static void sweep(AUP_VM)
 
 void aup_gc(AUP_VM)
 {
-#ifdef DEBUG_LOG_GC       
+#ifdef AUP_DEBUG
     printf("-- gc begin\n");
-    size_t before = vm.bytesAllocated;
+    size_t before = vm->bytesAllocated;
 #endif
 
     markRoots(vm);
@@ -199,7 +198,7 @@ void aup_gc(AUP_VM)
 
     vm->nextGC = vm->bytesAllocated * GC_HEAP_GROW_FACTOR;
 
-#ifdef DEBUG_LOG_GC       
+#ifdef AUP_DEBUG
     printf("-- gc end\n");
     printf("   collected %ld bytes (from %ld to %ld) next at %ld\n",
         before - vm->bytesAllocated, before, vm->bytesAllocated,
