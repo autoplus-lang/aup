@@ -503,7 +503,7 @@ int aup_doString(aupVM *vm, const char *source)
 	return exec(vm);
 }
 
-aupStt aup_doFile(aupVM *vm, const char *name)
+int aup_doFile(aupVM *vm, const char *name)
 {
     if (vm == NULL) return AUP_INVALID;
 

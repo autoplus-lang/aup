@@ -1157,11 +1157,11 @@ aupOf *aup_compile(AUP_VM, const char *source)
 	return parser.hadError ? NULL : function;
 }
 
-void aup_markCompilerRoots()
+void aup_markCompilerRoots(AUP_VM)
 {
     Compiler *compiler = current;
     while (compiler != NULL) {
-        aup_markObject((aupO *)compiler->function);
+        aup_markObject(vm, (aupO *)compiler->function);
         compiler = compiler->enclosing;
     }
 }

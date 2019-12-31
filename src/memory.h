@@ -4,11 +4,6 @@
 
 #include "util.h"
 
-typedef struct {
-	size_t size;
-	size_t : sizeof(size_t);	// padding
-} aupM;
-
 #define AUP_ALLOC(type, count) \
 	(type *)aup_realloc(vm, NULL, 0, sizeof(type) * (count))
 
@@ -28,7 +23,7 @@ void *aup_realloc(AUP_VM, void *previous, size_t oldSize, size_t newSize);
 void aup_freeObjects(AUP_VM);
 
 void aup_gc(AUP_VM);
-void aup_markValue(aupV value);
-void aup_markObject(aupO *object);
+void aup_markValue(AUP_VM, aupV value);
+void aup_markObject(AUP_VM, aupO *object);
 
 #endif

@@ -4,7 +4,6 @@
 #include "object.h"
 #include "memory.h"
 #include "vm.h"
-#include "context.h"
 #include "compiler.h"
 
 #ifdef DEBUG_LOG_GC                                               
@@ -28,7 +27,7 @@ void *aup_realloc(AUP_VM, void *ptr, size_t oldSize, size_t newSize)
 	return realloc(ptr, newSize);
 }
 
-void aup_markObject(aupVM *vm, aupO *object)
+void aup_markObject(AUP_VM, aupO *object)
 {
     if (object == NULL) return;
     if (object->isMarked) return;
@@ -122,28 +121,28 @@ static void freeObject(AUP_VM, aupO *object)
 static void markRoots(AUP_VM)
 {
     for (aupV *slot = vm->stack; slot < vm->top; slot++) {
-        markValue(*slot);
+        aup_markValue(vm, *slot);
     }
 
     for (int i = 0; i < vm->frameCount; i++) {
-        markObject((aupO *)vm->frames[i].function);
+        aup_markObject(vm, (aupO *)vm->frames[i].function);
     }
 
     for (aupOu *upvalue = vm->openUpvalues;
         upvalue != NULL;
         upvalue = upvalue->next) {
-        aup_markObject((aupO *)upvalue);
+        aup_markObject(vm, (aupO *)upvalue);
     }
 
-    aup_markTable(vm, &vm->ctx->globals);
-    aup_markCompilerRoots();
+    aup_markTable(vm, &vm->globals);
+    aup_markCompilerRoots(vm);
 }
 
 static void traceReferences(AUP_VM)
 {
     while (vm->grayCount > 0) {
         aupO *object = vm->grayStack[--vm->grayCount];
-        blackenObject(object);
+        blackenObject(vm, object);
     }
 }
 
@@ -182,7 +181,7 @@ void aup_gc(AUP_VM)
 
     markRoots(vm);
     traceReferences(vm);
-    aup_tableRemoveWhite(&vm->strings);
+    aupT_removeWhite(&vm->strings);
     sweep(vm);
 
 #ifdef DEBUG_LOG_GC       
@@ -194,7 +193,7 @@ void aup_freeObjects(AUP_VM)
 {
 	aupO *object = vm->objects;
 	while (object != NULL) {
-		aupO* next = object->next;
+		aupO *next = object->next;
 		freeObject(vm, object);
 		object = next;
 	}
