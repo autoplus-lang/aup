@@ -221,6 +221,44 @@ static int exec(aupVM *vm)
 #define NEXT        goto _loop
 #endif
 
+#define BINOP(op, fn) \
+    aupV left = RK_B(); \
+    aupV right = RK_C(); \
+    switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) { \
+        case AUP_TINT_INT: \
+            R_A() = AUP_INT(AUP_AS_INT(left) op AUP_AS_INT(right)); \
+            NEXT; \
+        case AUP_TNUM_NUM: \
+            R_A() = AUP_NUM(AUP_AS_NUM(left) op AUP_AS_NUM(right)); \
+            NEXT; \
+        case AUP_TINT_NUM: \
+            R_A() = AUP_NUM(AUP_AS_INT(left) op AUP_AS_NUM(right)); \
+            NEXT; \
+        case AUP_TNUM_INT: \
+            R_A() = AUP_NUM(AUP_AS_NUM(left) op AUP_AS_INT(right)); \
+            NEXT; \
+    } \
+    ERROR("Cannot perform '%s', got <%s> and <%s>.", #op, TOF(left), TOF(right))
+
+#define BINOP_LG(op, fn) \
+    aupV left = RK_B(); \
+    aupV right = RK_C(); \
+    switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) { \
+        case AUP_TINT_INT: \
+            R_A() = AUP_BOOL(AUP_AS_INT(left) op AUP_AS_INT(right)); \
+            NEXT; \
+        case AUP_TNUM_NUM: \
+            R_A() = AUP_BOOL(AUP_AS_NUM(left) op AUP_AS_NUM(right)); \
+            NEXT; \
+        case AUP_TINT_NUM: \
+            R_A() = AUP_BOOL(AUP_AS_INT(left) op AUP_AS_NUM(right)); \
+            NEXT; \
+        case AUP_TNUM_INT: \
+            R_A() = AUP_BOOL(AUP_AS_NUM(left) op AUP_AS_INT(right)); \
+            NEXT; \
+    } \
+    ERROR("Cannot perform '%s', got <%s> and <%s>.", #op, TOF(left), TOF(right))
+
 	LOAD_FRAME();
 
     INTERPRET()
@@ -303,8 +341,7 @@ static int exec(aupVM *vm)
 
         CODE(NOT):
         {
-            aupV value = RK_B();
-            R_A() = AUP_BOOL(AUP_IS_FALSEY(value));
+            R_A() = AUP_BOOL(AUP_IS_FALSEY(RK_B()));
             NEXT;
         }
 
@@ -318,88 +355,50 @@ static int exec(aupVM *vm)
                 case AUP_TNUM:
                     R_A() = AUP_NUM(-AUP_AS_NUM(value));
                     NEXT;
-                case AUP_TBOOL:
-                    R_A() = AUP_INT(-(char)AUP_AS_BOOL(value));
-                    NEXT;
             }
             ERROR("Cannot perform '-', got <%s>.", TOF(value));
         }
 
         CODE(LT):
         {
-            aupV left = RK_B(), right = RK_C();
-            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
-                case AUP_TINT_INT:
-                    R_A() = AUP_BOOL(AUP_AS_INT(left) < AUP_AS_INT(right));
-                    NEXT;
-            }
-            ERROR("Cannot perform '<', got <%s> and <%s>.", TOF(left), TOF(right));
+            BINOP_LG( < , lt);
+            NEXT;
         }
 
         CODE(LE):
         {
-            aupV left = RK_B(), right = RK_C();
-            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
-                case AUP_TINT_INT:
-                    R_A() = AUP_BOOL(AUP_AS_INT(left) <= AUP_AS_INT(right));
-                    NEXT;
-            }
-            ERROR("Cannot perform '<=', got <%s> and <%s>.", TOF(left), TOF(right));
+            BINOP_LG( <= , lt);
+            NEXT;
         }
 
         CODE(EQ):
         {
-            aupV left = RK_B(), right = RK_C();
-            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
-                case AUP_TINT_INT:
-                    R_A() = AUP_BOOL(AUP_AS_INT(left) == AUP_AS_INT(right));
-                    NEXT;
-            }
-            ERROR("Cannot perform '==', got <%s> and <%s>.", TOF(left), TOF(right));
+            BINOP_LG( == , lt);
+            NEXT;
         }
 
         CODE(ADD):
         {
-            aupV left = RK_B(), right = RK_C();
-            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
-                case AUP_TINT_INT:
-                    R_A() = AUP_INT(AUP_AS_INT(left) + AUP_AS_INT(right));
-                    NEXT;
-            }
-            ERROR("Cannot perform '+', got <%s> and <%s>.", TOF(left), TOF(right));
+            BINOP( + , add);
+            NEXT;
         }
 
         CODE(SUB):
         {
-            aupV left = RK_B(), right = RK_C();
-            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
-                case AUP_TINT_INT:
-                    R_A() = AUP_INT(AUP_AS_INT(left) - AUP_AS_INT(right));
-                    NEXT;
-            }
-            ERROR("cannot perform '-', got <%s> and <%s>.", TOF(left), TOF(right));
+            BINOP( - , sub);
+            NEXT;
         }
 
         CODE(MUL):
         {
-            aupV left = RK_B(), right = RK_C();
-            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
-                case AUP_TINT_INT:
-                    R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
-                    NEXT;
-            }
-            ERROR("Cannot perform '*', got <%s> and <%s>.", TOF(left), TOF(right));
+            BINOP( * , mul);
+            NEXT;
         }
 
         CODE(DIV):
         {
-            aupV left = RK_B(), right = RK_C();
-            switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
-                case AUP_TINT_INT:
-                    R_A() = AUP_INT(AUP_AS_INT(left) * AUP_AS_INT(right));
-                    NEXT;
-            }
-            ERROR("Cannot perform '/', got <%s> and <%s>.", TOF(left), TOF(right));
+            BINOP( / , div);
+            NEXT;
         }
 
         CODE(MOD):
@@ -408,6 +407,15 @@ static int exec(aupVM *vm)
             switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
                 case AUP_TINT_INT:
                     R_A() = AUP_INT(AUP_AS_INT(left) % AUP_AS_INT(right));
+                    NEXT;
+                case AUP_TNUM_NUM:
+                    R_A() = AUP_INT((int64_t)AUP_AS_NUM(left) % (int64_t)AUP_AS_NUM(right));
+                    NEXT;
+                case AUP_TINT_NUM:
+                    R_A() = AUP_INT(AUP_AS_INT(left) % (int64_t)AUP_AS_NUM(right));
+                    NEXT;
+                case AUP_TNUM_INT:
+                    R_A() = AUP_INT((int64_t)AUP_AS_NUM(left) % AUP_AS_INT(right));
                     NEXT;
             }
             ERROR("Cannot perform '%', got <%s> and <%s>.", TOF(left), TOF(right));
