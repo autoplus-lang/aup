@@ -13,6 +13,27 @@
                             32-bits instruction
 */
 
+typedef union {
+    struct {
+        aupOp    op : 6;
+        unsigned  A : 8;
+        unsigned Bx : 9;
+        unsigned Cx : 9;
+    };
+    struct {
+        unsigned : 14;
+        unsigned  B : 8;
+        unsigned sB : 1;
+        unsigned  C : 8;
+        unsigned sC : 1;
+    };
+    struct {
+        unsigned : 6;
+        signed   Ax : 16;
+    };
+    unsigned raw : 32;
+} aupI;
+
 #define AUP_SET_OpA(op, A)              ((uint32_t)( (op) | ((A) << 6) ))
 #define AUP_SET_OpAx(op, Ax)            ((uint32_t)( (op) | ((uint16_t)(Ax) << 6) ))
 #define AUP_SET_OpAxCx(op, Ax, Cx)      ((uint32_t)( (op) | ((uint16_t)(Ax) << 6) | (((Cx) & 0x1FF) << 23) ))
