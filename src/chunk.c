@@ -130,7 +130,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			NEXT;
 		}
 
-		CODE(PUT)
+		CODE(PUTS)
         {
 			R_A();
 			GET_B() > 1 ? PUT(".."), R(GET_A() + GET_B() - 1) : 0;

@@ -64,7 +64,7 @@ typedef enum {
     AUP_OP_CALL,
     AUP_OP_RET,
 
-    AUP_OP_PUT,
+    AUP_OP_PUTS,
 
     AUP_OP_NIL,
     AUP_OP_BOOL,

@@ -1029,7 +1029,7 @@ static void putsStatement()
 		}
 	};
 
-    EMIT_OpAB(PUT, src, count);
+    EMIT_OpAB(PUTS, src, count);
     POPN(count);
 }
 

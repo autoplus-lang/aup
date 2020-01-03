@@ -295,7 +295,7 @@ static int exec(aupVM *vm)
             NEXT;
         }
 
-        CODE(PUT):
+        CODE(PUTS):
         {
             int rA = GET_A(), nvalues = GET_B();
             for (int i = 0; i < nvalues; i++) {
