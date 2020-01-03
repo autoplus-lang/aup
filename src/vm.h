@@ -11,14 +11,14 @@
 #define AUP_MAX_TEMP_ROOTS  5
 
 typedef struct {
-	aupOf *function;
+	aupOfun *function;
 	uint32_t *ip;
-	aupV *stack;
+	aupVal *stack;
 } aupCallFrame;
 
 struct _aupVM {
-    aupV *top;
-    aupV stack[AUP_MAX_STACK];
+    aupVal *top;
+    aupVal stack[AUP_MAX_STACK];
 
     aupCallFrame frames[AUP_MAX_FRAMES];
 	int frameCount;
@@ -27,7 +27,7 @@ struct _aupVM {
     aupT globals;
     aupAlloc alloc;
 
-	aupOu *openUpvalues;
+	aupOupv *openUpvalues;
 
     size_t bytesAllocated;
     size_t nextGC;

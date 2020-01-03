@@ -20,7 +20,7 @@ void aupT_free(aupT *table)
 	aupT_init(table);
 }
 
-static aupTe *findEntry(aupTe *entries, int capacity, aupOs *key)
+static aupTe *findEntry(aupTe *entries, int capacity, aupOstr *key)
 {
 	uint32_t index = key->hash % capacity;
 	aupTe *tombstone = NULL;
@@ -47,7 +47,7 @@ static aupTe *findEntry(aupTe *entries, int capacity, aupOs *key)
 	}
 }
 
-bool aupT_get(aupT *table, aupOs *key, aupV *value)
+bool aupT_get(aupT *table, aupOstr *key, aupVal *value)
 {
 	if (table->count == 0) return false;
 
@@ -83,7 +83,7 @@ static void adjustCapacity(aupT *table, int capacity)
 	table->capacity = capacity;
 }
 
-bool aupT_set(aupT *table, aupOs *key, aupV value)
+bool aupT_set(aupT *table, aupOstr *key, aupVal value)
 {
 	if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
 		int capacity = AUP_GROW_CAP(table->capacity);
@@ -100,7 +100,7 @@ bool aupT_set(aupT *table, aupOs *key, aupV value)
 	return isNewKey;
 }
 
-bool aupT_delete(aupT *table, aupOs *key)
+bool aupT_delete(aupT *table, aupOstr *key)
 {
 	if (table->count == 0) return false;
 
@@ -125,7 +125,7 @@ void aupT_addAll(aupT *from, aupT *to)
 	}
 }
 
-aupOs *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash)
+aupOstr *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash)
 {
 	if (table->count == 0) return NULL;
 
@@ -133,7 +133,7 @@ aupOs *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash
 
 	for (;;) {
 		aupTe *entry = &table->entries[index];
-        aupOs *key = entry->key;
+        aupOstr *key = entry->key;
 
 		if (key == NULL) {
 			// Stop if we find an empty non-tombstone entry.                 

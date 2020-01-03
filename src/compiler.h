@@ -90,7 +90,7 @@ typedef struct {
 void aupLx_init(const char *source);
 aupTk aupLx_scan();
 
-aupOf *aup_compile(AUP_VM, const char *source);
+aupOfun *aup_compile(AUP_VM, const char *source);
 
 void aup_markCompilerRoots(AUP_VM);
 

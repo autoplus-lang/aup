@@ -7,16 +7,16 @@
 #include "vm.h"
 
 #define TYPE(o)		((o)->type)
-#define AS_STR(o)	((aupOs *)(o))
-#define AS_CSTR(o)	(((aupOs *)(o))->chars)
-#define AS_FUN(o)	((aupOf *)(o))
+#define AS_STR(o)	((aupOstr *)(o))
+#define AS_CSTR(o)	(((aupOstr *)(o))->chars)
+#define AS_FUN(o)	((aupOfun *)(o))
 
 static const char
 	__obj[] = "obj",
 	__str[] = "str",
 	__fun[] = "fn";
 
-const char *aupO_typeOf(aupObj *object)
+const char *aup_typeofObj(aupObj *object)
 {
 	switch (TYPE(object)) {
 		case AUP_TSTR:
@@ -28,7 +28,7 @@ const char *aupO_typeOf(aupObj *object)
 	}
 }
 
-static void printFunction(aupOf *function)
+static void printFunction(aupOfun *function)
 {
 	if (function->name == NULL) {
 		printf("<script>");
@@ -37,7 +37,7 @@ static void printFunction(aupOf *function)
 	printf("%s: <%s>", __fun, function->name->chars);
 }
 
-void aupO_print(aupObj *object)
+void aup_printObj(aupObj *object)
 {
 	switch (TYPE(object)) {
 		case AUP_TSTR: {
@@ -93,9 +93,9 @@ static aupObj *allocObject(AUP_VM, size_t size, aupVt type)
 	return object;
 }
 
-static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
+static aupOstr *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 {
-	aupOs *string = ALLOC_OBJ(aupOs, AUP_TSTR);
+	aupOstr *string = ALLOC_OBJ(aupOstr, AUP_TSTR);
 	string->length = length;
 	string->chars = chars;
 	string->hash = hash;
@@ -107,11 +107,11 @@ static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 	return string;
 }
 
-aupOs *aupOs_take(AUP_VM, char *chars, int length)
+aupOstr *aup_takeString(AUP_VM, char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
 
-	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
+	aupOstr *interned = aupT_findString(&vm->strings, chars, length, hash);
 	if (interned != NULL) {
 		free(chars);
 		return interned;
@@ -120,11 +120,11 @@ aupOs *aupOs_take(AUP_VM, char *chars, int length)
 	return allocString(vm, chars, length, hash);
 }
 
-aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
+aupOstr *aup_copyString(AUP_VM, const char *chars, int length)
 {
 	uint32_t hash = hashString(chars, length);
 
-	aupOs *interned = aupT_findString(&vm->strings, chars, length, hash);
+	aupOstr *interned = aupT_findString(&vm->strings, chars, length, hash);
 	if (interned != NULL) return interned;
 
 	char *heapChars = malloc(length + 1);
@@ -134,9 +134,9 @@ aupOs *aupOs_copy(AUP_VM, const char *chars, int length)
 	return allocString(vm, heapChars, length, hash);
 }
 
-aupOf *aupOf_new(AUP_VM)
+aupOfun *aup_newFunction(AUP_VM)
 {
-	aupOf *function = ALLOC_OBJ(aupOf, AUP_TFUN);
+	aupOfun *function = ALLOC_OBJ(aupOfun, AUP_TFUN);
 
 	function->arity = 0;
 	function->upvalueCount = 0;
@@ -147,10 +147,10 @@ aupOf *aupOf_new(AUP_VM)
 	return function;
 }
 
-void aupOf_closure(aupOf *function)
+void aup_makeClosure(aupOfun *function)
 {
 	int count = function->upvalueCount;
-	aupOu **upvalues = malloc(count * sizeof(aupOu *));
+	aupOupv **upvalues = malloc(count * sizeof(aupOupv *));
 
 	for (int i = 0; i < count; i++) {
 		upvalues[i] = NULL;
@@ -159,9 +159,9 @@ void aupOf_closure(aupOf *function)
 	function->upvalues = upvalues;
 }
 
-aupOu *aupOu_new(AUP_VM, aupV *slot)
+aupOupv *aup_newUpval(AUP_VM, aupVal *slot)
 {
-	aupOu *upvalue = ALLOC_OBJ(aupOu, AUP_TUPV);
+    aupOupv *upvalue = ALLOC_OBJ(aupOupv, AUP_TUPV);
 	upvalue->value = slot;
 	upvalue->next = NULL;
 

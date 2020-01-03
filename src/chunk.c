@@ -11,7 +11,7 @@ void aup_initChunk(aupChunk *chunk)
 	chunk->lines = NULL;
 	chunk->columns = NULL;
 
-	aupVa_init(&chunk->constants);
+	aup_initValueArr(&chunk->constants);
 }
 
 void aup_freeChunk(aupChunk *chunk)
@@ -19,7 +19,7 @@ void aup_freeChunk(aupChunk *chunk)
 	free(chunk->code);
     free(chunk->lines);
     free(chunk->columns);
-    aupVa_free(&chunk->constants);
+    aup_freeValueArr(&chunk->constants);
 
     aup_initChunk(chunk);
 }
@@ -39,15 +39,15 @@ int aup_writeChunk(aupChunk *chunk, uint32_t instruction, uint16_t line, uint16_
 	return chunk->count++;
 }
 
-int aup_addConstant(aupChunk *chunk, aupV value)
+int aup_addConstant(aupChunk *chunk, aupVal value)
 {
-	int k = aupVa_find(&chunk->constants, value);
+	int k = aup_findValue(&chunk->constants, value);
 	if (k != -1) return k;
 
-	return aupVa_write(&chunk->constants, value);
+	return aup_writeValueArr(&chunk->constants, value);
 }
 
-void aupCh_dasmInst(aupChunk *chunk, int offset)
+void aup_dasmInstruction(aupChunk *chunk, int offset)
 {
 	uint32_t i;
 	printf("%03d.", offset);
@@ -279,18 +279,18 @@ void aupCh_dasmInst(aupChunk *chunk, int offset)
 	printf("\n");
 }
 
-void aupCh_dasm(aupChunk *chunk, const char *name)
+void aup_dasmChunk(aupChunk *chunk, const char *name)
 {
 	printf("=== %s ===\n", name);
 
 	for (int i = 0; i < chunk->constants.count; i++) {
 		printf("K[%d] = ", i);
-        aupV_print(chunk->constants.values[i]);
+        aup_printVal(chunk->constants.values[i]);
 		printf("\n");
 	}
 
 	for (int offset = 0; offset < chunk->count; offset++) {
-		aupCh_dasmInst(chunk, offset);
+		aup_dasmInstruction(chunk, offset);
 	}
 
 	printf("================================================\n\n");

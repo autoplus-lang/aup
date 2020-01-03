@@ -11,30 +11,30 @@ struct _aupObj {
 	struct _aupObj *next;
 };
 
-struct _aupOs {
+struct _aupOstr {
 	aupObj obj;
 	char *chars;
 	int length;
 	uint32_t hash;
 };
 
-struct _aupOu {
+struct _aupOupv {
     aupObj obj;
-	aupV *value;
-	aupV closed;
-	struct _aupOu *next;
+    aupVal *value;
+    aupVal closed;
+	struct _aupOupv *next;
 };
 
-struct _aupOf {
+struct _aupOfun {
     aupObj obj;
 	int arity;
 	int upvalueCount;
     aupChunk chunk;
-	aupOs *name;
-	aupOu **upvalues;
+	aupOstr *name;
+	aupOupv **upvalues;
 };
 
-static inline bool aupO_isType(aupV value, aupVt type) {
+static inline bool aupO_isType(aupVal value, aupVt type) {
 	return AUP_IS_OBJ(value) && AUP_AS_OBJ(value)->type == type;
 }
 
@@ -42,19 +42,19 @@ static inline bool aupO_isType(aupV value, aupVt type) {
 #define AUP_IS_STR(v)	aupO_isType(v, AUP_TSTR)
 #define AUP_IS_FUN(v)	aupO_isType(v, AUP_TFUN)
 
-#define AUP_AS_STR(v)	((aupOs *)AUP_AS_OBJ(v))
-#define AUP_AS_CSTR(v)	(((aupOs *)AUP_AS_OBJ(v))->chars)
-#define AUP_AS_FUN(v)	((aupOf *)AUP_AS_OBJ(v))
+#define AUP_AS_STR(v)	((aupOstr *)AUP_AS_OBJ(v))
+#define AUP_AS_CSTR(v)	(((aupOstr *)AUP_AS_OBJ(v))->chars)
+#define AUP_AS_FUN(v)	((aupOfun *)AUP_AS_OBJ(v))
 
-aupOs *aupOs_take(AUP_VM, char *chars, int length);
-aupOs *aupOs_copy(AUP_VM, const char *chars, int length);
+aupOstr *aup_takeString(AUP_VM, char *chars, int length);
+aupOstr *aup_copyString(AUP_VM, const char *chars, int length);
 
-aupOf *aupOf_new(AUP_VM);
-void aupOf_closure(aupOf *function);
+aupOfun *aup_newFunction(AUP_VM);
+void aup_makeClosure(aupOfun *function);
 
-aupOu *aupOu_new(AUP_VM, aupV *slot);
+aupOupv *aup_newUpval(AUP_VM, aupVal *slot);
 
-const char *aupO_typeOf(aupObj *object);
-void aupO_print(aupObj *object);
+const char *aup_typeofObj(aupObj *object);
+void aup_printObj(aupObj *object);
 
 #endif

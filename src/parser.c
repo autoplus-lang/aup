@@ -56,7 +56,7 @@ typedef enum {
 
 typedef struct Compiler {
 	struct Compiler *enclosing;
-	aupOf *function;
+	aupOfun *function;
 	FunType type;
 
 	Local locals[AUP_MAX_LOCALS];
@@ -239,7 +239,7 @@ _emit:
 #define EMIT_OpAsC(op, A, sC)		emit(AUP_SET_OpAsC(_OPCODE(op), A, sC))
 #define EMIT_OpAsBsC(op, A, sB, sC)	emit(AUP_SET_OpAsBsC(_OPCODE(op), A, sB, sC))
 
-static uint8_t makeConstant(aupV value)
+static uint8_t makeConstant(aupVal value)
 {
     if (AUP_IS_OBJ(value)) aup_pushRoot(runningVM, AUP_AS_OBJ(value));
 	int constant = aup_addConstant(currentChunk(), value);
@@ -253,7 +253,7 @@ static uint8_t makeConstant(aupV value)
 	return (uint8_t)constant;
 }
 
-static uint8_t emitConstant(aupV value, REG dest)
+static uint8_t emitConstant(aupVal value, REG dest)
 {
 	uint8_t k = makeConstant(value);
 	EMIT_OpABx(LD, dest, k + 256);
@@ -316,12 +316,12 @@ static void initCompiler(Compiler *compiler, FunType type)
 	compiler->type = type;
 	compiler->localCount = 0;
 	compiler->scopeDepth = 0;
-	compiler->function = aupOf_new(runningVM);
+	compiler->function = aup_newFunction(runningVM);
 
 	current = compiler;
 
 	if (type != TYPE_SCRIPT) {
-		current->function->name = aupOs_copy(runningVM, parser.previous.start,
+		current->function->name = aup_copyString(runningVM, parser.previous.start,
 			parser.previous.length);
 	}
 
@@ -332,14 +332,14 @@ static void initCompiler(Compiler *compiler, FunType type)
 	local->name.length = 0;
 }
 
-static aupOf *endCompiler()
+static aupOfun *endCompiler()
 {
 	emitReturn(-1);
-	aupOf *function = current->function;
+	aupOfun *function = current->function;
 
 #ifdef AUP_DEBUG
 	if (!parser.hadError) {
-		aupCh_dasm(currentChunk(), function->name != NULL ?
+		aup_dasmChunk(currentChunk(), function->name != NULL ?
             function->name->chars : "<script>");
 	}
 #endif
@@ -382,7 +382,7 @@ static REG parsePrecedence(Precedence precedence, REG dest);
 
 static uint8_t identifierConstant(aupTk *name)
 {
-	aupOs *identifier = aupOs_copy(runningVM, name->start, name->length);
+	aupOstr *identifier = aup_copyString(runningVM, name->start, name->length);
 	return makeConstant(AUP_OBJ(identifier));
 }
 
@@ -633,7 +633,7 @@ static void integer(REG dest, bool canAssign)
 
 static void string(REG dest, bool canAssign)
 {
-	aupOs *value = aupOs_copy(runningVM,
+	aupOstr *value = aup_copyString(runningVM,
 		parser.previous.start + 1, parser.previous.length - 2);
 
 	emitConstant(AUP_OBJ(value), dest);
@@ -906,7 +906,7 @@ static void function(FunType type, REG dest)
     }
 
 	// Create the function object.                                
-	aupOf *function = endCompiler();
+	aupOfun *function = endCompiler();
 	
 	uint8_t constant = makeConstant(AUP_OBJ(function));
 
@@ -1138,7 +1138,7 @@ static void statement()
     }
 }
 
-aupOf *aup_compile(AUP_VM, const char *source)
+aupOfun *aup_compile(AUP_VM, const char *source)
 {
 	runningVM = vm;
 	aupLx_init(source);
@@ -1156,7 +1156,7 @@ aupOf *aup_compile(AUP_VM, const char *source)
 		} while (!match(TOKEN_EOF));
 	}
 
-	aupOf *function = endCompiler();
+	aupOfun *function = endCompiler();
 	return parser.hadError ? NULL : function;
 }
 

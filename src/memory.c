@@ -45,7 +45,7 @@ void aup_markObject(AUP_VM, aupObj *object)
 
 #ifdef AUP_DEBUG
     printf("%p mark ", (void*)object);
-    aupV_print(AUP_OBJ(object));
+    aup_printVal(AUP_OBJ(object));
     printf("\n");
 #endif
 
@@ -60,13 +60,13 @@ void aup_markObject(AUP_VM, aupObj *object)
     vm->grayStack[vm->grayCount++] = object;
 }
 
-void aup_markValue(AUP_VM, aupV value)
+void aup_markValue(AUP_VM, aupVal value)
 {
     if (!AUP_IS_OBJ(value)) return;
     aup_markObject(vm, AUP_AS_OBJ(value));
 }
 
-static void markArray(AUP_VM, aupVa *array)
+static void markArray(AUP_VM, aupValArr *array)
 {
     for (int i = 0; i < array->count; i++) {
         aup_markValue(vm, array->values[i]);
@@ -77,7 +77,7 @@ static void blackenObject(AUP_VM, aupObj *object)
 {
 #ifdef AUP_DEBUG
     printf("%p blacken ", (void*)object);
-    aupV_print(AUP_OBJ(object));
+    aup_printVal(AUP_OBJ(object));
     printf("\n");
 #endif
 
@@ -87,7 +87,7 @@ static void blackenObject(AUP_VM, aupObj *object)
             break;
 
         case AUP_TFUN: {
-            aupOf *function = (aupOf *)object;
+            aupOfun *function = (aupOfun *)object;
             aup_markObject(vm, (aupObj *)function->name);
             markArray(vm, &function->chunk.constants);
             for (int i = 0; i < function->upvalueCount; i++) {
@@ -97,7 +97,7 @@ static void blackenObject(AUP_VM, aupObj *object)
         }
 
         case AUP_TUPV:
-            aup_markValue(vm, ((aupOu *)object)->closed);
+            aup_markValue(vm, ((aupOupv *)object)->closed);
             break;
     }
 }
@@ -110,20 +110,20 @@ static void freeObject(AUP_VM, aupObj *object)
 
 	switch (object->type) {
 		case AUP_TSTR: {
-			aupOs *string = (aupOs*)object;
+			aupOstr *string = (aupOstr *)object;
 			free(string->chars);
-			AUP_FREE(aupOs, object);
+			AUP_FREE(aupOstr, object);
 			break;
 		}
 		case AUP_TFUN: {
-			aupOf *function = (aupOf*)object;
+			aupOfun *function = (aupOfun *)object;
 			aup_freeChunk(&function->chunk);
 			free(function->upvalues);
-			AUP_FREE(aupOf, object);
+			AUP_FREE(aupOfun, object);
 			break;
 		}
 		case AUP_TUPV: {
-			AUP_FREE(aupOu, object);
+			AUP_FREE(aupOupv, object);
 			break;
 		}
 	}
@@ -135,7 +135,7 @@ static void markRoots(AUP_VM)
         aup_markObject(vm, vm->tempRoots[i]);
     }
 
-    for (aupV *slot = vm->stack; slot < vm->top; slot++) {
+    for (aupVal *slot = vm->stack; slot < vm->top; slot++) {
         aup_markValue(vm, *slot);
     }
 
@@ -143,7 +143,7 @@ static void markRoots(AUP_VM)
         aup_markObject(vm, (aupObj *)vm->frames[i].function);
     }
 
-    for (aupOu *upvalue = vm->openUpvalues;
+    for (aupOupv *upvalue = vm->openUpvalues;
         upvalue != NULL;
         upvalue = upvalue->next) {
         aup_markObject(vm, (aupObj *)upvalue);

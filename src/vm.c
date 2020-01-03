@@ -24,7 +24,7 @@ static void runtimeError(aupVM *vm, const char* format, ...)
 
 	for (int i = vm->frameCount - 1; i >= 0; i--) {
         aupCallFrame *frame = &vm->frames[i];
-		aupOf *function = frame->function;
+		aupOfun *function = frame->function;
 		// -1 because the IP is sitting on the next instruction to be
 		// executed.                                                 
 		size_t instruction = frame->ip - function->chunk.code - 1;
@@ -80,7 +80,7 @@ void aup_close(aupVM *vm)
     free(vm);
 }
 
-static bool call(AUP_VM, aupOf *function, int argCount)
+static bool call(AUP_VM, aupOfun *function, int argCount)
 {
 	if (argCount != function->arity) {
 		runtimeError(vm, "Expected %d arguments but got %d.",
@@ -101,11 +101,11 @@ static bool call(AUP_VM, aupOf *function, int argCount)
 	return true;
 }
 
-#define TOF(v)	aupV_typeOf(v)
+#define TOF(v)	aup_typeofVal(v)
 #define PUSH(v)	(*((vm)->top++) = (v))
 #define POP()   (--(vm)->top)
 
-static bool callValue(AUP_VM, aupV callee, int argCount)
+static bool callValue(AUP_VM, aupVal callee, int argCount)
 {
 	if (AUP_IS_OBJ(callee)) {
 		switch (AUP_OBJ_TYPE(callee)) {
@@ -120,10 +120,10 @@ static bool callValue(AUP_VM, aupV callee, int argCount)
 	return false;
 }
 
-static aupOu *captureUpvalue(AUP_VM, aupV *local)
+static aupOupv *captureUpvalue(AUP_VM, aupVal *local)
 {
-	aupOu *prevUpvalue = NULL;
-	aupOu *upvalue = vm->openUpvalues;
+    aupOupv *prevUpvalue = NULL;
+    aupOupv *upvalue = vm->openUpvalues;
 
 	while (upvalue != NULL && upvalue->value > local) {
 		prevUpvalue = upvalue;
@@ -132,7 +132,7 @@ static aupOu *captureUpvalue(AUP_VM, aupV *local)
 
 	if (upvalue != NULL && upvalue->value == local) return upvalue;
 
-	aupOu *createdUpvalue = aupOu_new(vm, local);
+    aupOupv *createdUpvalue = aup_newUpval(vm, local);
 	createdUpvalue->next = upvalue;
 
 	if (prevUpvalue == NULL) {
@@ -145,10 +145,10 @@ static aupOu *captureUpvalue(AUP_VM, aupV *local)
 	return createdUpvalue;
 }
 
-static void closeUpvalues(AUP_VM, aupV *last)
+static void closeUpvalues(AUP_VM, aupVal *last)
 {
 	while (vm->openUpvalues != NULL && vm->openUpvalues->value >= last) {
-		aupOu *upvalue = vm->openUpvalues;
+        aupOupv *upvalue = vm->openUpvalues;
 		upvalue->closed = *upvalue->value;
 		upvalue->value = &upvalue->closed;
 		vm->openUpvalues = upvalue->next;
@@ -215,8 +215,8 @@ static int exec(aupVM *vm)
 #endif
 
 #define BINOP(op, fn) \
-    aupV left = RK_B(); \
-    aupV right = RK_C(); \
+    aupVal left = RK_B(); \
+    aupVal right = RK_C(); \
     switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) { \
         case AUP_TINT_INT: \
             R_A() = AUP_INT(AUP_AS_INT(left) op AUP_AS_INT(right)); \
@@ -234,8 +234,8 @@ static int exec(aupVM *vm)
     ERROR("Cannot perform '%s', got <%s> and <%s>.", #op, TOF(left), TOF(right))
 
 #define BINOP_LG(op, fn) \
-    aupV left = RK_B(); \
-    aupV right = RK_C(); \
+    aupVal left = RK_B(); \
+    aupVal right = RK_C(); \
     switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) { \
         case AUP_TINT_INT: \
             R_A() = AUP_BOOL(AUP_AS_INT(left) op AUP_AS_INT(right)); \
@@ -288,7 +288,7 @@ static int exec(aupVM *vm)
         {
             int rA = GET_A(), nvalues = GET_B();
             for (int i = 0; i < nvalues; i++) {
-                aupV_print(R(rA + i));
+                aup_printVal(R(rA + i));
                 if (i < nvalues - 1) printf("\t");
             }
             printf("\n");
@@ -328,7 +328,7 @@ static int exec(aupVM *vm)
 
         CODE(NEG):
         {
-            aupV value = RK_B();
+            aupVal value = RK_B();
             switch (AUP_TYPE(value)) {
                 case AUP_TINT:
                     R_A() = AUP_INT(-AUP_AS_INT(value));
@@ -384,7 +384,7 @@ static int exec(aupVM *vm)
 
         CODE(MOD):
         {
-            aupV left = RK_B(), right = RK_C();
+            aupVal left = RK_B(), right = RK_C();
             switch (AUP_CMB(AUP_TYPE(left), AUP_TYPE(right))) {
                 case AUP_TINT_INT:
                     R_A() = AUP_INT(AUP_AS_INT(left) % AUP_AS_INT(right));
@@ -404,7 +404,7 @@ static int exec(aupVM *vm)
 
         CODE(GLD):
         {
-            aupOs *name = AUP_AS_STR(K_B());
+            aupOstr *name = AUP_AS_STR(K_B());
             if (!aupT_get(&vm->globals, name, &R_A())) {
                 R_A() = AUP_NIL;
             }
@@ -413,7 +413,7 @@ static int exec(aupVM *vm)
 
         CODE(GST):
         {
-            aupOs *name = AUP_AS_STR(K_A());
+            aupOstr *name = AUP_AS_STR(K_A());
             aupT_set(&vm->globals, name, GET_sC() ? AUP_NIL : RK_B());
             NEXT;
         }
@@ -438,8 +438,8 @@ static int exec(aupVM *vm)
 
         CODE(CLOSURE):
         {
-            aupOf *function = AUP_AS_FUN(K_A());
-            aupOf_closure(function);
+            aupOfun *function = AUP_AS_FUN(K_A());
+            aup_makeClosure(function);
 
             for (int i = 0; i < function->upvalueCount; i++) {
                 FETCH();
@@ -473,7 +473,7 @@ static int exec(aupVM *vm)
 
         CODE(JMPF):
         {
-            aupV value = R_C();
+            aupVal value = R_C();
             if (AUP_IS_FALSEY(value)) ip += GET_Ax();
             NEXT;
         }
@@ -489,10 +489,10 @@ static int exec(aupVM *vm)
 
 int aup_doString(aupVM *vm, const char *source)
 {
-	aupOf *function = aup_compile(vm, source);
+	aupOfun *function = aup_compile(vm, source);
 	if (function == NULL) return AUP_COMPILE_ERROR;
 
-	aupV script = AUP_OBJ(function);
+	aupVal script = AUP_OBJ(function);
 	PUSH(script); POP();
 	callValue(vm, script, 0);
 

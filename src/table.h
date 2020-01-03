@@ -5,8 +5,8 @@
 #include "value.h"
 
 typedef struct {
-	aupOs *key;
-	aupV value;
+	aupOstr *key;
+    aupVal value;
 } aupTe;
 
 typedef struct {
@@ -17,11 +17,11 @@ typedef struct {
 
 void aupT_init(aupT *table);
 void aupT_free(aupT *table);
-bool aupT_get(aupT *table, aupOs *key, aupV *value);
-bool aupT_set(aupT *table, aupOs *key, aupV value);
-bool aupT_delete(aupT *table, aupOs *key);
+bool aupT_get(aupT *table, aupOstr *key, aupVal *value);
+bool aupT_set(aupT *table, aupOstr *key, aupVal value);
+bool aupT_delete(aupT *table, aupOstr *key);
 void aupT_addAll(aupT *from, aupT *to);
-aupOs *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash);
+aupOstr *aupT_findString(aupT *table, const char *chars, int length, uint32_t hash);
 
 void aupT_removeWhite(aupT *table);
 

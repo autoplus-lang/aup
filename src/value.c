@@ -11,7 +11,7 @@ static const char
 	__int[]  = "int",
 	__num[]  = "num";
 
-const char *aupV_typeOf(aupV value)
+const char *aup_typeofVal(aupVal value)
 {
 	switch (AUP_TYPE(value)) {
 		default:
@@ -24,11 +24,11 @@ const char *aupV_typeOf(aupV value)
 		case AUP_TNUM:
 			return __num;
 		case AUP_TOBJ:
-			return aupO_typeOf(AUP_AS_OBJ(value));
+			return aup_typeofObj(AUP_AS_OBJ(value));
 	}
 }
 
-void aupV_print(aupV value)
+void aup_printVal(aupVal value)
 {
 	switch (AUP_TYPE(value)) {
 		default:
@@ -45,37 +45,37 @@ void aupV_print(aupV value)
 			printf("%.14g", AUP_AS_NUM(value));
 			break;
 		case AUP_TOBJ:
-			aupO_print(AUP_AS_OBJ(value));
+			aup_printObj(AUP_AS_OBJ(value));
 			break;
 	}
 }
 
-void aupVa_init(aupVa *array)
+void aup_initValueArr(aupValArr *array)
 {
 	array->count = 0;
 	array->capacity = 0;
 	array->values = NULL;
 }
 
-int aupVa_write(aupVa *array, aupV value)
+int aup_writeValueArr(aupValArr *array, aupVal value)
 {
 	if (array->capacity < array->count + 1) {
 		int oldCapacity = array->capacity;
 		array->capacity = AUP_GROW_CAP(oldCapacity);
-		array->values = realloc(array->values, array->capacity * sizeof(aupV));
+		array->values = realloc(array->values, array->capacity * sizeof(aupVal));
 	}
 
 	array->values[array->count] = value;
 	return array->count++;
 }
 
-void aupVa_free(aupVa *array)
+void aup_freeValueArr(aupValArr *array)
 {
 	free(array->values);
-	aupVa_init(array);
+	aup_initValueArr(array);
 }
 
-int aupVa_find(aupVa *array, aupV value)
+int aup_findValue(aupValArr *array, aupVal value)
 {
 #define IS_EQUAL(v1, v2) \
 	AUP_TYPE(v1) == AUP_TYPE(v2) && \

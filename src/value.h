@@ -50,9 +50,9 @@ typedef enum {
 } aupVtt;
 
 typedef struct _aupObj aupObj;
-typedef struct _aupOs aupOs;
-typedef struct _aupOf aupOf;
-typedef struct _aupOu aupOu;
+typedef struct _aupOstr aupOstr;
+typedef struct _aupOfun aupOfun;
+typedef struct _aupOupv aupOupv;
 
 typedef struct {
     union {
@@ -67,21 +67,21 @@ typedef struct {
         aupObj *Obj;
 		uint64_t _;
 	};
-} aupV;
+} aupVal;
 
 typedef struct {
 	int count;
 	int capacity;
-	aupV *values;
-} aupVa;
+    aupVal *values;
+} aupValArr;
 
-#define AUP_NIL         ((aupV){ .type = AUP_TNIL })
-#define AUP_FALSE       ((aupV){ .type = AUP_TBOOL, .Bool = 0 })
-#define AUP_TRUE        ((aupV){ .type = AUP_TBOOL, .Bool = 1 })
-#define AUP_BOOL(b)     ((aupV){ .type = AUP_TBOOL, .Bool = (b) })
-#define AUP_INT(i)      ((aupV){ .type = AUP_TINT, .Int = (i) })
-#define AUP_NUM(n)      ((aupV){ .type = AUP_TNUM, .Num = (n) })
-#define AUP_OBJ(o)      ((aupV){ .isObj = true, .Obj = (aupObj *)(o) })
+#define AUP_NIL         ((aupVal){ .type = AUP_TNIL })
+#define AUP_FALSE       ((aupVal){ .type = AUP_TBOOL, .Bool = 0 })
+#define AUP_TRUE        ((aupVal){ .type = AUP_TBOOL, .Bool = 1 })
+#define AUP_BOOL(b)     ((aupVal){ .type = AUP_TBOOL, .Bool = (b) })
+#define AUP_INT(i)      ((aupVal){ .type = AUP_TINT, .Int = (i) })
+#define AUP_NUM(n)      ((aupVal){ .type = AUP_TNUM, .Num = (n) })
+#define AUP_OBJ(o)      ((aupVal){ .isObj = true, .Obj = (aupObj *)(o) })
 
 #define AUP_IS_NIL(v)   (!(v).notNil)
 #define AUP_IS_BOOL(v)  ((v).type == AUP_TBOOL)
@@ -98,12 +98,12 @@ typedef struct {
 #define AUP_TYPE(v)     ((v).type)
 #define AUP_IS_FALSEY(v) (!(unsigned char)((v)._))
 
-void aupVa_init(aupVa *array);
-void aupVa_free(aupVa *array);
-int aupVa_write(aupVa *array, aupV value);
-int aupVa_find(aupVa *array, aupV value);
+void aup_initValueArr(aupValArr *array);
+void aup_freeValueArr(aupValArr *array);
+int aup_writeValueArr(aupValArr *array, aupVal value);
+int aup_findValue(aupValArr *array, aupVal value);
 
-const char *aupV_typeOf(aupV value);
-void aupV_print(aupV value);
+const char *aup_typeofVal(aupVal value);
+void aup_printVal(aupVal value);
 
 #endif
