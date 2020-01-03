@@ -93,4 +93,11 @@ typedef union {
 typedef enum { AUP_OPCODES() } aupOp;
 #undef _CODE
 
+static inline const char *aup_opName(aupOp opcode) {
+#define _CODE(x) /* [AUP_OP_##x] = */ #x,
+    static const char *names[] = { AUP_OPCODES() };
+    return names[opcode];
+#undef _CODE
+}
+
 #endif
