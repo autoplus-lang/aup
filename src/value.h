@@ -96,7 +96,7 @@ typedef struct {
 #define AUP_AS_RAW(v)	((v)._)
 
 #define AUP_TYPE(v)     ((v).type)
-#define AUP_IS_FALSEY(v) (!(unsigned char)((v)._))
+#define AUP_IS_FALSEY(v) (!(bool)((v)._))
 
 void aup_initValueArr(aupValArr *array);
 void aup_freeValueArr(aupValArr *array);
