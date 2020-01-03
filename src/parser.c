@@ -360,7 +360,7 @@ static void endScope()
 	while (current->localCount > 0 &&
 		current->locals[current->localCount - 1].depth > current->scopeDepth) {
 		if (current->locals[current->localCount - 1].isCaptured) {
-			EMIT_OpA(CLU, current->localCount-1);
+			EMIT_OpA(CLOSE, current->localCount-1);
 		}
 		else {
 			//emitByte(OP_POP);
@@ -912,9 +912,9 @@ static void function(FunType type, REG dest)
 
     // Make closure if upvalues exist.
     if (function->upvalueCount > 0) {
-        EMIT_OpA(CLO, constant);
+        EMIT_OpA(CLOSURE, constant);
         for (int i = 0; i < function->upvalueCount; i++) {
-            EMIT_OpAsB(CLO, compiler.upvalues[i].index,
+            EMIT_OpAsB(CLOSURE, compiler.upvalues[i].index,
                 compiler.upvalues[i].isLocal);
         }
     }

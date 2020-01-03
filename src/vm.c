@@ -447,13 +447,13 @@ static int exec(aupVM *vm)
             NEXT;
         }
 
-        CODE(CLU):
+        CODE(CLOSE):
         {
             closeUpvalues(vm, frame->stack + GET_A());
             NEXT;
         }
 
-        CODE(CLO):
+        CODE(CLOSURE):
         {
             aupOf *function = AUP_AS_FUN(K_A());
             aupOf_closure(function);

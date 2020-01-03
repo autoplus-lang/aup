@@ -240,13 +240,13 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			NEXT;
 		}
 
-		CODE(CLU)
+		CODE(CLOSE)
         {
 			R_A();
 			NEXT;
 		}
 
-		CODE(CLO)
+		CODE(CLOSURE)
         {
 			K_A(); PUTF(", %d", GET_B());
 			NEXT;

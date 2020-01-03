@@ -15,7 +15,7 @@
 
 typedef union {
     struct {
-        aupOp    op : 6;
+        unsigned op : 6;
         unsigned  A : 8;
         unsigned Bx : 9;
         unsigned Cx : 9;
@@ -92,8 +92,8 @@ typedef enum {
     AUP_OP_LD,
     AUP_OP_ST,
 
-    AUP_OP_CLU,
-    AUP_OP_CLO,
+    AUP_OP_CLOSE,
+    AUP_OP_CLOSURE,
     AUP_OP_ULD,
     AUP_OP_UST,
 
