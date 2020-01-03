@@ -105,10 +105,6 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 
     DISPATCH()
     {
-		CODE(NOP)
-        {
-			NEXT;
-		}
 
 		CODE(RET)
         {

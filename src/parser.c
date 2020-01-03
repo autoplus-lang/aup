@@ -914,7 +914,7 @@ static void function(FunType type, REG dest)
     if (function->upvalueCount > 0) {
         EMIT_OpA(CLO, constant);
         for (int i = 0; i < function->upvalueCount; i++) {
-            EMIT_OpAsB(NOP, compiler.upvalues[i].index,
+            EMIT_OpAsB(CLO, compiler.upvalues[i].index,
                 compiler.upvalues[i].isLocal);
         }
     }

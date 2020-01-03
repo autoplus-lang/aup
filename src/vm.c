@@ -267,12 +267,6 @@ static int exec(aupVM *vm)
 
     INTERPRET()
     {
-        CODE(NOP):
-        {
-            // Do nothing.
-            NEXT;
-        }
-
         CODE(PUSH):
         {
 			PUSH(RK_B());

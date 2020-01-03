@@ -61,8 +61,6 @@ typedef union {
 #define AUP_GET_sC(i)   ((uint8_t)(((i) >> 31) & 1))
 
 typedef enum {
-    AUP_OP_NOP = 0,
-
     AUP_OP_CALL,
     AUP_OP_RET,
 
