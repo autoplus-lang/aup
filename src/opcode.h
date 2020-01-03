@@ -70,6 +70,7 @@ typedef enum {
 
     AUP_OP_NIL,
     AUP_OP_BOOL,
+    AUP_OP_CONST,
 
     AUP_OP_NOT,
     AUP_OP_NEG,
