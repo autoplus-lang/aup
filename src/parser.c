@@ -69,7 +69,7 @@ static aupPs parser;
 static Compiler *current = NULL;
 static aupVM *runningVM;
 
-static aupCh *currentChunk()
+static aupChunk *currentChunk()
 {
 	return &current->function->chunk;
 }
@@ -146,7 +146,7 @@ static  REG		currentReg;
 
 static void emit(uint32_t i)
 {
-	aupCh *ch = currentChunk();
+    aupChunk *ch = currentChunk();
 	if (ch->count <= 0)
 		goto _emit;
 
@@ -218,7 +218,7 @@ static void emit(uint32_t i)
 	}
 
 _emit:
-	aupCh_write(currentChunk(), i,
+	aup_writeChunk(currentChunk(), i,
 		parser.previous.line, parser.previous.column);
 }
 
@@ -242,7 +242,7 @@ _emit:
 static uint8_t makeConstant(aupV value)
 {
     if (AUP_IS_OBJ(value)) aup_pushRoot(runningVM, AUP_AS_OBJ(value));
-	int constant = aupCh_addK(currentChunk(), value);
+	int constant = aup_addConstant(currentChunk(), value);
     if (AUP_IS_OBJ(value)) aup_popRoot(runningVM);
 
 	if (constant > AUP_MAX_CONSTS) {
@@ -262,7 +262,7 @@ static uint8_t emitConstant(aupV value, REG dest)
 
 static void emitReturn(REG src)
 {
-	aupCh *chunk = currentChunk();
+    aupChunk *chunk = currentChunk();
 
 	if (chunk->count == 0 || AUP_GET_Op(chunk->code[chunk->count - 1]) != AUP_OP_RET) {
 		if (src == -1) {

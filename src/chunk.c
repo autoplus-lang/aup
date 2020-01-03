@@ -3,7 +3,7 @@
 
 #include "chunk.h"
 
-void aupCh_init(aupCh *chunk)
+void aup_initChunk(aupChunk *chunk)
 {
 	chunk->count = 0;
 	chunk->capacity = 0;
@@ -14,17 +14,17 @@ void aupCh_init(aupCh *chunk)
 	aupVa_init(&chunk->constants);
 }
 
-void aupCh_free(aupCh *chunk)
+void aup_freeChunk(aupChunk *chunk)
 {
 	free(chunk->code);
     free(chunk->lines);
     free(chunk->columns);
     aupVa_free(&chunk->constants);
 
-    aupCh_init(chunk);
+    aup_initChunk(chunk);
 }
 
-int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t column)
+int aup_writeChunk(aupChunk *chunk, uint32_t instruction, uint16_t line, uint16_t column)
 {
     if (chunk->capacity < chunk->count + 1) {
         int cap = (chunk->capacity += AUP_CODE_PAGE);
@@ -39,7 +39,7 @@ int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t colu
 	return chunk->count++;
 }
 
-int aupCh_addK(aupCh *chunk, aupV value)
+int aup_addConstant(aupChunk *chunk, aupV value)
 {
 	int k = aupVa_find(&chunk->constants, value);
 	if (k != -1) return k;
@@ -47,7 +47,7 @@ int aupCh_addK(aupCh *chunk, aupV value)
 	return aupVa_write(&chunk->constants, value);
 }
 
-void aupCh_dasmInst(aupCh *chunk, int offset)
+void aupCh_dasmInst(aupChunk *chunk, int offset)
 {
 	uint32_t i;
 	printf("%03d.", offset);
@@ -279,7 +279,7 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 	printf("\n");
 }
 
-void aupCh_dasm(aupCh *chunk, const char *name)
+void aupCh_dasm(aupChunk *chunk, const char *name)
 {
 	printf("=== %s ===\n", name);
 

@@ -142,7 +142,7 @@ aupOf *aupOf_new(AUP_VM)
 	function->upvalueCount = 0;
 	function->upvalues = NULL;
 	function->name = NULL;
-	aupCh_init(&function->chunk);
+	aup_initChunk(&function->chunk);
 
 	return function;
 }

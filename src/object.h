@@ -29,7 +29,7 @@ struct _aupOf {
 	struct _aupO obj;
 	int arity;
 	int upvalueCount;
-	aupCh chunk;
+    aupChunk chunk;
 	aupOs *name;
 	aupOu **upvalues;
 };

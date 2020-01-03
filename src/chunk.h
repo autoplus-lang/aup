@@ -12,16 +12,16 @@ typedef struct {
 	uint16_t *lines;
 	uint16_t *columns;
 	aupVa constants;
-} aupCh;
+} aupChunk;
 
 #define AUP_CODE_PAGE	256
 
-void aupCh_init(aupCh *chunk);
-void aupCh_free(aupCh *chunk);
-int aupCh_write(aupCh *chunk, uint32_t instruction, uint16_t line, uint16_t column);
-int aupCh_addK(aupCh *chunk, aupV value);
+void aup_initChunk(aupChunk *chunk);
+void aup_freeChunk(aupChunk *chunk);
+int aup_writeChunk(aupChunk *chunk, uint32_t instruction, uint16_t line, uint16_t column);
+int aup_addConstant(aupChunk *chunk, aupV value);
 
-void aupCh_dasm(aupCh *chunk, const char *name);
-void aupCh_dasmInst(aupCh *chunk, int offset);
+void aup_dasmChunk(aupChunk *chunk, const char *name);
+void aup_dasmInstruction(aupChunk *chunk, int offset);
 
 #endif

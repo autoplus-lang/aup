@@ -117,7 +117,7 @@ static void freeObject(AUP_VM, aupO *object)
 		}
 		case AUP_TFUN: {
 			aupOf *function = (aupOf*)object;
-			aupCh_free(&function->chunk);
+			aup_freeChunk(&function->chunk);
 			free(function->upvalues);
 			AUP_FREE(aupOf, object);
 			break;
