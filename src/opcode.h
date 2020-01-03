@@ -60,44 +60,37 @@ typedef union {
 #define AUP_GET_Cx(i)   ((uint16_t)(((i) >> 23) & 0x1FF))
 #define AUP_GET_sC(i)   ((uint8_t)(((i) >> 31) & 1))
 
-typedef enum {
-    AUP_OP_CALL,
-    AUP_OP_RET,
+#define AUP_OPCODES()   \
+    _CODE(CALL)         \
+    _CODE(RET)          \
+    _CODE(PUTS)         \
+    _CODE(NIL)          \
+    _CODE(BOOL)         \
+    _CODE(CONST)        \
+    _CODE(NOT)          \
+    _CODE(NEG)          \
+    _CODE(LT)           \
+    _CODE(LE)           \
+    _CODE(EQ)           \
+    _CODE(ADD)          \
+    _CODE(SUB)          \
+    _CODE(MUL)          \
+    _CODE(DIV)          \
+    _CODE(MOD)          \
+    _CODE(MOV)          \
+    _CODE(GLD)          \
+    _CODE(GST)          \
+    _CODE(LD)           \
+    _CODE(ST)           \
+    _CODE(ULD)          \
+    _CODE(UST)          \
+    _CODE(JMP)          \
+    _CODE(JMPF)         \
+    _CODE(CLOSURE)      \
+    _CODE(CLOSE)
 
-    AUP_OP_PUTS,
-
-    AUP_OP_NIL,
-    AUP_OP_BOOL,
-    AUP_OP_CONST,
-
-    AUP_OP_NOT,
-    AUP_OP_NEG,
-
-    AUP_OP_LT,
-    AUP_OP_LE,
-    AUP_OP_EQ,
-
-    AUP_OP_ADD,
-    AUP_OP_SUB,
-    AUP_OP_MUL,
-    AUP_OP_DIV,
-    AUP_OP_MOD,
-
-    AUP_OP_MOV,
-
-    AUP_OP_GLD,
-    AUP_OP_GST,
-
-    AUP_OP_LD,
-    AUP_OP_ST,
-
-    AUP_OP_CLOSE,
-    AUP_OP_CLOSURE,
-    AUP_OP_ULD,
-    AUP_OP_UST,
-
-    AUP_OP_JMP,
-    AUP_OP_JMPF,
-} aupOp;
+#define _CODE(x) AUP_OP_##x,
+typedef enum { AUP_OPCODES() } aupOp;
+#undef _CODE
 
 #endif
