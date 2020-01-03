@@ -65,7 +65,7 @@ typedef struct {
 		int64_t Int;
 		double Num;
         aupObj *Obj;
-		uint64_t _;
+		uint64_t raw;
 	};
 } aupVal;
 
@@ -93,10 +93,10 @@ typedef struct {
 #define AUP_AS_INT(v)   ((v).Int)
 #define AUP_AS_NUM(v)   ((v).Num)
 #define AUP_AS_OBJ(v)   ((v).Obj)
-#define AUP_AS_RAW(v)	((v)._)
+#define AUP_AS_RAW(v)	((v).raw)
 
 #define AUP_TYPE(v)     ((v).type)
-#define AUP_IS_FALSEY(v) (!(bool)((v)._))
+#define AUP_IS_FALSEY(v) (!(bool)((v).raw))
 
 void aup_initValueArr(aupValArr *array);
 void aup_freeValueArr(aupValArr *array);
@@ -105,5 +105,6 @@ int aup_findValue(aupValArr *array, aupVal value);
 
 const char *aup_typeofVal(aupVal value);
 void aup_printVal(aupVal value);
+bool aup_isEqual(aupVal a, aupVal b);
 
 #endif

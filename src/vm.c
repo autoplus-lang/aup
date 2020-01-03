@@ -354,7 +354,7 @@ static int exec(aupVM *vm)
 
         CODE(EQ):
         {
-            BINOP_LG( == , lt);
+            R_A() = AUP_BOOL(aup_isEqual(RK_B(), RK_C()));
             NEXT;
         }
 

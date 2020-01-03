@@ -50,6 +50,43 @@ void aup_printVal(aupVal value)
 	}
 }
 
+bool aup_isEqual(aupVal a, aupVal b)
+{
+    aupVt ta = AUP_TYPE(a);
+    aupVt tb = AUP_TYPE(b);
+
+    switch (AUP_CMB(AUP_TYPE(a), AUP_TYPE(b))) {
+        case AUP_TNIL_NIL:
+            return true;
+        case AUP_TBOOL_INT:
+            return AUP_AS_BOOL(a) == AUP_AS_INT(b);
+        case AUP_TBOOL_NUM:
+            return AUP_AS_BOOL(a) == AUP_AS_NUM(b);
+        case AUP_TINT_BOOL:
+            return AUP_AS_INT(a) == AUP_AS_BOOL(b);
+        case AUP_TNUM_BOOL:
+            return AUP_AS_NUM(a) == AUP_AS_BOOL(b);
+        case AUP_TNUM_INT:
+            return AUP_AS_NUM(a) == AUP_AS_INT(b);
+        case AUP_TINT_NUM:
+            return AUP_AS_INT(a) == AUP_AS_NUM(b);
+        default:
+            if (ta != tb) return false;
+            switch (ta) {
+                case AUP_TBOOL:
+                    return AUP_AS_BOOL(a) == AUP_AS_BOOL(b);
+                case AUP_TINT:
+                    return AUP_AS_INT(a) == AUP_AS_INT(b);
+                case AUP_TNUM:
+                    return AUP_AS_NUM(a) == AUP_AS_NUM(b);
+                case AUP_TOBJ:
+                    return AUP_AS_OBJ(a) == AUP_AS_OBJ(b);
+            }
+    }
+
+    return false;
+}
+
 void aup_initValueArr(aupValArr *array)
 {
 	array->count = 0;
@@ -77,12 +114,8 @@ void aup_freeValueArr(aupValArr *array)
 
 int aup_findValue(aupValArr *array, aupVal value)
 {
-#define IS_EQUAL(v1, v2) \
-	AUP_TYPE(v1) == AUP_TYPE(v2) && \
-	AUP_AS_RAW(v1) == AUP_AS_RAW(v2)
-
 	for (int i = 0; i < array->count; i++) {
-		if (IS_EQUAL(array->values[i], value)) {
+		if (aup_isEqual(array->values[i], value)) {
 			return i;
 		}
 	}
