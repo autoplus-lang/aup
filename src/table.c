@@ -164,7 +164,7 @@ void aup_markTable(AUP_VM, aupT *table)
 {
     for (int i = 0; i < table->capacity; i++) {
         aupTe *entry = &table->entries[i];
-        aup_markObject(vm, (aupO *)entry->key);
+        aup_markObject(vm, (aupObj *)entry->key);
         aup_markValue(vm, entry->value);
     }
 }

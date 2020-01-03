@@ -5,28 +5,28 @@
 #include "value.h"
 #include "chunk.h"
 
-struct _aupO {
+struct _aupObj {
     unsigned isMarked : 1;
 	aupVt type : 8;
-	struct _aupO *next;
+	struct _aupObj *next;
 };
 
 struct _aupOs {
-	struct _aupO obj;
+	aupObj obj;
 	char *chars;
 	int length;
 	uint32_t hash;
 };
 
 struct _aupOu {
-	struct _aupO obj;
+    aupObj obj;
 	aupV *value;
 	aupV closed;
 	struct _aupOu *next;
 };
 
 struct _aupOf {
-	struct _aupO obj;
+    aupObj obj;
 	int arity;
 	int upvalueCount;
     aupChunk chunk;
@@ -54,7 +54,7 @@ void aupOf_closure(aupOf *function);
 
 aupOu *aupOu_new(AUP_VM, aupV *slot);
 
-const char *aupO_typeOf(aupO *object);
-void aupO_print(aupO *object);
+const char *aupO_typeOf(aupObj *object);
+void aupO_print(aupObj *object);
 
 #endif

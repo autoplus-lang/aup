@@ -32,12 +32,12 @@ struct _aupVM {
     size_t bytesAllocated;
     size_t nextGC;
 
-	aupO *objects;
+    aupObj *objects;
     int grayCount;
     int grayCapacity;
-    aupO **grayStack;
+    aupObj **grayStack;
 
-    aupO *tempRoots[AUP_MAX_TEMP_ROOTS];
+    aupObj *tempRoots[AUP_MAX_TEMP_ROOTS];
     int numTempRoots;
 };
 
@@ -46,7 +46,7 @@ void aup_close(aupVM *vm);
 int aup_doString(aupVM *vm, const char *source);
 int aup_doFile(aupVM *vm, const char *name);
 
-void aup_pushRoot(aupVM *vm, aupO *object);
+void aup_pushRoot(aupVM *vm, aupObj *object);
 void aup_popRoot(aupVM *vm);
 
 #endif

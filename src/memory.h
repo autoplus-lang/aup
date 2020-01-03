@@ -20,6 +20,6 @@ void aup_freeObjects(AUP_VM);
 
 void aup_gc(AUP_VM);
 void aup_markValue(AUP_VM, aupV value);
-void aup_markObject(AUP_VM, aupO *object);
+void aup_markObject(AUP_VM, aupObj *object);
 
 #endif

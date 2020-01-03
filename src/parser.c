@@ -1164,7 +1164,7 @@ void aup_markCompilerRoots(AUP_VM)
 {
     Compiler *compiler = current;
     while (compiler != NULL) {
-        aup_markObject(vm, (aupO *)compiler->function);
+        aup_markObject(vm, (aupObj *)compiler->function);
         compiler = compiler->enclosing;
     }
 }

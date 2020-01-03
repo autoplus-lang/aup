@@ -16,7 +16,7 @@ static const char
 	__str[] = "str",
 	__fun[] = "fn";
 
-const char *aupO_typeOf(aupO *object)
+const char *aupO_typeOf(aupObj *object)
 {
 	switch (TYPE(object)) {
 		case AUP_TSTR:
@@ -37,7 +37,7 @@ static void printFunction(aupOf *function)
 	printf("%s: <%s>", __fun, function->name->chars);
 }
 
-void aupO_print(aupO *object)
+void aupO_print(aupObj *object)
 {
 	switch (TYPE(object)) {
 		case AUP_TSTR: {
@@ -78,9 +78,9 @@ static uint32_t hashString(const char *key, int length)
 #define ALLOC_OBJ(type, objectType) \
 	(type *)allocObject(vm, sizeof(type), objectType)
 
-static aupO *allocObject(AUP_VM, size_t size, aupVt type)
+static aupObj *allocObject(AUP_VM, size_t size, aupVt type)
 {
-	aupO *object = (aupO *)aup_realloc(vm, NULL, 0, size);
+    aupObj *object = (aupObj *)aup_realloc(vm, NULL, 0, size);
 	object->type = type;
     object->isMarked = false;
 
@@ -100,7 +100,7 @@ static aupOs *allocString(AUP_VM, char *chars, int length, uint32_t hash)
 	string->chars = chars;
 	string->hash = hash;
 
-    aup_pushRoot(vm, (aupO *)string);
+    aup_pushRoot(vm, (aupObj *)string);
 	aupT_set(&vm->strings, string, AUP_NIL);
     aup_popRoot(vm);
 

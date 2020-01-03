@@ -38,7 +38,7 @@ void *aup_realloc(AUP_VM, void *ptr, size_t oldSize, size_t newSize)
     return vm->alloc(ptr, newSize);
 }
 
-void aup_markObject(AUP_VM, aupO *object)
+void aup_markObject(AUP_VM, aupObj *object)
 {
     if (object == NULL) return;
     if (object->isMarked) return;
@@ -54,7 +54,7 @@ void aup_markObject(AUP_VM, aupO *object)
     if (vm->grayCapacity < vm->grayCount + 1) {
         vm->grayCapacity = AUP_GROW_CAP(vm->grayCapacity);
         vm->grayStack = realloc(vm->grayStack,
-            sizeof(aupO *) * vm->grayCapacity);
+            sizeof(aupObj *) * vm->grayCapacity);
     }
 
     vm->grayStack[vm->grayCount++] = object;
@@ -73,7 +73,7 @@ static void markArray(AUP_VM, aupVa *array)
     }
 }
 
-static void blackenObject(AUP_VM, aupO *object)
+static void blackenObject(AUP_VM, aupObj *object)
 {
 #ifdef AUP_DEBUG
     printf("%p blacken ", (void*)object);
@@ -88,10 +88,10 @@ static void blackenObject(AUP_VM, aupO *object)
 
         case AUP_TFUN: {
             aupOf *function = (aupOf *)object;
-            aup_markObject(vm, (aupO *)function->name);
+            aup_markObject(vm, (aupObj *)function->name);
             markArray(vm, &function->chunk.constants);
             for (int i = 0; i < function->upvalueCount; i++) {
-                aup_markObject(vm, (aupO *)function->upvalues[i]);
+                aup_markObject(vm, (aupObj *)function->upvalues[i]);
             }
             break;
         }
@@ -102,7 +102,7 @@ static void blackenObject(AUP_VM, aupO *object)
     }
 }
 
-static void freeObject(AUP_VM, aupO *object)
+static void freeObject(AUP_VM, aupObj *object)
 {
 #ifdef AUP_DEBUG
     printf("%p free type %d\n", (void*)object, object->type);
@@ -140,13 +140,13 @@ static void markRoots(AUP_VM)
     }
 
     for (int i = 0; i < vm->frameCount; i++) {
-        aup_markObject(vm, (aupO *)vm->frames[i].function);
+        aup_markObject(vm, (aupObj *)vm->frames[i].function);
     }
 
     for (aupOu *upvalue = vm->openUpvalues;
         upvalue != NULL;
         upvalue = upvalue->next) {
-        aup_markObject(vm, (aupO *)upvalue);
+        aup_markObject(vm, (aupObj *)upvalue);
     }
 
     aup_markTable(vm, &vm->globals);
@@ -156,15 +156,15 @@ static void markRoots(AUP_VM)
 static void traceReferences(AUP_VM)
 {
     while (vm->grayCount > 0) {
-        aupO *object = vm->grayStack[--vm->grayCount];
+        aupObj *object = vm->grayStack[--vm->grayCount];
         blackenObject(vm, object);
     }
 }
 
 static void sweep(AUP_VM)
 {
-    aupO *previous = NULL;
-    aupO *object = vm->objects;
+    aupObj *previous = NULL;
+    aupObj *object = vm->objects;
 
     while (object != NULL) {
         if (object->isMarked) {
@@ -173,7 +173,7 @@ static void sweep(AUP_VM)
             object = object->next;
         }
         else {
-            aupO *unreached = object;
+            aupObj *unreached = object;
 
             object = object->next;
             if (previous != NULL) {
@@ -212,9 +212,9 @@ void aup_gc(AUP_VM)
 
 void aup_freeObjects(AUP_VM)
 {
-	aupO *object = vm->objects;
+    aupObj *object = vm->objects;
 	while (object != NULL) {
-		aupO *next = object->next;
+        aupObj *next = object->next;
 		freeObject(vm, object);
 		object = next;
 	}

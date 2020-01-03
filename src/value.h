@@ -49,7 +49,7 @@ typedef enum {
 	AUP_TOBJ_OBJ	= AUP_CMB(AUP_TOBJ, AUP_TOBJ)
 } aupVtt;
 
-typedef struct _aupO aupO;
+typedef struct _aupObj aupObj;
 typedef struct _aupOs aupOs;
 typedef struct _aupOf aupOf;
 typedef struct _aupOu aupOu;
@@ -64,7 +64,7 @@ typedef struct {
 		bool Bool : 1;
 		int64_t Int;
 		double Num;
-		aupO *Obj;
+        aupObj *Obj;
 		uint64_t _;
 	};
 } aupV;
@@ -81,7 +81,7 @@ typedef struct {
 #define AUP_BOOL(b)     ((aupV){ .type = AUP_TBOOL, .Bool = (b) })
 #define AUP_INT(i)      ((aupV){ .type = AUP_TINT, .Int = (i) })
 #define AUP_NUM(n)      ((aupV){ .type = AUP_TNUM, .Num = (n) })
-#define AUP_OBJ(o)      ((aupV){ .isObj = true, .Obj = (aupO *)(o) })
+#define AUP_OBJ(o)      ((aupV){ .isObj = true, .Obj = (aupObj *)(o) })
 
 #define AUP_IS_NIL(v)   (!(v).notNil)
 #define AUP_IS_BOOL(v)  ((v).type == AUP_TBOOL)
