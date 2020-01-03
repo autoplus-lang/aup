@@ -199,25 +199,14 @@ static int exec(aupVM *vm)
 #define U_A()       U(GET_A())
 #define U_B()       U(GET_B())
 
-#if defined(__GNUC__) || defined(__clang__) || defined(__MINGW32__) || defined(__MINGW64__)
+#ifdef AUP_COMPUTED_GOTO
 #define INTERPRET() NEXT;
 #define CODE(x)     _AUP_OP_##x
 #define CODE_ERR()  _err
 #define NEXT        goto *_jtbl[FETCH()]
-    static void *_jtbl[] = {
-        &&CODE(NOP),
-        &&CODE(CALL),   &&CODE(RET),
-        &&CODE(PUSH),   &&CODE(POP),    &&CODE(PUT),
-        &&CODE(NIL),    &&CODE(BOOL),
-        &&CODE(NOT),    &&CODE(NEG),
-        &&CODE(LT),     &&CODE(LE),     &&CODE(EQ),
-        &&CODE(ADD),    &&CODE(SUB),    &&CODE(MUL),    &&CODE(DIV),    &&CODE(MOD),
-        &&CODE(MOV),
-        &&CODE(GLD),    &&CODE(GST),
-        &&CODE(LD),     &&CODE(ST),
-        &&CODE(CLU),    &&CODE(CLO),    &&CODE(ULD),    &&CODE(UST),
-        &&CODE(JMP),    &&CODE(JMPF),
-    };
+#define _CODE(x)    &&_AUP_OP_##x,
+    static void *_jtbl[] = { AUP_OPCODES() };
+#undef _CODE
 #else
 #define INTERPRET() _loop: switch (FETCH())
 #define CODE(x)     case AUP_OP_##x
@@ -316,6 +305,12 @@ static int exec(aupVM *vm)
         CODE(NIL):
         {
             R_A() = AUP_NIL;
+            NEXT;
+        }
+
+        CODE(CONST):
+        {
+            // todo
             NEXT;
         }
 

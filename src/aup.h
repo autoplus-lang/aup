@@ -37,4 +37,9 @@
 #define AUP_DEBUG
 #endif
 
+// computed goto
+#if defined(__GNUC__) || defined(__clang__) || defined(__MINGW32__) || defined(__MINGW64__)
+#define AUP_COMPUTED_GOTO
+#endif
+
 #endif
