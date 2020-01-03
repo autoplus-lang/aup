@@ -267,18 +267,6 @@ static int exec(aupVM *vm)
 
     INTERPRET()
     {
-        CODE(PUSH):
-        {
-			PUSH(RK_B());
-			NEXT;
-		}
-
-        CODE(POP):
-        {
-			POP();
-			NEXT;
-		}
-
 		CODE(RET):
         {
 			closeUpvalues(vm, frame->stack);

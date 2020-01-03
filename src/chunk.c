@@ -124,12 +124,6 @@ void aupCh_dasmInst(aupCh *chunk, int offset)
 			NEXT;
 		}
 
-		CODE(PUSH)
-        {
-			RK_B();
-			NEXT;
-		}
-
 		CODE(MOV)
         {
 			R_A(), PUT(" = "), R_B();
