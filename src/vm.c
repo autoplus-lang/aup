@@ -104,6 +104,8 @@ aupVM *aup_cloneVM(aupVM *from)
     vm->globals = from->globals;
     vm->strings = from->strings;
 
+    vm->next = from;
+
     resetStack(vm);
     return vm;
 }
