@@ -14,6 +14,7 @@ static void resetStack(aupVM *vm)
 {
     vm->top = vm->stack;
     vm->frameCount = 0;
+    vm->openUpvalues = NULL;
 }
 
 static void runtimeError(aupVM *vm, const char *format, ...)
@@ -323,6 +324,7 @@ int aup_execute(aupVM *vm)
 
         CODE(RET) {
             aupVal result = POP();
+            closeUpvalues(vm, frame->slots);
 
             if (--vm->frameCount == 0) {
                 POP();
