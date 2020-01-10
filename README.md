@@ -1,4 +1,4 @@
-<img align="left" src="https://github.com/wy3/aup/blob/master/aup.png?raw=true" width="120px">
+<img align="left" src="https://github.com/wy3/aup/blob/stack_based/aup.png?raw=true" width="120px">
 
 # aup
 The **AutoIt+** scripting language, based on my [Lox implementation](https://github.com/wy3/lox).
