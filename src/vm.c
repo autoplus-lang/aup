@@ -61,6 +61,7 @@ aupVM *aup_create()
     vm->strings = malloc(sizeof(aupTab));
 
     vm->compiler = NULL;
+    vm->next = NULL;
 
     vm->errmsg = NULL;
     vm->hadError = false;
@@ -77,16 +78,17 @@ void aup_close(aupVM *vm)
 {
     if (vm == NULL) return;
 
-    aup_freeTable(vm->globals);
-    aup_freeTable(vm->strings);
-    aup_freeGC(vm->gc);
+    if (vm->next == NULL) {
+        aup_freeTable(vm->globals);
+        aup_freeTable(vm->strings);
+        aup_freeGC(vm->gc);
 
-    free(vm->globals);
-    free(vm->strings);
-    free(vm->gc);
+        free(vm->globals);
+        free(vm->strings);
+        free(vm->gc);
+    }
 
     free(vm->errmsg);
-
     free(vm);
 }
 

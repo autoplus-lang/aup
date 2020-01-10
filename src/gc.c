@@ -158,7 +158,6 @@ static void sweep(aupVM *vm)
                 gc->objects = object;
             }
 
-            printf(">> %p: \n", unreached);
             aup_freeObject(gc, unreached);
         }
     }

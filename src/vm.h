@@ -30,6 +30,7 @@ struct _aupVM {
     aupUpv *openUpvalues;
 
     aupCompiler *compiler;
+    aupVM *next;
 
     char *errmsg;
     bool hadError;
