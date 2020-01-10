@@ -225,13 +225,16 @@ aupTok aup_scanToken(aupLexer *L)
         case ']': return makeToken(L, AUP_TOK_RBRACKET);
         case '{': return makeToken(L, AUP_TOK_LBRACE);
         case '}': return makeToken(L, AUP_TOK_RBRACE);
+
         case ';': return makeToken(L, AUP_TOK_SEMICOLON);
         case ',': return makeToken(L, AUP_TOK_COMMA);
         case '.': return makeToken(L, AUP_TOK_DOT);
+
         case '-': return makeToken(L, AUP_TOK_MINUS);
         case '+': return makeToken(L, AUP_TOK_PLUS);
         case '/': return makeToken(L, AUP_TOK_SLASH);
         case '*': return makeToken(L, AUP_TOK_STAR);
+        case '%': return makeToken(L, AUP_TOK_PERCENT);
 
         case '!':
             return makeToken(L, match(L, '=') ? AUP_TOK_BANG_EQUAL : AUP_TOK_BANG);
