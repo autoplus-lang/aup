@@ -469,7 +469,7 @@ static void literal(Parser *P, bool canAssign)
         case AUP_TOK_FALSE:   emitByte(P, AUP_OP_FALSE); break;
         case AUP_TOK_NIL:     emitByte(P, AUP_OP_NIL); break;
         case AUP_TOK_TRUE:    emitByte(P, AUP_OP_TRUE); break;
-        case AUP_TOK_FUN:     emitBytes(P, AUP_OP_LD, 0); break;
+        case AUP_TOK_FUNC:     emitBytes(P, AUP_OP_LD, 0); break;
         default:
             return; // Unreachable.                   
     }
@@ -605,7 +605,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_ELSE]          = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_FALSE]         = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_FOR]           = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_FUN]           = { literal,  NULL,    PREC_NONE },
+    [AUP_TOK_FUNC]          = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_IF]            = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_NIL]           = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_OR]            = { NULL,     or_,     PREC_OR },
@@ -796,7 +796,7 @@ static void synchronize(Parser *P)
 
         switch (P->current.type) {
             case AUP_TOK_CLASS:
-            case AUP_TOK_FUN:
+            case AUP_TOK_FUNC:
             case AUP_TOK_VAR:
             case AUP_TOK_FOR:
             case AUP_TOK_IF:
@@ -813,7 +813,7 @@ static void synchronize(Parser *P)
 
 static void declaration(Parser *P)
 {
-    if (match(P, AUP_TOK_FUN)) {
+    if (match(P, AUP_TOK_FUNC)) {
         funDeclaration(P);
     }
     else if (match(P, AUP_TOK_VAR)) {
