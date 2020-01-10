@@ -154,7 +154,12 @@ void aup_freeObject(aupGC *gc, aupObj *object)
         case AUP_TFUN: {
             aupFun *function = (aupFun *)object;
             aup_freeChunk(&function->chunk);
+            if (function->upvalueCount > 0) free(function->upvalues);
             FREE(gc, aupFun, function);
+            break;
+        }
+        case AUP_TUPV: {
+            FREE(gc, aupUpv, object);
             break;
         }
         case AUP_TMAP: {
