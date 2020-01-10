@@ -599,3 +599,9 @@ aupVal aup_pop(aupVM *vm)
 {
     return POP();
 }
+
+void aup_error(aupVM *vm, const char *msg)
+{
+    vm->hadError = true;
+    vm->errmsg = msg;
+}

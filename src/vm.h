@@ -23,11 +23,16 @@ struct _aupVM {
     aupGC *gc;
     aupTab *strings;
     aupTab *globals;
+
+    const char *errmsg;
+    bool hadError;
 };
 
 aupVM *aup_create();
 void aup_close(aupVM *vm);
 aupVM *aup_cloneVM(aupVM *from);
 int aup_doFile(aupVM *vm, const char *fname);
+
+void aup_error(aupVM *vm, const char *msg);
 
 #endif
