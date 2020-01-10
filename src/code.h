@@ -96,7 +96,9 @@ typedef enum {
     AUP_TOK_TRUE, AUP_TOK_VAR, AUP_TOK_WHILE,
 
     AUP_TOK_ERROR,
-    AUP_TOK_EOF
+    AUP_TOK_EOF,
+
+    AUP_TOKENCOUNT
 } aupTokType;
 
 typedef struct {

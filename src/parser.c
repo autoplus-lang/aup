@@ -568,7 +568,7 @@ static void unary(Parser *P, bool canAssign)
     }
 }
 
-static ParseRule rules[] = {
+static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_LPAREN]        = { grouping, call,    PREC_CALL },
     [AUP_TOK_RPAREN]        = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_LBRACKET]      = { map,      index_,  PREC_CALL },
