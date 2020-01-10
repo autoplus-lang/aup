@@ -106,6 +106,10 @@ static void blackenObject(aupVM *vm, aupObj *object)
 
 static void markRoots(aupVM *vm)
 {
+    for (int i = 0; i < vm->numRoots; i++) {
+        aup_markObject(vm, vm->tempRoots[i]);
+    }
+
     for (aupVal *slot = vm->stack; slot < vm->top; slot++) {
         aup_markValue(vm, *slot);
     }
