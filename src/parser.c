@@ -420,6 +420,7 @@ static void binary(Parser *P, bool canAssign)
         case AUP_TOK_MINUS:         emitByte(P, AUP_OP_SUB); break;
         case AUP_TOK_STAR:          emitByte(P, AUP_OP_MUL); break;
         case AUP_TOK_SLASH:         emitByte(P, AUP_OP_DIV); break;
+        case AUP_TOK_PERCENT:       emitByte(P, AUP_OP_MOD); break;
 
         default:
             return; // Unreachable.                              
@@ -584,6 +585,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_SEMICOLON]     = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_SLASH]         = { NULL,     binary,  PREC_FACTOR },
     [AUP_TOK_STAR]          = { NULL,     binary,  PREC_FACTOR },
+    [AUP_TOK_PERCENT]       = { NULL,     binary,  PREC_FACTOR },
 
     [AUP_TOK_BANG]          = { unary,    NULL,    PREC_NONE },
     [AUP_TOK_BANG_EQUAL]    = { NULL,     binary,  PREC_EQUALITY },
