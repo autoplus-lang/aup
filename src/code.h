@@ -36,7 +36,11 @@
     _CODE(GET)      \
     _CODE(SET)      \
     _CODE(GETI)     \
-    _CODE(SETI)
+    _CODE(SETI)     \
+    _CODE(CLOSURE)  \
+    _CODE(CLOSE)    \
+    _CODE(ULD)      \
+    _CODE(UST)
 
 #define _CODE(x) AUP_OP_##x,
 typedef enum { OPCODES() AUP_OPCOUNT } aupOp;

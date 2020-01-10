@@ -7,6 +7,7 @@
 typedef struct _aupObj aupObj;
 typedef struct _aupStr aupStr;
 typedef struct _aupFun aupFun;
+typedef struct _aupUpv aupUpv;
 typedef struct _aupMap aupMap;
 
 typedef aupVal (* aupCFn)(aupVM *vm, int argc, aupVal *args);
@@ -23,6 +24,7 @@ typedef enum {
 typedef enum {
     AUP_TSTR,
     AUP_TFUN,
+    AUP_TUPV,
     AUP_TMAP,
 } aupOType;
 

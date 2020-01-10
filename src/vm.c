@@ -171,6 +171,41 @@ bool aup_call(aupVM *vm, aupVal callee, int argCount)
     return false;
 }
 
+static aupUpv *captureUpvalue(aupVM *vm, aupVal *local)
+{
+    aupUpv *prevUpvalue = NULL;
+    aupUpv *upvalue = vm->openUpvalues;
+
+    while (upvalue != NULL && upvalue->location > local) {
+        prevUpvalue = upvalue;
+        upvalue = upvalue->next;
+    }
+
+    if (upvalue != NULL && upvalue->location == local) return upvalue;
+
+    aupUpv *createdUpvalue = aup_newUpvalue(vm, local);
+    createdUpvalue->next = upvalue;
+
+    if (prevUpvalue == NULL) {
+        vm->openUpvalues = createdUpvalue;
+    }
+    else {
+        prevUpvalue->next = createdUpvalue;
+    }
+
+    return createdUpvalue;
+}
+
+static void closeUpvalues(aupVM *vm, aupVal *last)
+{
+    while (vm->openUpvalues != NULL && vm->openUpvalues->location >= last) {
+        aupUpv *upvalue = vm->openUpvalues;
+        upvalue->closed = *upvalue->location;
+        upvalue->location = &upvalue->closed;
+        vm->openUpvalues = upvalue->next;
+    }
+}
+
 int aup_execute(aupVM *vm)
 {
     register uint8_t *ip;
@@ -548,6 +583,42 @@ int aup_execute(aupVM *vm)
             else {
                 ERROR("Operands must be a map.");
             }
+            NEXT;
+        }
+
+        CODE(CLOSURE) {
+            aupFun *function = AUP_AS_FUN(READ_CONST());
+            aup_makeClosure(function);
+
+            for (int i = 0; i < function->upvalueCount; i++) {
+                uint8_t isLocal = READ_BYTE();
+                uint8_t index = READ_BYTE();
+                if (isLocal) {
+                    function->upvalues[i] = captureUpvalue(vm, frame->slots + index);
+                }
+                else {
+                    function->upvalues[i] = frame->function->upvalues[index];
+                }
+            }
+
+            NEXT;
+        }
+
+        CODE(CLOSE) {
+            closeUpvalues(vm, vm->top - 1);
+            POP();
+            NEXT;
+        }
+
+        CODE(ULD) {
+            uint8_t slot = READ_BYTE();
+            PUSH(*frame->function->upvalues[slot]->location);
+            NEXT;
+        }
+
+        CODE(UST) {
+            uint8_t slot = READ_BYTE();
+            *frame->function->upvalues[slot]->location = PEEK(0);
             NEXT;
         }
 

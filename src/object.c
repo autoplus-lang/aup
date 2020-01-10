@@ -109,6 +109,27 @@ aupFun *aup_newFunction(aupVM *vm, aupSrc *source)
     return function;
 }
 
+void aup_makeClosure(aupFun *function)
+{
+    int upvalueCount = function->upvalueCount;
+    aupUpv **upvalues = malloc(sizeof(aupUpv *) * upvalueCount);
+
+    for (int i = 0; i < upvalueCount; i++) {
+        upvalues[i] = NULL;
+    }
+
+    function->upvalues = upvalues;
+}
+
+aupUpv *aup_newUpvalue(aupVM *vm, aupVal *slot)
+{
+    aupUpv *upvalue = ALLOC_OBJ(vm->gc, aupUpv, AUP_TUPV);
+    upvalue->location = slot;
+    upvalue->next = NULL;
+
+    return upvalue;
+}
+
 aupMap *aup_newMap(aupVM *vm)
 {
     aupMap *map = ALLOC_OBJ(vm->gc, aupMap, AUP_TMAP);

@@ -27,6 +27,7 @@ struct _aupVM {
     aupGC *gc;
     aupTab *strings;
     aupTab *globals;
+    aupUpv *openUpvalues;
 
     char *errmsg;
     bool hadError;

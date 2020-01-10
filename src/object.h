@@ -23,8 +23,17 @@ struct _aupStr {
 struct _aupFun {
     AUP_OBJBASE;
     aupStr *name;
+    aupUpv **upvalues;
     aupChunk chunk;   
     int arity;
+    int upvalueCount;
+};
+
+struct _aupUpv {
+    AUP_OBJBASE;
+    aupVal *location;
+    aupVal closed;
+    struct _aupUpv *next;
 };
 
 struct _aupMap {
@@ -55,6 +64,9 @@ aupStr *aup_takeString(aupVM *vm, char *chars, int length);
 aupStr *aup_copyString(aupVM *vm, const char *chars, int length);
 
 aupFun *aup_newFunction(aupVM *vm, aupSrc *source);
+void aup_makeClosure(aupFun *function);
+
+aupUpv *aup_newUpvalue(aupVM *vm, aupVal *slot);
 
 aupMap *aup_newMap(aupVM *vm);
 
