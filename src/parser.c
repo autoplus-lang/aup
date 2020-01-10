@@ -191,7 +191,11 @@ static void emitReturn(Parser *P)
 
 static uint8_t makeConstant(Parser *P, aupVal value)
 {
+    bool isObject = AUP_IS_OBJ(value);
+    if (isObject) aup_pushRoot(P->vm, AUP_AS_OBJ(value));
     int constant = aup_pushArray(&currentChunk(P)->constants, value, false);
+    if (isObject) aup_popRoot(P->vm);
+
     if (constant > UINT8_MAX) {
         error(P, "Too many constants in one chunk.");
         return 0;

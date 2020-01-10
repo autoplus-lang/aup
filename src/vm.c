@@ -114,8 +114,8 @@ aupVM *aup_cloneVM(aupVM *from)
 
 static void concatenate(aupVM *vm)
 {
-    aupStr *b = AUP_AS_STR(POP());
-    aupStr *a = AUP_AS_STR(POP());
+    aupStr *b = AUP_AS_STR(PEEK(0));
+    aupStr *a = AUP_AS_STR(PEEK(1));
 
     int length = a->length + b->length;
     char *chars = malloc((length + 1) * sizeof(char));
@@ -124,6 +124,8 @@ static void concatenate(aupVM *vm)
     chars[length] = '\0';
 
     aupStr *result = aup_takeString(vm, chars, length);
+    POP();
+    POP();
     PUSH(AUP_OBJ(result));
 }
 

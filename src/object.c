@@ -70,7 +70,9 @@ static aupStr *allocStr(aupVM *vm, char *chars, int length, uint32_t hash)
     string->length = length;
     string->hash = hash;
 
+    aup_pushRoot(vm, (aupObj *)string);
     aup_setTable(vm->strings, string, AUP_NIL);
+    aup_popRoot(vm);
     return string;
 }
 
