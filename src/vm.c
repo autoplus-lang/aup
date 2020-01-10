@@ -98,12 +98,17 @@ aupVM *aup_cloneVM(aupVM *from)
     aupVM *vm = malloc(sizeof(aupVM));
     if (vm == NULL) return NULL;
 
-    memset(vm, '\0', sizeof(aupVM));
+    memset(vm->stack, '\0', sizeof(vm->stack));
+    memset(vm->frames, '\0', sizeof(vm->frames));
+
+    vm->numRoots = 0;
+    vm->compiler = NULL;
+    vm->errmsg = NULL;
+    vm->hadError = false;
 
     vm->gc = from->gc;
     vm->globals = from->globals;
     vm->strings = from->strings;
-
     vm->next = from;
 
     resetStack(vm);

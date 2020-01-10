@@ -23,14 +23,14 @@ struct _aupVM {
 
     int numRoots;
     aupObj *tempRoots[8];
-
-    aupGC *gc;
-    aupTab *strings;
-    aupTab *globals;
     aupUpv *openUpvalues;
 
     aupCompiler *compiler;
     aupVM *next;
+
+    aupGC *gc;
+    aupTab *strings;
+    aupTab *globals;
 
     char *errmsg;
     bool hadError;
