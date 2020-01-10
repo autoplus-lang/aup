@@ -100,16 +100,6 @@ aupVM *aup_cloneVM(aupVM *from)
 #define POPN(n)     *((vm)->top -= (n))
 #define PEEK(i)     ((vm)->top[-1 - (i)])
 
-static void defineNative(aupVM *vm, const char *name, aupCFn function)
-{
-    aupVal native = AUP_CFN(function);
-    aupVal gname = AUP_OBJ(aup_copyString(vm, name, (int)strlen(name)));
-
-    PUSH(gname);
-    aup_setTable(vm->globals, AUP_AS_STR(gname), native);
-    POP();
-}
-
 static void concatenate(aupVM *vm)
 {
     aupStr *b = AUP_AS_STR(POP());
@@ -161,6 +151,10 @@ bool aup_call(aupVM *vm, aupVal callee, int argCount)
     else if (AUP_IS_CFN(callee)) {
         aupCFn native = AUP_AS_CFN(callee);
         aupVal result = native(vm, argCount, vm->top - argCount);
+        if (vm->hadError) {
+            runtimeError(vm, "%s", vm->errmsg);
+            return false;
+        }
         vm->top -= argCount + 1;
         PUSH(result);
         return true;
@@ -579,8 +573,22 @@ int aup_doFile(aupVM *vm, const char *fname)
     return result;
 }
 
+void aup_defineNative(aupVM *vm, const char *name, aupCFn function)
+{
+    if (vm->hadError) return;
+
+    aupVal native = AUP_CFN(function);
+    aupVal gname = AUP_OBJ(aup_copyString(vm, name, (int)strlen(name)));
+
+    PUSH(gname);
+    aup_setTable(vm->globals, AUP_AS_STR(gname), native);
+    POP();
+}
+
 void aup_setGlobal(aupVM *vm, const char *name, aupVal value)
 {
+    if (vm->hadError) return;
+
     aupVal global = AUP_OBJ(aup_copyString(vm, name, (int)strlen(name)));
 
     PUSH(global);
@@ -592,11 +600,13 @@ void aup_setGlobal(aupVM *vm, const char *name, aupVal value)
 
 void aup_push(aupVM *vm, aupVal value)
 {
+    if (vm->hadError) return;
     PUSH(value);
 }
 
 aupVal aup_pop(aupVM *vm)
 {
+    if (vm->hadError) return AUP_NIL;
     return POP();
 }
 
