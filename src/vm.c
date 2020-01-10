@@ -60,6 +60,7 @@ aupVM *aup_create()
     vm->globals = malloc(sizeof(aupTab));
     vm->strings = malloc(sizeof(aupTab));
 
+    vm->numRoots = 0;
     vm->compiler = NULL;
     vm->next = NULL;
 
