@@ -103,6 +103,8 @@ aupFun *aup_newFunction(aupVM *vm, aupSrc *source)
     aupFun *function = ALLOC_OBJ(vm->gc, aupFun, AUP_TFUN);
 
     function->arity = 0;
+    function->upvalueCount = 0;
+    function->upvalues = NULL;
     function->name = NULL;
     aup_initChunk(&function->chunk, source);
 
