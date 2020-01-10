@@ -29,6 +29,8 @@ struct _aupVM {
     aupTab *globals;
     aupUpv *openUpvalues;
 
+    aupCompiler *compiler;
+
     char *errmsg;
     bool hadError;
 };

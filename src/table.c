@@ -3,6 +3,7 @@
 #include "table.h"
 #include "value.h"
 #include "object.h"
+#include "gc.h"
 
 struct _aupEnt {
     aupStr *key;
@@ -257,4 +258,31 @@ bool aup_setHash(aupHash *hash, uint64_t key, aupVal value)
     index->key = key;
     index->value = value;
     return isNewKey;
+}
+
+void aup_tableRemoveWhite(aupTab *table)
+{
+    for (int i = 0; i < table->capacity; i++) {
+        aupEnt *entry = &table->entries[i];
+        if (entry->key != NULL && !entry->key->obj.isMarked) {
+            aup_tableRemove(table, entry->key);
+        }
+    }
+}
+
+void aup_markTable(aupVM *vm, aupTab *table)
+{
+    for (int i = 0; i < table->capacity; i++) {
+        aupEnt *entry = &table->entries[i];
+        aup_markObject(vm, (aupObj *)entry->key);
+        aup_markValue(vm, entry->value);
+    }
+}
+
+void aup_markHash(aupVM *vm, aupHash *hash)
+{
+    for (int i = 0; i < hash->capacity; i++) {
+        aupIdx *index = &hash->indexes[i];
+        aup_markValue(vm, index->value);
+    }
 }

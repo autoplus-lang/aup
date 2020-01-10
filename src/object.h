@@ -9,8 +9,9 @@
 #define AUP_OBJBASE aupObj obj
 
 struct _aupObj {
-    aupOType type;
     aupObj *next;
+    aupOType type : 8;
+    unsigned isMarked : 1;
 };
 
 struct _aupStr {

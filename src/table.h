@@ -36,4 +36,8 @@ void aup_freeHash(aupHash *hash);
 bool aup_getHash(aupHash *hash, uint64_t key, aupVal *value);
 bool aup_setHash(aupHash *hash, uint64_t key, aupVal value);
 
+void aup_tableRemoveWhite(aupTab *table);
+void aup_markTable(aupVM *vm, aupTab *table);
+void aup_markHash(aupVM *vm, aupHash *hash);
+
 #endif

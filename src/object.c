@@ -43,33 +43,34 @@ const char *aup_typeofObject(aupObj *object)
     }
 }
 
-#define ALLOC(gc, size) \
-    aup_realloc(gc, NULL, 0, size)
+#define ALLOC(vm, size) \
+    aup_realloc(vm, (vm)->gc, NULL, 0, size)
 
 #define FREE(gc, type, pointer) \
-    aup_realloc(gc, pointer, sizeof(type), 0)
+    aup_realloc(NULL, gc, pointer, sizeof(type), 0)
 
-#define ALLOC_OBJ(gc, type, objectType) \
-    (type *)allocObj(gc, sizeof(type), objectType)
+#define ALLOC_OBJ(vm, type, objectType) \
+    (type *)allocObj(vm, sizeof(type), objectType)
 
-static aupObj *allocObj(aupGC *gc, size_t size, aupOType type)
+static aupObj *allocObj(aupVM *vm, size_t size, aupOType type)
 {
-    aupObj *object = ALLOC(gc, size);
+    aupObj *object = ALLOC(vm, size);
     object->type = type;
+    object->isMarked = false;
 
-    object->next = gc->objects;
-    gc->objects = object;
+    object->next = vm->gc->objects;
+    vm->gc->objects = object;
     return object;
 }
 
-static aupStr *allocStr(aupGC *gc, aupTab *strings, char *chars, int length, uint32_t hash)
+static aupStr *allocStr(aupVM *vm, char *chars, int length, uint32_t hash)
 {
-    aupStr *string = ALLOC_OBJ(gc, aupStr, AUP_TSTR);
+    aupStr *string = ALLOC_OBJ(vm, aupStr, AUP_TSTR);
     string->chars = chars;
     string->length = length;
     string->hash = hash;
 
-    aup_setTable(strings, string, AUP_NIL);
+    aup_setTable(vm->strings, string, AUP_NIL);
     return string;
 }
 
@@ -82,7 +83,7 @@ aupStr *aup_takeString(aupVM *vm, char *chars, int length)
         return interned;
     }
 
-    return allocStr(vm->gc, vm->strings, chars, length, hash);
+    return allocStr(vm, chars, length, hash);
 }
 
 aupStr *aup_copyString(aupVM *vm, const char *chars, int length)
@@ -95,12 +96,12 @@ aupStr *aup_copyString(aupVM *vm, const char *chars, int length)
     memcpy(heapChars, chars, length);
     heapChars[length] = '\0';
 
-    return allocStr(vm->gc, vm->strings, heapChars, length, hash);
+    return allocStr(vm, heapChars, length, hash);
 }
 
 aupFun *aup_newFunction(aupVM *vm, aupSrc *source)
 {
-    aupFun *function = ALLOC_OBJ(vm->gc, aupFun, AUP_TFUN);
+    aupFun *function = ALLOC_OBJ(vm, aupFun, AUP_TFUN);
 
     function->arity = 0;
     function->upvalueCount = 0;
@@ -125,7 +126,7 @@ void aup_makeClosure(aupFun *function)
 
 aupUpv *aup_newUpvalue(aupVM *vm, aupVal *slot)
 {
-    aupUpv *upvalue = ALLOC_OBJ(vm->gc, aupUpv, AUP_TUPV);
+    aupUpv *upvalue = ALLOC_OBJ(vm, aupUpv, AUP_TUPV);
     upvalue->location = slot;
     upvalue->next = NULL;
 
@@ -134,7 +135,7 @@ aupUpv *aup_newUpvalue(aupVM *vm, aupVal *slot)
 
 aupMap *aup_newMap(aupVM *vm)
 {
-    aupMap *map = ALLOC_OBJ(vm->gc, aupMap, AUP_TMAP);
+    aupMap *map = ALLOC_OBJ(vm, aupMap, AUP_TMAP);
 
     aup_initHash(&map->hash);
     aup_initTable(&map->table);

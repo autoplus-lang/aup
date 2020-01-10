@@ -153,9 +153,12 @@ typedef struct {
     int position;
 } aupLexer;
 
+typedef struct _aupCompiler aupCompiler;
+
 void aup_initLexer(aupLexer *lexer, const char *source);
 aupTok aup_scanToken(aupLexer *lexer);
 
 aupFun *aup_compile(aupVM *vm, aupSrc *source);
+void aup_markCompilerRoots(aupVM *vm);
 
 #endif

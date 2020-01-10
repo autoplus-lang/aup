@@ -6,8 +6,9 @@
 #include "code.h"
 #include "object.h"
 #include "vm.h"
+#include "gc.h"
 
-typedef struct _Compiler Compiler;
+typedef struct _aupCompiler Compiler;
 
 typedef struct {
     aupVM *vm;
@@ -63,7 +64,7 @@ typedef enum {
     TYPE_SCRIPT
 } FunType;
 
-struct _Compiler {
+struct _aupCompiler {
     Compiler *enclosing;
     aupFun *function;
     FunType type;
@@ -921,6 +922,8 @@ aupFun *aup_compile(aupVM *vm, aupSrc *source)
     Parser P;
     Compiler C;
 
+    vm->compiler = &C;
+
     P.vm = vm;
     P.source = source;
     P.lexer = &L;
@@ -938,4 +941,13 @@ aupFun *aup_compile(aupVM *vm, aupSrc *source)
 
     aupFun *function = endCompiler(&P);
     return P.hadError ? NULL : function;
+}
+
+void aup_markCompilerRoots(aupVM *vm)
+{
+    Compiler *compiler = vm->compiler;
+    while (compiler != NULL) {
+        aup_markObject(vm, (aupObj *)compiler->function);
+        compiler = compiler->enclosing;
+    }
 }
