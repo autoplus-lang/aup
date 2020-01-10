@@ -604,8 +604,8 @@ void aup_push(aupVM *vm, aupVal value)
 
 void aup_pop(aupVM *vm)
 {
-    if (vm->hadError) return AUP_NIL;
-    return POP();
+    if (vm->hadError) return;
+    POP();
 }
 
 void aup_pushRoot(aupVM *vm, aupObj *object)
