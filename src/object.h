@@ -1,3 +1,5 @@
+#ifndef _AUP_OBJECT_H
+#define _AUP_OBJECT_H
 #pragma once
 
 #include "value.h"
@@ -55,3 +57,5 @@ aupStr *aup_copyString(aupVM *vm, const char *chars, int length);
 aupFun *aup_newFunction(aupVM *vm, aupSrc *source);
 
 aupMap *aup_newMap(aupVM *vm);
+
+#endif

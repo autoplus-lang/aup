@@ -1,3 +1,5 @@
+#ifndef _AUP_COMMON_H
+#define _AUP_COMMON_H
 #pragma once
 
 #ifdef _MSC_VER
@@ -31,3 +33,5 @@ typedef struct _aupVal aupVal;
 
 uint32_t aup_hashBytes(const void *bytes, size_t size);
 char *aup_readFile(const char *path, size_t *size);
+
+#endif

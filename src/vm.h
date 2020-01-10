@@ -1,3 +1,5 @@
+#ifndef _AUP_VM_H
+#define _AUP_VM_H
 #pragma once
 
 #include "common.h"
@@ -27,3 +29,5 @@ aupVM *aup_create();
 void aup_close(aupVM *vm);
 aupVM *aup_cloneVM(aupVM *from);
 int aup_doFile(aupVM *vm, const char *fname);
+
+#endif

@@ -1,3 +1,5 @@
+#ifndef _AUP_CODE_H
+#define _AUP_CODE_H
 #pragma once
 
 #include "common.h"
@@ -122,3 +124,5 @@ void aup_initLexer(aupLexer *lexer, const char *source);
 aupTok aup_scanToken(aupLexer *lexer);
 
 aupFun *aup_compile(aupVM *vm, aupSrc *source);
+
+#endif

@@ -1,3 +1,5 @@
+#ifndef _AUP_GC_H
+#define _AUP_GC_H
 #pragma once
 
 #include "common.h"
@@ -14,3 +16,5 @@ void aup_freeGC(aupGC *gc);
 
 void *aup_realloc(aupGC *gc, void *ptr, size_t old, size_t new);
 void aup_collect(aupVM *vm);
+
+#endif

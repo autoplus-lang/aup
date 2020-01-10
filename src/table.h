@@ -1,3 +1,5 @@
+#ifndef _AUP_TABLE_H
+#define _AUP_TABLE_H
 #pragma once
 
 #include "common.h"
@@ -33,3 +35,5 @@ void aup_freeHash(aupHash *hash);
 
 bool aup_getHash(aupHash *hash, uint64_t key, aupVal *value);
 bool aup_setHash(aupHash *hash, uint64_t key, aupVal value);
+
+#endif

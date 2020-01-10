@@ -1,3 +1,5 @@
+#ifndef _AUP_VALUE_H
+#define _AUP_VALUE_H
 #pragma once
 
 #include "common.h"
@@ -102,3 +104,5 @@ const char *aup_typeofValue(aupVal value);
 void aup_initArray(aupArr *array);
 void aup_freeArray(aupArr *array);
 int aup_pushArray(aupArr *array, aupVal value, bool allowdup);
+
+#endif
