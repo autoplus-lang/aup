@@ -52,10 +52,15 @@ aupVM *aup_create()
     aupVM *vm = malloc(sizeof(aupVM));
     if (vm == NULL) return NULL;
 
-    memset(vm, '\0', sizeof(aupVM));
+    memset(vm->stack, '\0', sizeof(vm->stack));
+    memset(vm->frames, '\0', sizeof(vm->frames));
+
     vm->gc = malloc(sizeof(aupGC));
     vm->globals = malloc(sizeof(aupTab));
     vm->strings = malloc(sizeof(aupTab));
+
+    vm->errmsg = NULL;
+    vm->hadError = false;
 
     aup_initGC(vm->gc);
     aup_initTable(vm->globals);
@@ -76,6 +81,8 @@ void aup_close(aupVM *vm)
     free(vm->globals);
     free(vm->strings);
     free(vm->gc);
+
+    free(vm->errmsg);
 
     free(vm);
 }
@@ -573,29 +580,20 @@ int aup_doFile(aupVM *vm, const char *fname)
     return result;
 }
 
-void aup_defineNative(aupVM *vm, const char *name, aupCFn function)
+aupVal aup_error(aupVM *vm, const char *msg, ...)
 {
-    if (vm->hadError) return;
+    va_list ap;
+    va_start(ap, msg);
+    int len = vsprintf(NULL, msg, ap);
+    char *buf = malloc((len + 1) * sizeof(char));
+    vsprintf(buf, msg, ap);
+    va_end(ap);
 
-    aupVal native = AUP_CFN(function);
-    aupVal gname = AUP_OBJ(aup_copyString(vm, name, (int)strlen(name)));
+    buf[len] = '\0';
+    vm->hadError = true;
+    vm->errmsg = buf;
 
-    PUSH(gname);
-    aup_setTable(vm->globals, AUP_AS_STR(gname), native);
-    POP();
-}
-
-void aup_setGlobal(aupVM *vm, const char *name, aupVal value)
-{
-    if (vm->hadError) return;
-
-    aupVal global = AUP_OBJ(aup_copyString(vm, name, (int)strlen(name)));
-
-    PUSH(global);
-    PUSH(value);
-    aup_setTable(vm->globals, AUP_AS_STR(global), value);
-    POP();
-    POP();
+    return AUP_NIL;
 }
 
 void aup_push(aupVM *vm, aupVal value)
@@ -604,14 +602,18 @@ void aup_push(aupVM *vm, aupVal value)
     PUSH(value);
 }
 
-aupVal aup_pop(aupVM *vm)
+void aup_pop(aupVM *vm)
 {
     if (vm->hadError) return AUP_NIL;
     return POP();
 }
 
-void aup_error(aupVM *vm, const char *msg)
+void aup_pushRoot(aupVM *vm, aupObj *object)
 {
-    vm->hadError = true;
-    vm->errmsg = msg;
+    vm->tempRoots[vm->numRoots++] = object;
+}
+
+void aup_popRoot(aupVM *vm)
+{
+    vm->numRoots--;
 }

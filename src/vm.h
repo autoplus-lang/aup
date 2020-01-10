@@ -20,11 +20,15 @@ struct _aupVM {
     aupVal stack[AUP_MAX_STACK];
     aupFrame frames[AUP_MAX_FRAMES];
     int frameCount;
+
+    int numRoots;
+    aupObj *tempRoots[8];
+
     aupGC *gc;
     aupTab *strings;
     aupTab *globals;
 
-    const char *errmsg;
+    char *errmsg;
     bool hadError;
 };
 
@@ -33,6 +37,11 @@ void aup_close(aupVM *vm);
 aupVM *aup_cloneVM(aupVM *from);
 int aup_doFile(aupVM *vm, const char *fname);
 
-void aup_error(aupVM *vm, const char *msg);
+aupVal aup_error(aupVM *vm, const char *msg, ...);
+
+void aup_push(aupVM *vm, aupVal value);
+void aup_pop(aupVM *vm);
+void aup_pushRoot(aupVM *vm, aupObj *object);
+void aup_popRoot(aupVM *vm);
 
 #endif
