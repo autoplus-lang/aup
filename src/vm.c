@@ -353,7 +353,8 @@ int aup_execute(register aupVM *vm)
         }
 
         CODE(NOT) {
-            PUSH(AUP_BOOL(AUP_IS_FALSEY(POP())));
+            aupVal value = POP();
+            PUSH(AUP_BOOL(AUP_IS_FALSEY(value)));
             NEXT;
         }
 

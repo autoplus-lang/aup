@@ -72,8 +72,8 @@ typedef struct {
 } aupArr;
 
 static const aupVal AUP_NIL = { AUP_TNIL };
-static const aupVal AUP_TRUE = { AUP_TBOOL, true };
-static const aupVal AUP_FALSE = { AUP_TBOOL, false };
+static const aupVal AUP_TRUE = { AUP_TBOOL, .Bool = true };
+static const aupVal AUP_FALSE = { AUP_TBOOL, .Bool = false };
 
 #define AUP_BOOL(b)         ((aupVal){ AUP_TBOOL, .Bool = (b) })
 #define AUP_NUM(n)          ((aupVal){ AUP_TNUM, .Num = (n) })
@@ -98,20 +98,20 @@ static const aupVal AUP_FALSE = { AUP_TBOOL, false };
 #define AUP_AS_INT64(v)     ((int64_t)AUP_AS_NUM(v))
 #define AUP_AS_RAW(v)       ((v).Raw)
 
-#if defined(_MSC_VER) && _MSC_VER <= 1600
-static inline bool AUP_IS_FALSEY(aupVal value) {
+#if (defined(_MSC_VER) && _MSC_VER <= 1600) || defined(__clang__)
+static bool AUP_IS_FALSEY(aupVal value) {
     switch (value.type) {
-        case AUP_TNIL: return true;
-        case AUP_TBOOL: return AUP_AS_BOOL(value) == false;
-        case AUP_TNUM: return AUP_AS_NUM(value) == 0;
+        case AUP_TNIL:  return true;
+        case AUP_TBOOL: return !AUP_AS_BOOL(value);
+        case AUP_TNUM:  return AUP_AS_NUM(value) == 0;
         case AUP_TCFN:
-        case AUP_TPTR: return AUP_AS_PTR(value) == NULL;
+        case AUP_TPTR:  return AUP_AS_PTR(value) == NULL;
         case AUP_TOBJ:
         default: return false;
     }
 }
 #else
-#define AUP_IS_FALSEY(v)    (!AUP_AS_RAW(v))
+#define AUP_IS_FALSEY(v)    (!(bool)AUP_AS_RAW(v))
 #endif
 
 void aup_printValue(aupVal value);
