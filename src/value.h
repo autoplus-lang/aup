@@ -111,7 +111,7 @@ static inline bool AUP_IS_FALSEY(aupVal value) {
     }
 }
 #else
-#define AUP_IS_FALSEY(v)    (!AUP_AS_BOOL(v))
+#define AUP_IS_FALSEY(v)    (!AUP_AS_RAW(v))
 #endif
 
 void aup_printValue(aupVal value);
