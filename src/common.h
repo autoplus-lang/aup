@@ -58,7 +58,7 @@ typedef struct _aupVM aupVM;
 typedef struct _aupGC aupGC;
 typedef struct _aupVal aupVal;
 
-uint32_t aup_hashBytes(const void *bytes, size_t size);
+uint32_t aup_hashBytes(const void *bytes, int size);
 char *aup_readFile(const char *path, size_t *size);
 
 #endif

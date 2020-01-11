@@ -4,14 +4,21 @@
 
 #include "common.h"
 
-uint32_t aup_hashBytes(const void *bytes, size_t size)
+uint32_t aup_hashBytes(const void *bytes, int size)
 {
-    uint32_t hash = 2166136261u;
-    const uint8_t *bs = (const uint8_t *)bytes;
+    static const int32_t prime = 16777619;
+    static const uint32_t basis = 2166136261;
 
-    for (size_t i = 0; i < size; i++) {
+    uint32_t hash = basis;
+    const uint8_t *bs = bytes;
+
+    if (size < 0) while (*bs != '\0') {
+        hash ^= *(bs++);
+        hash *= prime;
+    }
+    else for (int i = 0; i < size; i++) {
         hash ^= bs[i];
-        hash *= 16777619;
+        hash *= prime;
     }
 
     return hash;

@@ -90,6 +90,8 @@ aupStr *aup_takeString(aupVM *vm, char *chars, int length)
 
 aupStr *aup_copyString(aupVM *vm, const char *chars, int length)
 {
+    if (length < 0) length = (int)strlen(chars);
+
     uint32_t hash = aup_hashBytes(chars, length);
     aupStr *interned = aup_findString(vm->strings, chars, length, hash);
     if (interned != NULL) return interned;
