@@ -98,7 +98,7 @@ static const aupVal AUP_FALSE = { AUP_TBOOL, false };
 #define AUP_AS_INT64(v)     ((int64_t)AUP_AS_NUM(v))
 #define AUP_AS_RAW(v)       ((v).Raw)
 
-#if (defined(__clang_major__) &&  (__clang_major__ <= 6)) || (defined(_MSC_VER) && _MSC_VER <= 1600)
+#if defined(_MSC_VER) && _MSC_VER <= 1600
 static inline bool AUP_IS_FALSEY(aupVal value) {
     switch (value.type) {
         case AUP_TNIL: return true;
@@ -111,7 +111,7 @@ static inline bool AUP_IS_FALSEY(aupVal value) {
     }
 }
 #else
-#define AUP_IS_FALSEY(v)    (!(bool)AUP_AS_RAW(v))
+#define AUP_IS_FALSEY(v)    (!AUP_AS_BOOL(v))
 #endif
 
 void aup_printValue(aupVal value);
