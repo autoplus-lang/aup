@@ -365,8 +365,9 @@ int aup_execute(register aupVM *vm)
                 case AUP_TNUM:
                     PUSH(AUP_NUM(-AUP_AS_NUM(POP())));
                     NEXT;
-            }
-            ERROR("Operands must be a number/boolean.");
+                default:
+                    ERROR("Operands must be a number/boolean.");
+            }          
         }
 
         CODE(EQ) {
