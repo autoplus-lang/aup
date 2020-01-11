@@ -94,7 +94,8 @@ static aupVal math_rand(aupVM *vm, int argc, aupVal *args)
         return AUP_NUM(rand() % (high + 1 - low) + low);
     }
     
-    return AUP_NUM((double)rand() / (double)RAND_MAX);
+    double ret = (double)rand() / (double)RAND_MAX;     
+    return AUP_NUM(ceil(ret * 100) / 100);
 }
 
 static aupVal math_sin(aupVM *vm, int argc, aupVal *args)
@@ -117,7 +118,7 @@ static aupVal math_sqrt(aupVM *vm, int argc, aupVal *args)
 
 void aup_loadMath(aupVM *vm)
 {
-    srand((unsigned)time(NULL));
+    srand((unsigned)time(NULL) ^ rand());
 
     aupMap *math = aup_newMap(vm);
 
