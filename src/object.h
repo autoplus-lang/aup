@@ -70,5 +70,6 @@ void aup_makeClosure(aupFun *function);
 aupUpv *aup_newUpvalue(aupVM *vm, aupVal *slot);
 
 aupMap *aup_newMap(aupVM *vm);
+void aup_setMap(aupVM *vm, aupMap *map, const char *name, aupVal value);
 
 #endif

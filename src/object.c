@@ -147,6 +147,18 @@ aupMap *aup_newMap(aupVM *vm)
     return map;
 }
 
+void aup_setMap(aupVM *vm, aupMap *map, const char *name, aupVal value)
+{
+    bool isObj = AUP_IS_OBJ(value);
+    aupStr *field = aup_copyString(vm, name, -1);
+
+    aup_pushRoot(vm, (aupObj *)field);
+    if (isObj) aup_pushRoot(vm, AUP_AS_OBJ(value));
+    aup_setTable(&map->table, field, value);
+    if (isObj) aup_popRoot(vm);
+    aup_popRoot(vm);
+}
+
 void aup_freeObject(aupGC *gc, aupObj *object)
 {
     switch (object->type) {
