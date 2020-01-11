@@ -71,6 +71,9 @@ void aup_initChunk(aupChunk *chunk, aupSrc *source);
 void aup_freeChunk(aupChunk *chunk);
 void aup_emitChunk(aupChunk *chunk, uint8_t byte, int line, int column);
 
+void aup_dasmChunk(aupChunk *chunk, const char *name);
+int aup_dasmInstruction(aupChunk *chunk, int offset);
+
 static const char *aup_op2Str(aupOp opcode) {
 #define _CODE(x) #x,
     static const char *tab[] = { OPCODES() };

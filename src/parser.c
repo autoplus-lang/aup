@@ -256,9 +256,10 @@ static aupFun *endCompiler(Parser *P)
     emitReturn(P);
     aupFun *function = P->compiler->function;
 
-#ifdef DEBUG_PRINT_CODE                      
+#ifdef AUP_DEBUG
     if (!P->hadError) {
-        //disassembleChunk(currentChunk(P), "code");
+        aup_dasmChunk(currentChunk(P), function->name == NULL ? "<script>"
+            : function->name->chars);
     }
 #endif
 
