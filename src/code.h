@@ -33,14 +33,14 @@
     _CODE(LD)      	/* [s]      [-0, +1]    */ \
     _CODE(ST)      	/* [s]      [-0, +0]    */ \
     _CODE(MAP)      /* []       [-0, +1]    */ \
-    _CODE(GET)      \
-    _CODE(SET)      \
-    _CODE(GETI)     \
-    _CODE(SETI)     \
-    _CODE(CLOSURE)  \
-    _CODE(CLOSE)    \
-    _CODE(ULD)      \
-    _CODE(UST)
+    _CODE(GET)      /* [k]      [-1, +1]    */ \
+    _CODE(SET)      /* [k]      [-2, +1]    */ \
+    _CODE(GETI)     /* []       [-2, +1]    */ \
+    _CODE(SETI)     /* []       [-3, +1]    */ \
+    _CODE(CLOSURE)  /* [k, ...] [-0, +0]    */ \
+    _CODE(CLOSE)    /* []       [-1, +0]    */ \
+    _CODE(ULD)      /* [u]      [-0, +1]    */ \
+    _CODE(UST)      /* [u]      [-0, +0]    */
 
 #define _CODE(x) AUP_OP_##x,
 typedef enum { OPCODES() AUP_OPCOUNT } aupOp;
