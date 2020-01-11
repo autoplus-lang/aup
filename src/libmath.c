@@ -74,28 +74,26 @@ static aupVal math_pow(aupVM *vm, int argc, aupVal *args)
 
 static aupVal math_rand(aupVM *vm, int argc, aupVal *args)
 {
-    static bool seeded = false;
-    if (!seeded) srand((unsigned int)time(NULL)), seeded = true;
-
     if (argc >= 1) {
-        double min, max;
+        int high, low;
 
         if (!AUP_IS_NUM(args[0]))
             return aup_error(vm, "#1 must be a number.");
 
-        min = 0;
-        max = AUP_AS_NUM(args[0]);
+        low = 0;
+        high = AUP_AS_INT(args[0]);
 
         if (argc == 2) {
             if (!AUP_IS_NUM(args[1]))
                 return aup_error(vm, "#2 must be a number.");
-            min = AUP_AS_NUM(args[0]);
-            max = AUP_AS_NUM(args[1]);
+
+            low = AUP_AS_INT(args[0]);
+            high = AUP_AS_INT(args[1]);
         }
 
-        return AUP_NUM( ((double)rand() * (max - min)) / (double)RAND_MAX + min );
+        return AUP_NUM(rand() % (high + 1 - low) + low);
     }
-
+    
     return AUP_NUM((double)rand() / (double)RAND_MAX);
 }
 
@@ -119,6 +117,8 @@ static aupVal math_sqrt(aupVM *vm, int argc, aupVal *args)
 
 void aup_loadMath(aupVM *vm)
 {
+    srand((unsigned)time(NULL));
+
     aupMap *math = aup_newMap(vm);
 
     aup_setMap(vm, math, "nan", AUP_NUM(NAN));
