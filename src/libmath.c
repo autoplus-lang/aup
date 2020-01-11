@@ -6,6 +6,9 @@
 #include "value.h"
 #include "object.h"
 
+/*
+    math.abs(num) -> num
+*/
 static aupVal math_abs(aupVM *vm, int argc, aupVal *args)
 {
     if (argc < 1 || !AUP_IS_NUM(args[0]))
@@ -15,6 +18,9 @@ static aupVal math_abs(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(n < 0 ? (-n) : n);
 }
 
+/*
+    math.ceil(num) -> num
+*/
 static aupVal math_ceil(aupVM *vm, int argc, aupVal *args)
 {
     if (argc < 1 || !AUP_IS_NUM(args[0]))
@@ -24,6 +30,9 @@ static aupVal math_ceil(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(ceil(x));
 }
 
+/*
+    math.cos(num) -> num
+*/
 static aupVal math_cos(aupVM *vm, int argc, aupVal *args)
 {
     if (argc < 1 || !AUP_IS_NUM(args[0]))
@@ -33,6 +42,9 @@ static aupVal math_cos(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(cos(x));
 }
 
+/*
+    math.floor(num) -> num
+*/
 static aupVal math_floor(aupVM *vm, int argc, aupVal *args)
 {
     if (argc < 1 || !AUP_IS_NUM(args[0]))
@@ -42,6 +54,9 @@ static aupVal math_floor(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(floor(x));
 }
 
+/*
+    math.log(num) -> num
+*/
 static aupVal math_log(aupVM *vm, int argc, aupVal *args)
 {
     if (argc < 1 || !AUP_IS_NUM(args[0]))
@@ -51,6 +66,9 @@ static aupVal math_log(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(log(x));
 }
 
+/*
+    math.log10(num) -> num
+*/
 static aupVal math_log10(aupVM *vm, int argc, aupVal *args)
 {
     if (argc < 1 || !AUP_IS_NUM(args[0]))
@@ -60,6 +78,9 @@ static aupVal math_log10(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(log10(x));
 }
 
+/*
+    math.pow(num, num) -> num
+*/
 static aupVal math_pow(aupVM *vm, int argc, aupVal *args)
 {
     if (!AUP_IS_NUM(args[0]))
@@ -72,6 +93,11 @@ static aupVal math_pow(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(pow(x, y));
 }
 
+/*
+    math.log() -> num
+    math.log(num) -> num
+    math.log(num, num) -> num
+*/
 static aupVal math_rand(aupVM *vm, int argc, aupVal *args)
 {
     if (argc >= 1) {
@@ -98,6 +124,9 @@ static aupVal math_rand(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(ceil(ret * 100) / 100);
 }
 
+/*
+    math.sin(num) -> num
+*/
 static aupVal math_sin(aupVM *vm, int argc, aupVal *args)
 {
     if (!AUP_IS_NUM(args[0]))
@@ -107,6 +136,9 @@ static aupVal math_sin(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(sin(x));
 }
 
+/*
+    math.sqrt(num) -> num
+*/
 static aupVal math_sqrt(aupVM *vm, int argc, aupVal *args)
 {
     if (!AUP_IS_NUM(args[0]))
@@ -116,6 +148,12 @@ static aupVal math_sqrt(aupVM *vm, int argc, aupVal *args)
     return AUP_NUM(sqrt(x));
 }
 
+// math.nan -> num (nan)
+static int math_nan = 0x7F800001;
+
+// math.inf -> num (inf)
+static int math_inf = 0x7F800000;
+
 void aup_loadMath(aupVM *vm)
 {
     srand((unsigned)time(NULL));
@@ -123,8 +161,8 @@ void aup_loadMath(aupVM *vm)
 
     aupMap *math = aup_newMap(vm);
 
-    aup_setMap(vm, math, "nan", AUP_NUM(NAN));
-    aup_setMap(vm, math, "inf", AUP_NUM(INFINITY));
+    aup_setMap(vm, math, "nan",     AUP_NUM(*(float *)&math_nan));
+    aup_setMap(vm, math, "inf",     AUP_NUM(*(float *)&math_inf));
 
     aup_setMap(vm, math, "abs",     AUP_CFN(math_abs));
     aup_setMap(vm, math, "ceil",    AUP_CFN(math_ceil));
