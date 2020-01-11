@@ -59,7 +59,12 @@ aupSrc *aup_newSource(const char *fname)
     if ((s = strrchr(fname, '\\')) != NULL) s++;
     if (s == NULL) s = fname;
 
-    source->fname = strdup(s);
+    size_t len = strlen(s);
+    char *bufname = malloc((len + 1) * sizeof(char));
+    memcpy(bufname, s, len + 1);
+    bufname[len] = '\0';
+
+    source->fname = bufname;
     source->buffer = buffer;
     return source;
 }
