@@ -13,6 +13,7 @@ int main(int argc, char **argv)
     int ret = AUP_INIT_ERROR;
 
     if (vm != NULL) {
+        aup_loadMath(vm);
         ret = aup_doFile(vm, argv[argc - 1]);
         aup_close(vm);
     }

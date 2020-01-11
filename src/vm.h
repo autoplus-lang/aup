@@ -48,4 +48,10 @@ void aup_pop(aupVM *vm);
 void aup_pushRoot(aupVM *vm, aupObj *object);
 void aup_popRoot(aupVM *vm);
 
+void aup_defineNative(aupVM *vm, const char *name, aupCFn function);
+void aup_setGlobal(aupVM *vm, const char *name, aupVal value);
+aupVal aup_getGlobal(aupVM *vm, const char *name);
+
+void aup_loadMath(aupVM *vm);
+
 #endif
