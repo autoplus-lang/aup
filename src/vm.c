@@ -221,7 +221,7 @@ static void closeUpvalues(aupVM *vm, aupVal *last)
     }
 }
 
-int aup_execute(aupVM *vm)
+int aup_execute(register aupVM *vm)
 {
     register uint8_t *ip;
     register aupVal *stack;
