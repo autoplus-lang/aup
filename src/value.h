@@ -77,8 +77,8 @@ static const aupVal AUP_FALSE = { AUP_TBOOL, false };
 
 #define AUP_BOOL(b)         ((aupVal){ AUP_TBOOL, .Bool = (b) })
 #define AUP_NUM(n)          ((aupVal){ AUP_TNUM, .Num = (n) })
-#define AUP_PTR(p)          ((aupVal){ AUP_TOBJ, .Ptr = (void *)(p) })
-#define AUP_CFN(c)          ((aupVal){ AUP_TOBJ, .CFn = (c) })
+#define AUP_PTR(p)          ((aupVal){ AUP_TPTR, .Ptr = (void *)(p) })
+#define AUP_CFN(c)          ((aupVal){ AUP_TCFN, .CFn = (c) })
 #define AUP_OBJ(o)          ((aupVal){ AUP_TOBJ, .Obj = (aupObj *)(o) })
 
 #define AUP_IS_NIL(v)       ((v).type == AUP_TNIL)

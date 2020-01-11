@@ -17,6 +17,9 @@ void aup_printValue(aupVal value)
         case AUP_TNUM:
             printf("%.14g", AUP_AS_NUM(value));
             break;
+        case AUP_TCFN:
+            printf("fn: %p", AUP_AS_CFN(value));
+            break;
         case AUP_TPTR:
             printf("ptr: %p", AUP_AS_PTR(value));
             break;
