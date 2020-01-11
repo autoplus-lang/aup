@@ -185,6 +185,12 @@ static int emitJump(Parser *P, uint8_t instruction)
 
 static void emitReturn(Parser *P)
 {
+    int count;
+    if ((count = currentChunk(P)->count) > 0 &&
+        currentChunk(P)->code[count - 1] == AUP_OP_RET) {
+        return;
+    }
+
     emitByte(P, AUP_OP_NIL);
     emitByte(P, AUP_OP_RET);
 }
