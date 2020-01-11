@@ -119,6 +119,7 @@ static aupVal math_sqrt(aupVM *vm, int argc, aupVal *args)
 void aup_loadMath(aupVM *vm)
 {
     srand((unsigned)time(NULL));
+    rand();
 
     aupMap *math = aup_newMap(vm);
 
