@@ -149,10 +149,12 @@ static aupVal math_sqrt(aupVM *vm, int argc, aupVal *args)
 }
 
 // math.nan -> num (nan)
-static int math_nan = 0x7F800001;
+static const int math_nan = 0x7F800001;
 
 // math.inf -> num (inf)
-static int math_inf = 0x7F800000;
+static const int math_inf = 0x7F800000;
+
+// math.pi -> num
 
 void aup_loadMath(aupVM *vm)
 {
@@ -161,6 +163,7 @@ void aup_loadMath(aupVM *vm)
 
     aupMap *math = aup_newMap(vm);
 
+    aup_setMap(vm, math, "pi",      AUP_NUM(acos(-1)));
     aup_setMap(vm, math, "nan",     AUP_NUM(*(float *)&math_nan));
     aup_setMap(vm, math, "inf",     AUP_NUM(*(float *)&math_inf));
 
