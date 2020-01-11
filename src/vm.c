@@ -21,7 +21,7 @@ static void runtimeError(aupVM *vm, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "Error: ");
+    fprintf(stderr, "\nError: ");
     vfprintf(stderr, format, args);
     va_end(args);
     fputs("\n", stderr);
@@ -670,10 +670,15 @@ int aup_doFile(aupVM *vm, const char *fname)
 aupVal aup_error(aupVM *vm, const char *msg, ...)
 {
     va_list ap;
+
     va_start(ap, msg);
-    int len = vsprintf(NULL, msg, ap);
+    int len = vsnprintf(NULL, 0, msg, ap);
+    va_end(ap);
+
     char *buf = malloc((len + 1) * sizeof(char));
-    vsprintf(buf, msg, ap);
+
+    va_start(ap, msg);
+    vsnprintf(buf, len + 1, msg, ap);
     va_end(ap);
 
     buf[len] = '\0';
