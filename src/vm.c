@@ -254,7 +254,7 @@ int aup_execute(register aupVM *vm)
         return AUP_RUNTIME_ERROR; \
     } while (0)
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 // Never try the 'computed goto' below on MSVC x86!
 #if 0 //defined(_M_IX86) || (defined(_WIN32) && !defined(_WIN64))
 #define INTERPRET       NEXT;
