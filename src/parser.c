@@ -28,7 +28,8 @@ typedef struct {
 
 typedef enum {
     PREC_NONE,
-    PREC_ASSIGNMENT,  // =        
+    PREC_ASSIGNMENT,  // =
+    PREC_TERNARY,     // ?:
     PREC_OR,          // or       
     PREC_AND,         // and
     PREC_BOR,		  // |
@@ -531,6 +532,23 @@ static void index_(Parser *P, bool canAssign)
     }
 }
 
+static void ternary(Parser *P, bool canAssign)
+{
+    int jmp1 = emitJump(P, AUP_OP_JMPF);
+    emitByte(P, AUP_OP_POP);
+
+    expression(P);
+    int jmp2 = emitJump(P, AUP_OP_JMP);
+    
+    consume(P, AUP_TOK_COLON, "Expect ':' after value.");
+
+    patchJump(P, jmp1);
+    emitByte(P, AUP_OP_POP);
+    expression(P);
+
+    patchJump(P, jmp2);
+}
+
 static void literal(Parser *P, bool canAssign)
 {
     switch (P->previous.type) {
@@ -718,6 +736,9 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
 
     [AUP_TOK_COMMA]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_DOT]           = { NULL,     dot,     PREC_CALL },
+
+    [AUP_TOK_COLON]         = { NULL,     NULL,    PREC_NONE },
+    [AUP_TOK_QMARK]         = { NULL,     ternary, PREC_TERNARY },
 
     [AUP_TOK_MINUS]         = { unary,    binary,  PREC_TERM },
     [AUP_TOK_PLUS]          = { NULL,     binary,  PREC_TERM },

@@ -266,6 +266,9 @@ aupTok aup_scanToken(aupLexer *L)
         case ',': return makeToken(L, AUP_TOK_COMMA);
         case '.': return makeToken(L, AUP_TOK_DOT);
 
+        case ':': return makeToken(L, AUP_TOK_COLON);
+        case '?': return makeToken(L, AUP_TOK_QMARK);
+
         case '&': return makeToken(L, AUP_TOK_AMPERSAND);
         case '|': return makeToken(L, AUP_TOK_VBAR);
         case '~': return makeToken(L, AUP_TOK_TILDE);

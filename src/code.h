@@ -112,6 +112,9 @@ typedef enum {
     AUP_TOK_DOT,
     AUP_TOK_SEMICOLON,
 
+    AUP_TOK_COLON,
+    AUP_TOK_QMARK,
+
     AUP_TOK_MINUS, 
     AUP_TOK_PLUS,
     AUP_TOK_SLASH,
