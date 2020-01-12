@@ -371,7 +371,7 @@ int aup_execute(register aupVM *vm)
             if (--vm->frameCount == 0) {
                 POP();
 #ifdef AUP_DEBUG
-                printStack(vm, 5);
+                printStack(vm, 10);
 #endif
                 return AUP_OK;
             }

@@ -927,6 +927,7 @@ static void ifStatement(Parser *P)
     emitByte(P, AUP_OP_POP);
     statement(P);
 
+    /*
     int elseJump = emitJump(P, AUP_OP_JMP);
 
     patchJump(P, thenJump);
@@ -934,6 +935,21 @@ static void ifStatement(Parser *P)
 
     if (match(P, AUP_TOK_ELSE)) statement(P);
     patchJump(P, elseJump);
+    */
+
+    if (match(P, AUP_TOK_ELSE)) {
+        int elseJump = emitJump(P, AUP_OP_JMP);
+
+        patchJump(P, thenJump);
+        emitByte(P, AUP_OP_POP);
+
+        statement(P);
+        patchJump(P, elseJump);
+    }
+    else {
+        patchJump(P, thenJump);
+        emitByte(P, AUP_OP_POP);
+    }
 }
 
 static void printStatement(Parser *P)
