@@ -192,7 +192,7 @@ static aupTok number(aupLexer *L, char start)
 
         advance(L);
         while (isDigit(peek(L)) || isAlpha(peek(L))) {
-            if (!isHexalDigit(advance(L)))
+            if (!isHexaDigit(advance(L)))
                 return errorToken(L, "Expect hexadecimal digit.");
         }
 
@@ -238,7 +238,7 @@ aupTok aup_scanToken(aupLexer *L)
 
     char c = advance(L);
     if (isAlpha(c)) return identifier(L);
-    if (isDigit(c)) return number(L);
+    if (isDigit(c)) return number(L, c);
 
     switch (c) {
         case '(': return makeToken(L, AUP_TOK_LPAREN);
