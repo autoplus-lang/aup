@@ -319,6 +319,16 @@ int aup_execute(register aupVM *vm)
             NEXT;
         }
 
+        CODE(INT) {
+            PUSH(AUP_NUM(READ_BYTE()));
+            NEXT;
+        }
+
+        CODE(INTL) {
+            PUSH(AUP_NUM(READ_SHORT()));
+            NEXT;
+        }
+
         CODE(CONST) {
             PUSH(READ_CONST());
             NEXT;
