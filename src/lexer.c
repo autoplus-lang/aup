@@ -158,7 +158,14 @@ static aupTokType identifierType(aupLexer *L)
             }
             break;
         case 'i': return checkKeyword(L, 1, 1, "f", AUP_TOK_IF);
-        case 'n': return checkKeyword(L, 1, 2, "il", AUP_TOK_NIL);
+        case 'n':
+            if (L->current - L->start > 1) {
+                switch (L->start[1]) {
+                    case 'i': return checkKeyword(L, 2, 1, "l", AUP_TOK_NIL);
+                    case 'o': return checkKeyword(L, 2, 1, "t", AUP_TOK_NOT);
+                }
+            }
+            break;
         case 'o': return checkKeyword(L, 1, 1, "r", AUP_TOK_OR);
         case 'p': return checkKeyword(L, 1, 4, "rint", AUP_TOK_PRINT);
         case 'r': return checkKeyword(L, 1, 5, "eturn", AUP_TOK_RETURN);

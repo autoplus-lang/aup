@@ -647,6 +647,7 @@ static void unary(Parser *P, bool canAssign)
 
     // Emit the operator instruction.              
     switch (operatorType) {
+        case AUP_TOK_NOT:
         case AUP_TOK_BANG:    emitByte(P, AUP_OP_NOT); break;
         case AUP_TOK_MINUS:   emitByte(P, AUP_OP_NEG); break;
         default:
@@ -695,6 +696,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_FUNC]          = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_IF]            = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_NIL]           = { literal,  NULL,    PREC_NONE },
+    [AUP_TOK_NOT]           = { unary,    NULL,    PREC_NONE },
     [AUP_TOK_OR]            = { NULL,     or_,     PREC_OR },
     [AUP_TOK_PRINT]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_RETURN]        = { NULL,     NULL,    PREC_NONE },
