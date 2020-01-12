@@ -242,7 +242,7 @@ int aup_execute(register aupVM *vm)
 
 #define PREV_BYTE()     (ip[-1])
 #define READ_BYTE()     *(ip++)
-#define READ_SHORT()    (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
+#define READ_WORD()     (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
 
 #define READ_CONST()    CONSTS[READ_BYTE()]
 #define READ_STR()      AUP_AS_STR(READ_CONST())
@@ -325,7 +325,7 @@ int aup_execute(register aupVM *vm)
         }
 
         CODE(INTL) {
-            PUSH(AUP_NUM(READ_SHORT()));
+            PUSH(AUP_NUM(READ_WORD()));
             NEXT;
         }
 
@@ -494,13 +494,13 @@ int aup_execute(register aupVM *vm)
         }
 
         CODE(JMP) {
-            uint16_t offset = READ_SHORT();
+            uint16_t offset = READ_WORD();
             ip += offset;
             NEXT;
         }
 
         CODE(JMPF) {
-            uint16_t offset = READ_SHORT();
+            uint16_t offset = READ_WORD();
             if (AUP_IS_FALSEY(PEEK(0))) ip += offset;
             NEXT;
         }
