@@ -546,6 +546,31 @@ static void grouping(Parser *P, bool canAssign)
     consume(P, AUP_TOK_RPAREN, "Expect ')' after expression.");
 }
 
+static void integer(Parser *P, bool canAssign)
+{
+    int64_t i = 0;
+
+    switch (P->previous.type) {
+        case AUP_TOK_INTEGER:
+            i = strtoll(P->previous.start, NULL, 10);
+            break;
+        case AUP_TOK_HEXADECIMAL:
+            i = strtoll(P->previous.start + 2, NULL, 16);
+            break;
+    }
+
+    if (i <= UINT8_MAX) {
+        emitBytes(P, AUP_OP_INT, (uint8_t)i);
+    }
+    else if (i <= UINT16_MAX) {
+        emitByte(P, AUP_OP_INTL);
+        emitBytes(P, (i >> 8) & 0xFF, i & 0xFF);
+    }
+    else {
+        emitConstant(P, AUP_NUM((double)i));
+    }
+}
+
 static void number(Parser *P, bool canAssign)
 {
     double n = strtod(P->previous.start, NULL);
@@ -668,6 +693,8 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_IDENTIFIER]    = { variable, NULL,    PREC_NONE },
     [AUP_TOK_STRING]        = { string,   NULL,    PREC_NONE },
     [AUP_TOK_NUMBER]        = { number,   NULL,    PREC_NONE },
+    [AUP_TOK_INTEGER]       = { integer,  NULL,    PREC_NONE },
+    [AUP_TOK_HEXADECIMAL]   = { integer,  NULL,    PREC_NONE },
 
     [AUP_TOK_AND]           = { NULL,     and_,    PREC_AND },
     [AUP_TOK_CLASS]         = { NULL,     NULL,    PREC_NONE },
