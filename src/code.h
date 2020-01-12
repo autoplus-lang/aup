@@ -7,8 +7,8 @@
 
 #define OPCODES() \
 /*        opcodes      args     stack       description */ \
-    _CODE(PRINT)   	/* []       [-1, +0]    pop a value from stack */ \
-    _CODE(POP)     	/* []       [-1, +0]    pop a value from stack and print it */ \
+    _CODE(PRINT)   	/* [n]      [-1, +0]    */ \
+    _CODE(POP)     	/* []       [-1, +0]    */ \
     _CODE(CALL)    	/* [n]      [-n, +1]    */ \
     _CODE(RET)     	/* []       [-1, +0]    */ \
     _CODE(NIL)     	/* []       [-0, +1]    push nil to stack */ \
