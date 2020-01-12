@@ -99,12 +99,12 @@ static void errorAt(Parser *P, aupTok *token, const char *message)
         fprintf(stderr, " at '%.*s'", token->length, token->start);
     }
 
-    if (token->type != AUP_TOK_EOF) {
-        fprintf(stderr, ": %s\n", message);
-        fprintf(stderr, "  | %.*s\n", length, line);
+    fprintf(stderr, ": %s\n", message);
+    fprintf(stderr, "  | %.*s\n", length, line);
+
+    if (token->type != AUP_TOK_ERROR) {
         fprintf(stderr, "    %*s", length - token->length, "");
         for (int i = 0; i < token->length; i++) fputc('^', stderr);
-        
     }
 
     fprintf(stderr, "\n");
@@ -829,7 +829,8 @@ static void expressionStatement(Parser *P)
     expression(P);
     emitByte(P, AUP_OP_POP);
 
-    if ((P->subExprs <= 1) && !P->hadCall && !P->hadAssign) {
+    if ((P->subExprs <= 1) ||
+        (!P->hadCall && !P->hadAssign)) {
         error(P, "Unexpected expression syntax.");
         return;
     }

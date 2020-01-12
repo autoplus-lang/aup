@@ -95,6 +95,7 @@ static aupTok errorToken(aupLexer *L, const char *message)
     token.length = (int)strlen(message);
     token.line = L->line;
     token.column = L->position - 1;
+    token.currentLine = L->currentLine;
 
     return token;
 }
@@ -186,17 +187,23 @@ static aupTok identifier(aupLexer *L)
 
 static aupTok number(aupLexer *L, char start)
 {
-    // Look for '0x' || '0X'.
-    if (start == '0' &&
-        (peek(L) == 'x' || peek(L) == 'X')) {
-
-        advance(L);
-        while (isDigit(peek(L)) || isAlpha(peek(L))) {
-            if (!isHexaDigit(advance(L)))
+    if (start == '0' && isAlpha(peek(L))) {
+        if ((peek(L) == 'x' || peek(L) == 'X')) {
+            advance(L);
+            while (isAlpha(peek(L)) || isDigit(peek(L))) {
+                if (!isHexaDigit(peek(L))) {
+                    return errorToken(L, "Expect hexadecimal digit.");
+                }
+                advance(L);
+            }
+            if (L->current - L->start <= 2) {
                 return errorToken(L, "Expect hexadecimal digit.");
+            }
+            return makeToken(L, AUP_TOK_HEXADECIMAL);           
         }
-
-        return makeToken(L, AUP_TOK_HEXADECIMAL);
+        else {
+            return errorToken(L, "Unexpected number format.");
+        }
     }
 
     while (isDigit(peek(L))) advance(L);
