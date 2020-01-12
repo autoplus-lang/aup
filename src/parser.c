@@ -865,8 +865,8 @@ static void expressionStatement(Parser *P)
     expression(P);
     emitByte(P, AUP_OP_POP);
 
-    if ((P->subExprs <= 1) ||
-        (!P->hadCall && !P->hadAssign)) {
+    if ((P->subExprs <= 1 && !P->hadCall) ||
+        (P->subExprs > 1 && !P->hadCall && !P->hadAssign)) {
         error(P, "Unexpected expression syntax.");
         return;
     }
