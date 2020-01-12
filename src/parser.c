@@ -168,14 +168,6 @@ static void emitBytes(Parser *P, uint8_t byte1, uint8_t byte2)
     emitByte(P, byte2);
 }
 
-static void emitNBytes(Parser *P, void *bytes, size_t size)
-{
-    const uint8_t *bs = bytes;
-    for (size_t i = 0; i < size; i++) {
-        emitByte(P, bytes == NULL ? 0 : bs[i]);
-    }
-}
-
 static int emitJump(Parser *P, uint8_t instruction)
 {
     emitByte(P, instruction);
