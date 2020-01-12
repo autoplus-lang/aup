@@ -616,6 +616,46 @@ static void namedVariable(Parser *P, aupTok name, bool canAssign)
 
         P->hadAssign = true;
     }
+    else if (canAssign && match(P, AUP_TOK_PLUS_EQUAL)) {
+        namedVariable(P, name, false);
+        expression(P);
+        emitByte(P, AUP_OP_ADD);
+        emitBytes(P, setOp, (uint8_t)arg);
+
+        P->hadAssign = true;
+    }
+    else if (canAssign && match(P, AUP_TOK_MINUS_EQUAL)) {
+        namedVariable(P, name, false);
+        expression(P);
+        emitByte(P, AUP_OP_SUB);
+        emitBytes(P, setOp, (uint8_t)arg);
+
+        P->hadAssign = true;
+    }
+    else if (canAssign && match(P, AUP_TOK_STAR_EQUAL)) {
+        namedVariable(P, name, false);
+        expression(P);
+        emitByte(P, AUP_OP_MUL);
+        emitBytes(P, setOp, (uint8_t)arg);
+
+        P->hadAssign = true;
+    }
+    else if (canAssign && match(P, AUP_TOK_SLASH_EQUAL)) {
+        namedVariable(P, name, false);
+        expression(P);
+        emitByte(P, AUP_OP_DIV);
+        emitBytes(P, setOp, (uint8_t)arg);
+
+        P->hadAssign = true;
+    }
+    else if (canAssign && match(P, AUP_TOK_PERCENT_EQUAL)) {
+        namedVariable(P, name, false);
+        expression(P);
+        emitByte(P, AUP_OP_MOD);
+        emitBytes(P, setOp, (uint8_t)arg);
+
+        P->hadAssign = true;
+    }
     else {
         emitBytes(P, getOp, (uint8_t)arg);
     }
