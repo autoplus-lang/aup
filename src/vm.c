@@ -381,6 +381,14 @@ int aup_execute(register aupVM *vm)
             }          
         }
 
+        CODE(BNOT) {
+            if (AUP_IS_NUM(PEEK(0))) {
+                PUSH(AUP_NUM((double)~AUP_AS_INT64(POP())));
+                NEXT;
+            }
+            ERROR("Operands must be a number.");
+        }
+
         CODE(EQ) {
             aupVal b = POP();
             aupVal a = POP();
@@ -457,6 +465,56 @@ int aup_execute(register aupVM *vm)
                 int64_t b = AUP_AS_INT64(POP());
                 int64_t a = AUP_AS_INT64(POP());
                 PUSH(AUP_NUM((double)(a % b)));
+                NEXT;
+            }
+            ERROR("Operands must be two numbers.");
+        }
+
+        CODE(BAND) {
+            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
+                int64_t b = AUP_AS_INT64(POP());
+                int64_t a = AUP_AS_INT64(POP());
+                PUSH(AUP_NUM((double)(a & b)));
+                NEXT;
+            }
+            ERROR("Operands must be two numbers.");
+        }
+
+        CODE(BOR) {
+            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
+                int64_t b = AUP_AS_INT64(POP());
+                int64_t a = AUP_AS_INT64(POP());
+                PUSH(AUP_NUM((double)(a | b)));
+                NEXT;
+            }
+            ERROR("Operands must be two numbers.");
+        }
+
+        CODE(BXOR) {
+            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
+                int64_t b = AUP_AS_INT64(POP());
+                int64_t a = AUP_AS_INT64(POP());
+                PUSH(AUP_NUM((double)(a ^ b)));
+                NEXT;
+            }
+            ERROR("Operands must be two numbers.");
+        }
+
+        CODE(SHL) {
+            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
+                int64_t b = AUP_AS_INT64(POP());
+                int64_t a = AUP_AS_INT64(POP());
+                PUSH(AUP_NUM((double)(a << b)));
+                NEXT;
+            }
+            ERROR("Operands must be two numbers.");
+        }
+
+        CODE(SHR) {
+            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
+                int64_t b = AUP_AS_INT64(POP());
+                int64_t a = AUP_AS_INT64(POP());
+                PUSH(AUP_NUM((double)(a >> b)));
                 NEXT;
             }
             ERROR("Operands must be two numbers.");

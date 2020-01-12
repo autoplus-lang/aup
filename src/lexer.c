@@ -266,6 +266,11 @@ aupTok aup_scanToken(aupLexer *L)
         case ',': return makeToken(L, AUP_TOK_COMMA);
         case '.': return makeToken(L, AUP_TOK_DOT);
 
+        case '&': return makeToken(L, AUP_TOK_AMPERSAND);
+        case '|': return makeToken(L, AUP_TOK_VBAR);
+        case '~': return makeToken(L, AUP_TOK_TILDE);
+        case '^': return makeToken(L, AUP_TOK_CARET);
+
         case '+': return makeToken(L, match(L, '=') ? AUP_TOK_PLUS_EQUAL : AUP_TOK_PLUS);
         case '-': return makeToken(L, match(L, '=') ? AUP_TOK_MINUS_EQUAL : AUP_TOK_MINUS);
         case '*': return makeToken(L, match(L, '=') ? AUP_TOK_STAR_EQUAL : AUP_TOK_STAR);
@@ -277,9 +282,19 @@ aupTok aup_scanToken(aupLexer *L)
         case '=':
             return makeToken(L, match(L, '=') ? AUP_TOK_EQUAL_EQUAL : AUP_TOK_EQUAL);
         case '<':
-            return makeToken(L, match(L, '=') ? AUP_TOK_LESS_EQUAL : AUP_TOK_LESS);
+            if (match(L, '<'))
+                return makeToken(L, AUP_TOK_LESS_LESS);
+            else if (match(L, '='))
+                return makeToken(L, AUP_TOK_LESS_EQUAL);
+            else
+                return makeToken(L, AUP_TOK_LESS);
         case '>':
-            return makeToken(L, match(L, '=') ? AUP_TOK_GREATER_EQUAL : AUP_TOK_GREATER);
+            if (match(L, '>'))
+                return makeToken(L, AUP_TOK_GREATER_GREATER);
+            else if (match(L, '='))
+                return makeToken(L, AUP_TOK_GREATER_EQUAL);
+            else
+                return makeToken(L, AUP_TOK_GREATER);
 
         case '\'':
         case '\"': return string(L, c);

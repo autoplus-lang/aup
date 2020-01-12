@@ -30,13 +30,17 @@ typedef enum {
     PREC_NONE,
     PREC_ASSIGNMENT,  // =        
     PREC_OR,          // or       
-    PREC_AND,         // and      
-    PREC_EQUALITY,    // == !=    
+    PREC_AND,         // and
+    PREC_BOR,		  // |
+    PREC_BXOR,		  // ^
+    PREC_BAND,		  // &
+    PREC_EQUALITY,    // == !=
     PREC_COMPARISON,  // < > <= >=
+    PREC_SHIFT,       // << >>
     PREC_TERM,        // + -      
     PREC_FACTOR,      // * /      
-    PREC_UNARY,       // ! -      
-    PREC_CALL,        // . ()     
+    PREC_UNARY,       // ! - ~
+    PREC_CALL,        // . ()
     PREC_PRIMARY
 } Precedence;
 
@@ -478,6 +482,14 @@ static void binary(Parser *P, bool canAssign)
         case AUP_TOK_SLASH:         emitByte(P, AUP_OP_DIV); break;
         case AUP_TOK_PERCENT:       emitByte(P, AUP_OP_MOD); break;
 
+        case AUP_TOK_AMPERSAND:     emitByte(P, AUP_OP_BAND); break;
+        case AUP_TOK_VBAR:          emitByte(P, AUP_OP_BOR); break;
+        case AUP_TOK_CARET:         emitByte(P, AUP_OP_BXOR); break;
+
+        case AUP_TOK_LESS_LESS:     emitByte(P, AUP_OP_SHL); break;
+        case AUP_TOK_GREATER_GREATER:
+                                    emitByte(P, AUP_OP_SHR); break;
+
         default:
             return; // Unreachable.                              
     }
@@ -688,8 +700,9 @@ static void unary(Parser *P, bool canAssign)
     // Emit the operator instruction.              
     switch (operatorType) {
         case AUP_TOK_NOT:
-        case AUP_TOK_BANG:    emitByte(P, AUP_OP_NOT); break;
-        case AUP_TOK_MINUS:   emitByte(P, AUP_OP_NEG); break;
+        case AUP_TOK_BANG:      emitByte(P, AUP_OP_NOT); break;
+        case AUP_TOK_MINUS:     emitByte(P, AUP_OP_NEG); break;
+        case AUP_TOK_TILDE:     emitByte(P, AUP_OP_BNOT); break;
         default:
             return; // Unreachable.                    
     }
@@ -712,6 +725,15 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_SLASH]         = { NULL,     binary,  PREC_FACTOR },
     [AUP_TOK_STAR]          = { NULL,     binary,  PREC_FACTOR },
     [AUP_TOK_PERCENT]       = { NULL,     binary,  PREC_FACTOR },
+
+    [AUP_TOK_AMPERSAND]     = { NULL,     binary,  PREC_BAND },
+    [AUP_TOK_VBAR]          = { NULL,     binary,  PREC_BOR },
+    [AUP_TOK_TILDE]         = { unary,    NULL,    PREC_NONE },
+    [AUP_TOK_CARET]         = { NULL,     binary,  PREC_BXOR },
+
+    [AUP_TOK_LESS_LESS]     = { NULL,     binary,  PREC_SHIFT },
+    [AUP_TOK_GREATER_GREATER]
+                            = { NULL,     binary,  PREC_SHIFT },
 
     [AUP_TOK_BANG]          = { unary,    NULL,    PREC_NONE },
     [AUP_TOK_BANG_EQUAL]    = { NULL,     binary,  PREC_EQUALITY },

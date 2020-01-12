@@ -9,29 +9,44 @@
 /*        opcodes      args     stack       description */ \
     _CODE(PRINT)   	/* [n]      [-1, +0]    */ \
     _CODE(POP)     	/* []       [-1, +0]    */ \
+    \
     _CODE(CALL)    	/* [n]      [-n, +1]    */ \
     _CODE(RET)     	/* []       [-1, +0]    */ \
+    \
     _CODE(NIL)     	/* []       [-0, +1]    push nil to stack */ \
     _CODE(TRUE)    	/* []       [-0, +1]    push true to stack */ \
     _CODE(FALSE)   	/* []       [-0, +1]    push false to stack */ \
     _CODE(INT)   	/* [b]      [-0, +1]    */ \
     _CODE(INTL)   	/* [b, b]   [-0, +1]    */ \
     _CODE(CONST)   	/* [k]      [-0, +1]    push a constant from (k) to stack */ \
+    \
     _CODE(NEG)     	/* []       [-1, +1]    */ \
     _CODE(NOT)     	/* []       [-1, +1]    */ \
+    _CODE(BNOT)     /* []       [-1, +1]    */ \
+    \
     _CODE(LT)      	/* []       [-1, +1]    */ \
     _CODE(LE)      	/* []       [-1, +1]    */ \
     _CODE(EQ)      	/* []       [-1, +1]    */ \
+    \
     _CODE(ADD)     	/* []       [-2, +1]    */ \
     _CODE(SUB)     	/* []       [-2, +1]    */ \
     _CODE(MUL)     	/* []       [-2, +1]    */ \
     _CODE(DIV)     	/* []       [-2, +1]    */ \
     _CODE(MOD)     	/* []       [-2, +1]    */ \
+    \
+    _CODE(BAND)     /* []       [-2, +1]    */ \
+    _CODE(BOR)     	/* []       [-2, +1]    */ \
+    _CODE(BXOR)     /* []       [-2, +1]    */ \
+    _CODE(SHL)     	/* []       [-2, +1]    */ \
+    _CODE(SHR)     	/* []       [-2, +1]    */ \
+    \
     _CODE(DEF)     	/* [k]      [-1, +0]    pop a value from stack and define as (k) in global */ \
     _CODE(GLD)     	/* [k]      [-0, +1]    push a from (k) in global to stack */ \
     _CODE(GST)     	/* [k]      [-0, +0]    set a value from stack as (k) in global */ \
+    \
     _CODE(JMP)     	/* [s, s]   [-0, +0]    */ \
     _CODE(JMPF)    	/* [s, s]   [-1, +0]    */ \
+    \
     _CODE(LD)      	/* [s]      [-0, +1]    */ \
     _CODE(ST)      	/* [s]      [-0, +0]    */ \
     _CODE(MAP)      /* []       [-0, +1]    */ \
@@ -39,6 +54,7 @@
     _CODE(SET)      /* [k]      [-2, +1]    */ \
     _CODE(GETI)     /* []       [-2, +1]    */ \
     _CODE(SETI)     /* []       [-3, +1]    */ \
+    \
     _CODE(CLOSURE)  /* [k, ...] [-0, +0]    */ \
     _CODE(CLOSE)    /* []       [-1, +0]    */ \
     _CODE(ULD)      /* [u]      [-0, +1]    */ \
@@ -101,6 +117,13 @@ typedef enum {
     AUP_TOK_SLASH,
     AUP_TOK_STAR,
     AUP_TOK_PERCENT,
+
+    AUP_TOK_AMPERSAND,
+    AUP_TOK_VBAR,
+    AUP_TOK_TILDE,
+    AUP_TOK_CARET,
+    AUP_TOK_LESS_LESS,
+    AUP_TOK_GREATER_GREATER,
 
     // One or two character tokens.                     
     AUP_TOK_BANG,
