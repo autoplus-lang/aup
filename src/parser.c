@@ -84,9 +84,6 @@ static void errorAt(Parser *P, aupTok *token, const char *message)
     if (P->panicMode) return;
     P->panicMode = true;
 
-    int length = token->start - token->currentLine + token->length;
-    const char *line = token->currentLine;
-
     fprintf(stderr, "[%s:%d:%d] Error", P->source->fname, token->line, token->column);
 
     if (token->type == AUP_TOK_EOF) {
@@ -100,12 +97,9 @@ static void errorAt(Parser *P, aupTok *token, const char *message)
     }
 
     fprintf(stderr, ": %s\n", message);
-    fprintf(stderr, "  | %.*s\n", length, line);
-
-    if (token->type != AUP_TOK_ERROR) {
-        fprintf(stderr, "    %*s", length - token->length, "");
-        for (int i = 0; i < token->length; i++) fputc('^', stderr);
-    }
+    fprintf(stderr, "  | %.*s\n", token->lineLength, token->lineStart);
+    fprintf(stderr, "    %*s", token->column-1, "");
+    for (int i = 0; i < token->length; i++) fputc('^', stderr);
 
     fprintf(stderr, "\n");
     fflush(stderr);

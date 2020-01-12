@@ -145,7 +145,8 @@ typedef enum {
 
 typedef struct {
     const char *start;
-    const char *currentLine;
+    const char *lineStart;
+    int lineLength;
     aupTokType type;
     int length;
     int line;
@@ -155,7 +156,8 @@ typedef struct {
 typedef struct {
     const char *start;
     const char *current;
-    const char *currentLine;
+    const char *lineStart;
+    int lineLength;
     int line;
     int position;
 } aupLexer;

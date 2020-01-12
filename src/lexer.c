@@ -7,7 +7,7 @@ void aup_initLexer(aupLexer *L, const char *source)
 {
     L->start = source;
     L->current = source;
-    L->currentLine = source;
+    L->lineStart = source;
 
     L->line = 1;
     L->position = 1;
@@ -61,7 +61,7 @@ static void newLine(aupLexer *L)
 {
     L->line++;
     L->position = 0;
-    L->currentLine = L->current + 1;
+    L->lineStart = L->current + 1;
 }
 
 static bool match(aupLexer *L, char expected)
@@ -82,20 +82,20 @@ static aupTok makeToken(aupLexer *L, aupTokType type)
     token.length = (int)(L->current - L->start);
     token.line = L->line;
     token.column = L->position - token.length;
-    token.currentLine = L->currentLine;
+
+    const char *endLine = strchr(L->lineStart, '\n');
+    if (endLine == NULL) L->lineLength = (int)strlen(L->lineStart);
+    else L->lineLength = endLine - L->lineStart - 1;
+    token.lineStart = L->lineStart;
+    token.lineLength = L->lineLength;
 
     return token;
 }
 
 static aupTok errorToken(aupLexer *L, const char *message)
 {
-    aupTok token;
-    token.type = AUP_TOK_ERROR;
+    aupTok token = makeToken(L, AUP_TOK_ERROR);
     token.start = message;
-    token.length = (int)strlen(message);
-    token.line = L->line;
-    token.column = L->position - 1;
-    token.currentLine = L->currentLine;
 
     return token;
 }
