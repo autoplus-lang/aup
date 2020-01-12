@@ -27,6 +27,13 @@ static bool isDigit(char c)
         && (c <= '9');
 }
 
+static bool isHexaDigit(char c)
+{
+    return (c >= '0' && c <= '9')
+        || (c >= 'a' && c <= 'f')
+        || (c >= 'A' && c <= 'F');
+}
+
 static bool isAtEnd(aupLexer *L)
 {
     return *L->current == '\0';
@@ -187,9 +194,11 @@ static aupTok number(aupLexer *L)
         advance(L);
 
         while (isDigit(peek(L))) advance(L);
+
+        return makeToken(L, AUP_TOK_NUMBER);
     }
 
-    return makeToken(L, AUP_TOK_NUMBER);
+    return makeToken(L, AUP_TOK_INTEGER);
 }
 
 static aupTok string(aupLexer *L, char start)
