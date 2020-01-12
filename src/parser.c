@@ -168,6 +168,11 @@ static void emitBytes(Parser *P, uint8_t byte1, uint8_t byte2)
     emitByte(P, byte2);
 }
 
+static void emitWord(Parser *P, uint16_t word)
+{
+    emitBytes(P, (word >> 8) & 0xFF, word & 0xFF);
+}
+
 static int emitJump(Parser *P, uint8_t instruction)
 {
     emitByte(P, instruction);
@@ -556,7 +561,7 @@ static void integer(Parser *P, bool canAssign)
     }
     else if (i <= UINT16_MAX) {
         emitByte(P, AUP_OP_INTL);
-        emitBytes(P, (i >> 8) & 0xFF, i & 0xFF);
+        emitWord(P, (uint16_t)i);
     }
     else {
         emitConstant(P, AUP_NUM((double)i));
