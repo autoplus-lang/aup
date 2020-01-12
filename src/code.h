@@ -116,6 +116,8 @@ typedef enum {
     AUP_TOK_IDENTIFIER,
     AUP_TOK_STRING,
     AUP_TOK_NUMBER,
+    AUP_TOK_INTEGER,
+    AUP_TOK_HEXADECIMAL,
 
     // Keywords.                                        
     AUP_TOK_AND,
