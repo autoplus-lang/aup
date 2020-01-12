@@ -779,6 +779,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_FOR]           = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_FUNC]          = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_IF]            = { NULL,     NULL,    PREC_NONE },
+    [AUP_TOK_MATCH]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_NIL]           = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_NOT]           = { unary,    NULL,    PREC_NONE },
     [AUP_TOK_OR]            = { NULL,     or_,     PREC_OR },
@@ -961,6 +962,43 @@ static void ifStatement(Parser *P)
     }
 }
 
+static void matchStatement(Parser *P)
+{
+    consume(P, AUP_TOK_LPAREN, "Expect '(' after 'match'.");
+    expression(P);
+    consume(P, AUP_TOK_RPAREN, "Expect ')' after condition.");
+
+    consume(P, AUP_TOK_LBRACE, "Exprect '{' before 'match' statement body.");
+
+    int caseCount = 0;
+    int jmpOuts[UINT8_COUNT];
+
+    if (!check(P, AUP_TOK_RBRACE)) {
+        do {
+            expression(P);
+            int jmpNext = emitJump(P, AUP_OP_JNE);
+
+            consume(P, AUP_TOK_ARROW, "Extect an arrow after expression.");
+            statement(P);
+         
+            jmpOuts[caseCount++] =  emitJump(P, AUP_OP_JMP);
+            patchJump(P, jmpNext);
+
+            if (caseCount > UINT8_COUNT) {
+                error(P, "Too many cases in 'match' statement.");
+                return;
+            }
+        } while (match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_RBRACE));
+    }
+
+    consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' statement body.");
+
+    // Patch all endings.
+    for (int i = 0; i < caseCount; i++) patchJump(P, jmpOuts[i]);
+    // Pop the input value.
+    emitByte(P, AUP_OP_POP);
+}
+
 static void printStatement(Parser *P)
 {
     int count = 0;
@@ -1006,6 +1044,7 @@ static void synchronize(Parser *P)
             case AUP_TOK_VAR:
             case AUP_TOK_FOR:
             case AUP_TOK_IF:
+            case AUP_TOK_MATCH:
             case AUP_TOK_WHILE:
             case AUP_TOK_PRINT:
             case AUP_TOK_RETURN:
@@ -1039,6 +1078,9 @@ static void statement(Parser *P)
     }
     else if (match(P, AUP_TOK_IF)) {
         ifStatement(P);
+    }
+    else if (match(P, AUP_TOK_MATCH)) {
+        matchStatement(P);
     }
     else if (match(P, AUP_TOK_RETURN)) {
         returnStatement(P);

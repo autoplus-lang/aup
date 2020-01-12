@@ -45,7 +45,8 @@
     _CODE(GST)     	/* [k]      [-0, +0]    set a value from stack as (k) in global */ \
     \
     _CODE(JMP)     	/* [s, s]   [-0, +0]    */ \
-    _CODE(JMPF)    	/* [s, s]   [-1, +0]    */ \
+    _CODE(JMPF)    	/* [s, s]   [-0, +0]    */ \
+    _CODE(JNE)      /* [s, s]   [-1, +0]    */ \
     \
     _CODE(LD)      	/* [s]      [-0, +1]    */ \
     _CODE(ST)      	/* [s]      [-0, +0]    */ \
@@ -160,6 +161,7 @@ typedef enum {
     AUP_TOK_FOR,
     AUP_TOK_FUNC,
     AUP_TOK_IF,
+    AUP_TOK_MATCH,
     AUP_TOK_NIL,
     AUP_TOK_NOT,
     AUP_TOK_OR,

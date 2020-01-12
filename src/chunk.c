@@ -218,6 +218,7 @@ int aup_dasmInstruction(aupChunk *chunk, int offset)
 
         case AUP_OP_JMP:
         case AUP_OP_JMPF:
+        case AUP_OP_JNE:
             return jumpInst(1, chunk, offset);
 
         case AUP_OP_CLOSURE: {

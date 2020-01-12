@@ -584,6 +584,13 @@ int aup_execute(register aupVM *vm)
             NEXT;
         }
 
+        CODE(JNE) {
+            uint16_t offset = READ_WORD();
+            aupVal cond = POP();
+            if (!aup_valuesEqual(PEEK(0), cond)) ip += offset;
+            NEXT;
+        }
+
         CODE(MAP) {
             uint8_t count = READ_BYTE();
             aupMap *map = aup_newMap(vm);
