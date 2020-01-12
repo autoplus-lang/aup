@@ -858,9 +858,17 @@ static void function(Parser *P, FunType type)
     }
     consume(P, AUP_TOK_RPAREN, "Expect ')' after parameters.");
 
-    // The body.                                                  
-    consume(P, AUP_TOK_LBRACE, "Expect '{' before function body.");
-    block(P);
+    // The body.                     
+    if (match(P, AUP_TOK_EQUAL)) {
+        // Single expression
+        expression(P);
+        emitByte(P, AUP_OP_RET);
+    }
+    else {
+        // Block statement.
+        consume(P, AUP_TOK_LBRACE, "Expect '{' before function body.");
+        block(P);
+    }
 
     // Create the function object.                                
     aupFun *function = endCompiler(P);
