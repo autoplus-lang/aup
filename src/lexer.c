@@ -275,29 +275,26 @@ aupTok aup_scanToken(aupLexer *L)
         case '^': return makeToken(L, AUP_TOK_CARET);
 
         case '+': return makeToken(L, match(L, '=') ? AUP_TOK_PLUS_EQUAL : AUP_TOK_PLUS);
-        case '-': return makeToken(L, match(L, '=') ? AUP_TOK_MINUS_EQUAL : AUP_TOK_MINUS);
         case '*': return makeToken(L, match(L, '=') ? AUP_TOK_STAR_EQUAL : AUP_TOK_STAR);
         case '/': return makeToken(L, match(L, '=') ? AUP_TOK_SLASH_EQUAL : AUP_TOK_SLASH);
         case '%': return makeToken(L, match(L, '=') ? AUP_TOK_PERCENT_EQUAL : AUP_TOK_PERCENT);
+        case '!': return makeToken(L, match(L, '=') ? AUP_TOK_BANG_EQUAL : AUP_TOK_BANG);
 
-        case '!':
-            return makeToken(L, match(L, '=') ? AUP_TOK_BANG_EQUAL : AUP_TOK_BANG);
-        case '=':
-            return makeToken(L, match(L, '=') ? AUP_TOK_EQUAL_EQUAL : AUP_TOK_EQUAL);
-        case '<':
-            if (match(L, '<'))
-                return makeToken(L, AUP_TOK_LESS_LESS);
-            else if (match(L, '='))
-                return makeToken(L, AUP_TOK_LESS_EQUAL);
-            else
-                return makeToken(L, AUP_TOK_LESS);
-        case '>':
-            if (match(L, '>'))
-                return makeToken(L, AUP_TOK_GREATER_GREATER);
-            else if (match(L, '='))
-                return makeToken(L, AUP_TOK_GREATER_EQUAL);
-            else
-                return makeToken(L, AUP_TOK_GREATER);
+        case '-': if (match(L, '>'))    return makeToken(L, AUP_TOK_ARROW);
+             else if (match(L, '='))    return makeToken(L, AUP_TOK_MINUS_EQUAL);
+                                        return makeToken(L, AUP_TOK_MINUS);
+
+        case '=': if (match(L, '>'))    return makeToken(L, AUP_TOK_ARROW);
+             else if (match(L, '='))    return makeToken(L, AUP_TOK_EQUAL_EQUAL);
+                                        return makeToken(L, AUP_TOK_EQUAL);
+
+        case '<': if (match(L, '<'))    return makeToken(L, AUP_TOK_LESS_LESS);
+             else if (match(L, '='))    return makeToken(L, AUP_TOK_LESS_EQUAL);
+                                        return makeToken(L, AUP_TOK_LESS);
+
+        case '>': if (match(L, '>'))    return makeToken(L, AUP_TOK_GREATER_GREATER);
+             else if (match(L, '='))    return makeToken(L, AUP_TOK_GREATER_EQUAL);
+                                        return makeToken(L, AUP_TOK_GREATER);
 
         case '\'':
         case '\"': return string(L, c);

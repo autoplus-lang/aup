@@ -108,6 +108,7 @@ typedef enum {
     AUP_TOK_LBRACE,
     AUP_TOK_RBRACE,
 
+    AUP_TOK_ARROW,
     AUP_TOK_COMMA,
     AUP_TOK_DOT,
     AUP_TOK_SEMICOLON,

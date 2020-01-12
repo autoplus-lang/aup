@@ -734,6 +734,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_LBRACE]        = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_RBRACE]        = { NULL,     NULL,    PREC_NONE },
 
+    [AUP_TOK_ARROW]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_COMMA]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_DOT]           = { NULL,     dot,     PREC_CALL },
 
@@ -859,7 +860,7 @@ static void function(Parser *P, FunType type)
     consume(P, AUP_TOK_RPAREN, "Expect ')' after parameters.");
 
     // The body.                     
-    if (match(P, AUP_TOK_EQUAL)) {
+    if (match(P, AUP_TOK_EQUAL) || match(P, AUP_TOK_ARROW)) {
         // Single expression
         expression(P);
         emitByte(P, AUP_OP_RET);
