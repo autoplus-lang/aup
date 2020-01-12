@@ -48,6 +48,24 @@ static void runtimeError(aupVM *vm, const char *format, ...)
     resetStack(vm);
 }
 
+static void printStack(aupVM *vm, int n)
+{
+    printf("\n== stack trace ==\n");
+
+    for (int i = 0; i < n; i++) {
+        aupVal val = vm->stack[i];
+
+        if (vm->stack - vm->top == i)
+            printf("[#] ");
+        else
+            printf("[%d] ", i);
+
+        printf("%-6s -> ", aup_typeofValue(val));
+        aup_printValue(val);
+        printf("\n");
+    }
+}
+
 aupVM *aup_create()
 {
     aupVM *vm = malloc(sizeof(aupVM));
@@ -352,6 +370,9 @@ int aup_execute(register aupVM *vm)
 
             if (--vm->frameCount == 0) {
                 POP();
+#ifdef AUP_DEBUG
+                printStack(vm, 5);
+#endif
                 return AUP_OK;
             }
 
