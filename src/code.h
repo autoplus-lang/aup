@@ -14,6 +14,8 @@
     _CODE(NIL)     	/* []       [-0, +1]    push nil to stack */ \
     _CODE(TRUE)    	/* []       [-0, +1]    push true to stack */ \
     _CODE(FALSE)   	/* []       [-0, +1]    push false to stack */ \
+    _CODE(INT)   	/* [b]      [-0, +1]    */ \
+    _CODE(INTL)   	/* [b, b]   [-0, +1]    */ \
     _CODE(CONST)   	/* [k]      [-0, +1]    push a constant from (k) to stack */ \
     _CODE(NEG)     	/* []       [-1, +1]    */ \
     _CODE(NOT)     	/* []       [-1, +1]    */ \

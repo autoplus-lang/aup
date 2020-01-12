@@ -108,8 +108,17 @@ static int simpleInst(int offset)
 
 static int byteInst(aupChunk *chunk, int offset)
 {
-    uint8_t slot = chunk->code[offset + 1];
-    printf("%4d\n", slot);
+    uint8_t byte = chunk->code[offset + 1];
+    printf("%4d\n", byte);
+
+    return offset + 2;
+}
+
+static int wordInst(aupChunk *chunk, int offset)
+{
+    uint16_t word = chunk->code[offset + 1] << 8;
+    word |= chunk->code[offset + 2];
+    printf("%4d\n", word);
 
     return offset + 2;
 }
@@ -159,6 +168,12 @@ int aup_dasmInstruction(aupChunk *chunk, int offset)
         case AUP_OP_TRUE:
         case AUP_OP_FALSE:
             return simpleInst(offset);
+
+        case AUP_OP_INT:
+            return byteInst(chunk, offset);
+
+        case AUP_OP_INTL:
+            return wordInst(chunk, offset);
 
         case AUP_OP_CONST:
             return constantInst(chunk, offset);
