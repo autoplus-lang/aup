@@ -975,6 +975,18 @@ static void matchStatement(Parser *P)
 
     if (!check(P, AUP_TOK_RBRACE)) {
         do {
+            // Default.
+            if (match(P, AUP_TOK_ARROW)) {
+                statement(P);
+                jmpOuts[caseCount++] = emitJump(P, AUP_OP_JMP);
+               
+                if (match(P, AUP_TOK_COMMA), !check(P, AUP_TOK_RBRACE)) {
+                    error(P, "Default must be placed at end.");
+                    return;
+                }
+                break;
+            }
+
             expression(P);
             int jmpNext = emitJump(P, AUP_OP_JNE);
 
