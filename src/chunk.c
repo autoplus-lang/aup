@@ -120,7 +120,7 @@ static int wordInst(aupChunk *chunk, int offset)
     word |= chunk->code[offset + 2];
     printf("%4d\n", word);
 
-    return offset + 2;
+    return offset + 3;
 }
 
 static int jumpInst(int sign, aupChunk *chunk, int offset)
