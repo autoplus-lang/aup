@@ -128,6 +128,7 @@ typedef enum {
     AUP_TOK_FUNC,
     AUP_TOK_IF,
     AUP_TOK_NIL,
+    AUP_TOK_NOT,
     AUP_TOK_OR,
     AUP_TOK_PRINT,
     AUP_TOK_RETURN,
