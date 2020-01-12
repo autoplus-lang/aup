@@ -184,8 +184,21 @@ static aupTok identifier(aupLexer *L)
     return makeToken(L, identifierType(L));
 }
 
-static aupTok number(aupLexer *L)
+static aupTok number(aupLexer *L, char start)
 {
+    // Look for '0x' || '0X'.
+    if (start == '0' &&
+        (peek(L) == 'x' || peek(L) == 'X')) {
+
+        advance(L);
+        while (isDigit(peek(L)) || isAlpha(peek(L))) {
+            if (!isHexalDigit(advance(L)))
+                return errorToken(L, "Expect hexadecimal digit.");
+        }
+
+        return makeToken(L, AUP_TOK_HEXADECIMAL);
+    }
+
     while (isDigit(peek(L))) advance(L);
 
     // Look for a fractional part.             
