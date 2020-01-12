@@ -112,6 +112,12 @@ typedef enum {
     AUP_TOK_LESS,
     AUP_TOK_LESS_EQUAL,
 
+    AUP_TOK_PLUS_EQUAL,
+    AUP_TOK_MINUS_EQUAL,
+    AUP_TOK_STAR_EQUAL,
+    AUP_TOK_SLASH_EQUAL,
+    AUP_TOK_PERCENT_EQUAL,
+
     // Literals.                                        
     AUP_TOK_IDENTIFIER,
     AUP_TOK_STRING,

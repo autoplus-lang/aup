@@ -266,11 +266,11 @@ aupTok aup_scanToken(aupLexer *L)
         case ',': return makeToken(L, AUP_TOK_COMMA);
         case '.': return makeToken(L, AUP_TOK_DOT);
 
-        case '-': return makeToken(L, AUP_TOK_MINUS);
-        case '+': return makeToken(L, AUP_TOK_PLUS);
-        case '/': return makeToken(L, AUP_TOK_SLASH);
-        case '*': return makeToken(L, AUP_TOK_STAR);
-        case '%': return makeToken(L, AUP_TOK_PERCENT);
+        case '+': return makeToken(L, match(L, '=') ? AUP_TOK_PLUS_EQUAL : AUP_TOK_PLUS);
+        case '-': return makeToken(L, match(L, '=') ? AUP_TOK_MINUS_EQUAL : AUP_TOK_MINUS);
+        case '*': return makeToken(L, match(L, '=') ? AUP_TOK_STAR_EQUAL : AUP_TOK_STAR);
+        case '/': return makeToken(L, match(L, '=') ? AUP_TOK_SLASH_EQUAL : AUP_TOK_SLASH);
+        case '%': return makeToken(L, match(L, '=') ? AUP_TOK_PERCENT_EQUAL : AUP_TOK_PERCENT);
 
         case '!':
             return makeToken(L, match(L, '=') ? AUP_TOK_BANG_EQUAL : AUP_TOK_BANG);
