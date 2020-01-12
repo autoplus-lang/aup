@@ -964,27 +964,21 @@ static void ifStatement(Parser *P)
 
 static void matchStatement(Parser *P)
 {
-    consume(P, AUP_TOK_LPAREN, "Expect '(' after 'match'.");
-    expression(P);
-    consume(P, AUP_TOK_RPAREN, "Expect ')' after condition.");
-
-    consume(P, AUP_TOK_LBRACE, "Exprect '{' before 'match' statement body.");
-
+    bool hadBrace;
     int caseCount = 0;
     int jmpOuts[UINT8_COUNT];
 
-    if (!check(P, AUP_TOK_RBRACE)) {
+    expression(P);
+    hadBrace = match(P, AUP_TOK_LBRACE);
+
+    if ((hadBrace && !check(P, AUP_TOK_RBRACE)) ||
+        match(P, AUP_TOK_VBAR)) {
         do {
             // Default.
             if (match(P, AUP_TOK_ARROW)) {
                 statement(P);
                 jmpOuts[caseCount++] = emitJump(P, AUP_OP_JMP);
-               
-                if (match(P, AUP_TOK_COMMA), !check(P, AUP_TOK_RBRACE)) {
-                    error(P, "Default must be placed at end.");
-                    return;
-                }
-                break;
+                continue;
             }
 
             expression(P);
@@ -1000,10 +994,11 @@ static void matchStatement(Parser *P)
                 error(P, "Too many cases in 'match' statement.");
                 return;
             }
-        } while (match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_RBRACE));
+        } while ((hadBrace && match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_RBRACE)) ||
+            match(P, AUP_TOK_VBAR));
     }
 
-    consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' statement body.");
+    if (hadBrace) consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' statement body.");
 
     // Patch all endings.
     for (int i = 0; i < caseCount; i++) patchJump(P, jmpOuts[i]);
