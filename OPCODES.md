@@ -1,4 +1,4 @@
-### List of detailed opcodes are used in virtual machine
+### List of detailed opcodes, used in virtual machine
 
 - Each opcode and its arg used one byte
 - A word is combined from two bytes
