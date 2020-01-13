@@ -144,11 +144,14 @@ static aupTokType checkKeyword(aupLexer *L, int start, int length, const char *r
 
 static aupTokType identifierType(aupLexer *L)
 {
-    switch (L->start[0]) {
+#define START   (L->start)
+#define LENGTH  (L->current - L->start)
+
+    switch (START[0]) {
         case 'a': return checkKeyword(L, 1, 2, "nd", AUP_TOK_AND);
         case 'b': return checkKeyword(L, 1, 4, "reak", AUP_TOK_BREAK);
         case 'c':
-            if (L->current - L->start > 1) {
+            if (LENGTH > 1) {
                 switch (L->start[1]) {
                     case 'l': return checkKeyword(L, 2, 3, "ass", AUP_TOK_CLASS);
                     case 'o': return checkKeyword(L, 2, 6, "ntinue", AUP_TOK_CONTINUE);
@@ -157,16 +160,18 @@ static aupTokType identifierType(aupLexer *L)
             break;
         case 'd': return checkKeyword(L, 1, 1, "o", AUP_TOK_DO);
         case 'e': 
-            if (L->current - L->start > 1) {
-                switch (L->start[1]) {
-                    case 'l': return checkKeyword(L, 2, 2, "se", AUP_TOK_ELSE);
+            if (LENGTH > 1) {
+                switch (START[1]) {
+                    case 'l':
+                        if (LENGTH >= 6) return checkKeyword(L, 2, 4, "seif", AUP_TOK_ELSEIF);
+                        return checkKeyword(L, 2, 2, "se", AUP_TOK_ELSE);
                     case 'n': return checkKeyword(L, 2, 1, "d", AUP_TOK_END);
                 }
             }
             break;
         case 'f':
-            if (L->current - L->start > 1) {
-                switch (L->start[1]) {
+            if (LENGTH > 1) {
+                switch (START[1]) {
                     case 'a': return checkKeyword(L, 2, 3, "lse", AUP_TOK_FALSE);
                     case 'o': return checkKeyword(L, 2, 1, "r", AUP_TOK_FOR);
                     case 'u': return checkKeyword(L, 2, 2, "nc", AUP_TOK_FUNC);
@@ -177,8 +182,8 @@ static aupTokType identifierType(aupLexer *L)
         case 'l': return checkKeyword(L, 1, 3, "oop", AUP_TOK_LOOP);
         case 'm': return checkKeyword(L, 1, 4, "atch", AUP_TOK_MATCH);
         case 'n':
-            if (L->current - L->start > 1) {
-                switch (L->start[1]) {
+            if (LENGTH > 1) {
+                switch (START[1]) {
                     case 'i': return checkKeyword(L, 2, 1, "l", AUP_TOK_NIL);
                     case 'o': return checkKeyword(L, 2, 1, "t", AUP_TOK_NOT);
                 }
@@ -189,11 +194,11 @@ static aupTokType identifierType(aupLexer *L)
         case 'r': return checkKeyword(L, 1, 5, "eturn", AUP_TOK_RETURN);
         case 's': return checkKeyword(L, 1, 4, "uper", AUP_TOK_SUPER);
         case 't':
-            if (L->current - L->start > 1) {
-                switch (L->start[1]) {
+            if (LENGTH > 1) {
+                switch (START[1]) {
                     case 'h': 
-                        if (L->current - L->start > 2) {
-                            switch (L->start[2]) {
+                        if (LENGTH > 2) {
+                            switch (START[2]) {
                                 case 'e': return checkKeyword(L, 3, 1, "n", AUP_TOK_THEN);
                                 case 'i': return checkKeyword(L, 3, 1, "s", AUP_TOK_THIS);
                             }

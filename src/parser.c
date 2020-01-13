@@ -88,6 +88,7 @@ struct _aupCompiler {
     int scopeDepth;
     Loop *currentLoop;
     int loopDepth;
+    bool ifNeedEnd;
 };
 
 static aupChunk *currentChunk(Parser *P)
@@ -156,6 +157,11 @@ static void advance(Parser *P)
 static bool check(Parser *P, aupTokType type)
 {
     return P->current.type == type;
+}
+
+static bool checkPrev(Parser *P, aupTokType type)
+{
+    return P->previous.type == type;
 }
 
 static bool match(Parser *P, aupTokType type)
@@ -801,6 +807,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_CONTINUE]      = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_DO]            = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_ELSE]          = { NULL,     NULL,    PREC_NONE },
+    [AUP_TOK_ELSEIF]        = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_END]           = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_FALSE]         = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_FOR]           = { NULL,     NULL,    PREC_NONE },
@@ -962,35 +969,48 @@ static void expressionStatement(Parser *P)
 
 static void ifStatement(Parser *P)
 {
+    Compiler *current = P->compiler;
+
     expression(P);
 
     int thenJump = emitJump(P, AUP_OP_JMPF);
     emitByte(P, AUP_OP_POP);
+
+    bool useThen = !check(P, AUP_TOK_LBRACE);
+    if (useThen && !match(P, AUP_TOK_THEN)) {
+        error(P, "Expect 'then' after condition.");
+        return;
+    }
+
     statement(P);
 
-    /*
     int elseJump = emitJump(P, AUP_OP_JMP);
 
     patchJump(P, thenJump);
     emitByte(P, AUP_OP_POP);
 
-    if (match(P, AUP_TOK_ELSE)) statement(P);
-    patchJump(P, elseJump);
-    */
-
     if (match(P, AUP_TOK_ELSE)) {
-        int elseJump = emitJump(P, AUP_OP_JMP);
-
-        patchJump(P, thenJump);
-        emitByte(P, AUP_OP_POP);
-
-        statement(P);
-        patchJump(P, elseJump);
+        if (match(P, AUP_TOK_IF)) {
+            current->ifNeedEnd = true;
+            ifStatement(P);
+            current->ifNeedEnd = false;
+        }
+        else {
+            match(P, AUP_TOK_THEN);
+            statement(P);
+        }
     }
-    else {
-        patchJump(P, thenJump);
-        emitByte(P, AUP_OP_POP);
+    else if (match(P, AUP_TOK_ELSEIF)) {
+        current->ifNeedEnd = true;
+        ifStatement(P);
+        current->ifNeedEnd = false;
     }
+
+    if (useThen && current->ifNeedEnd) {
+        consume(P, AUP_TOK_END, "Expect 'end' to close 'if' statement.");
+    }
+
+    patchJump(P, elseJump);
 }
 
 static void loopStatetment(Parser *P)
@@ -1190,6 +1210,7 @@ static void statement(Parser *P)
         printStatement(P);
     }
     else if (match(P, AUP_TOK_IF)) {
+        P->compiler->ifNeedEnd = true;
         ifStatement(P);
     }
     else if (match(P, AUP_TOK_LOOP)) {
@@ -1212,6 +1233,17 @@ static void statement(Parser *P)
             AUP_TOK_RBRACE : AUP_TOK_END;
         beginScope(P);
         block(P, closing);
+        endScope(P);
+    }
+    else if (checkPrev(P, AUP_TOK_THEN) || checkPrev(P, AUP_TOK_ELSE)) {
+        beginScope(P);
+
+        while (!check(P, AUP_TOK_IF) && !check(P, AUP_TOK_ELSE) &&
+            !check(P, AUP_TOK_ELSEIF) && !check(P, AUP_TOK_END) && !check(P, AUP_TOK_EOF)) {
+            declaration(P);
+        }
+
+        P->compiler->ifNeedEnd = check(P, AUP_TOK_END);
         endScope(P);
     }
     else if (match(P, AUP_TOK_SEMICOLON)) {
