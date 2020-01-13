@@ -796,7 +796,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_HEXADECIMAL]   = { integer,  NULL,    PREC_NONE },
 
     [AUP_TOK_AND]           = { NULL,     and_,    PREC_AND },
-    [AUP_TOK_BREAK]         = { NULL,     and_,    PREC_AND },
+    [AUP_TOK_BREAK]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_CLASS]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_CONTINUE]      = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_DO]            = { NULL,     NULL,    PREC_NONE },
