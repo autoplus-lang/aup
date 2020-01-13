@@ -52,10 +52,10 @@ _
 `GETI`  | `[]`     | `[-2, +1]` | - Get by index
 `SETI`  | `[]`     | `[-3, +1]` | - Set by index
 _
-`CLOSURE` | `[k, ...] | `[-0, +0]` | - Make closure function at index 'k'
-`CLOSE`   | `[]`      | `[-1, +0]` | - Close an upvalue
-`ULD`     | `[u]`     | `[-0, +1]` | - Load an upvalue
-`UST`     | `[u]`     | `[-0, +0]` | - Store value to upvalue
+`CLOSURE` | `[k, ...]` | `[-0, +0]` | - Make closure function at index 'k'
+`CLOSE`   | `[]`       | `[-1, +0]` | - Close an upvalue
+`ULD`     | `[u]`      | `[-0, +1]` | - Load an upvalue
+`UST`     | `[u]`      | `[-0, +0]` | - Store value to upvalue
 _
 `MAP`   | `[n]`    | `[-n, +1]` | - Create a map, push `n` values to this map<br>- In **map** declaration
 _
