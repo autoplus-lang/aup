@@ -592,6 +592,12 @@ int aup_execute(register aupVM *vm)
             NEXT;
         }
 
+        CODE(LOOP) {
+            uint16_t offset = READ_WORD();
+            ip -= offset;
+            NEXT;
+        }
+
         CODE(MAP) {
             uint8_t count = READ_BYTE();
             aupMap *map = aup_newMap(vm);

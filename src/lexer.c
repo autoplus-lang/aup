@@ -158,6 +158,7 @@ static aupTokType identifierType(aupLexer *L)
             }
             break;
         case 'i': return checkKeyword(L, 1, 1, "f", AUP_TOK_IF);
+        case 'l': return checkKeyword(L, 1, 3, "oop", AUP_TOK_LOOP);
         case 'm': return checkKeyword(L, 1, 4, "atch", AUP_TOK_MATCH);
         case 'n':
             if (L->current - L->start > 1) {

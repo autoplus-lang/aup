@@ -221,6 +221,9 @@ int aup_dasmInstruction(aupChunk *chunk, int offset)
         case AUP_OP_JNE:
             return jumpInst(1, chunk, offset);
 
+        case AUP_OP_LOOP:
+            return jumpInst(-1, chunk, offset);
+
         case AUP_OP_CLOSURE: {
             offset++;
             uint8_t constant = chunk->code[offset++];

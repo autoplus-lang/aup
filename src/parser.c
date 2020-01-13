@@ -181,6 +181,17 @@ static int emitJump(Parser *P, uint8_t instruction)
     return currentChunk(P)->count - 2;
 }
 
+static void emitLoop(Parser *P, int loopStart)
+{
+    emitByte(P, AUP_OP_LOOP);
+
+    int offset = currentChunk(P)->count - loopStart + 2;
+    if (offset > UINT16_MAX) error(P, "Loop body too large.");
+
+    emitByte(P, (offset >> 8) & 0xff);
+    emitByte(P, offset & 0xff);
+}
+
 static void emitReturn(Parser *P)
 {
     int count;
@@ -782,6 +793,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_FUNC]          = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_IF]            = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_MATCH]         = { NULL,     NULL,    PREC_NONE },
+    [AUP_TOK_LOOP]          = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_NIL]           = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_NOT]           = { unary,    NULL,    PREC_NONE },
     [AUP_TOK_OR]            = { NULL,     or_,     PREC_OR },
@@ -963,6 +975,22 @@ static void ifStatement(Parser *P)
     }
 }
 
+static void loopStatetment(Parser *P)
+{
+    int loopStart = currentChunk(P)->count;
+    expression(P);
+
+    int jmpOut = emitJump(P, AUP_OP_JMPF);
+
+    emitByte(P, AUP_OP_POP);
+    statement(P);
+
+    emitLoop(P, loopStart);
+
+    patchJump(P, jmpOut);
+    emitByte(P, AUP_OP_POP);
+}
+
 static void matchStatement(Parser *P)
 {
     expression(P);
@@ -1055,6 +1083,7 @@ static void synchronize(Parser *P)
             case AUP_TOK_VAR:
             case AUP_TOK_FOR:
             case AUP_TOK_IF:
+            case AUP_TOK_LOOP:
             case AUP_TOK_MATCH:
             case AUP_TOK_WHILE:
             case AUP_TOK_PRINT:
@@ -1089,6 +1118,9 @@ static void statement(Parser *P)
     }
     else if (match(P, AUP_TOK_IF)) {
         ifStatement(P);
+    }
+    else if (match(P, AUP_TOK_LOOP)) {
+        loopStatetment(P);
     }
     else if (match(P, AUP_TOK_MATCH)) {
         matchStatement(P);
