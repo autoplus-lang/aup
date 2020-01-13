@@ -23,6 +23,7 @@ typedef struct {
     aupTok previous;
     bool hadError;
     bool panicMode;
+    bool isElseIf;
 
     bool hadCall;
     bool hadAssign;
@@ -147,9 +148,21 @@ static void advance(Parser *P)
     P->previous = P->current;
 
     for (;;) {
-        P->current = aup_scanToken(P->lexer);
-        if (P->current.type != AUP_TOK_ERROR) break;
+        if (P->isElseIf) {
+            P->current.type = AUP_TOK_IF;
+            P->isElseIf = false;
+            break;
+        }
 
+        P->current = aup_scanToken(P->lexer);
+
+        if (P->current.type == AUP_TOK_ELSEIF) {
+            P->current.type = AUP_TOK_ELSE;
+            P->isElseIf = true;
+            break;
+        }
+
+        if (P->current.type != AUP_TOK_ERROR) break;
         errorAtCurrent(P, P->current.start);
     }
 }
@@ -968,42 +981,41 @@ static void expressionStatement(Parser *P)
 
 static void ifStatement(Parser *P)
 {
-    Compiler *current = P->compiler;
-
     expression(P);
 
     int thenJump = emitJump(P, AUP_OP_JMPF);
     emitByte(P, AUP_OP_POP);
 
-    bool useThen = !check(P, AUP_TOK_LBRACE);
-    if (useThen) consume(P, AUP_TOK_THEN, "Expect 'then' after condition.");
+    bool useThen = match(P, AUP_TOK_THEN);
 
-    statement(P);
+    if (!useThen) {
+        statement(P);
+    }
+    else {
+        beginScope(P);
+        while (!match(P, AUP_TOK_END) &&
+            !check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_EOF)) {
+            declaration(P);
+        }
+        endScope(P);
+    }
 
     int elseJump = emitJump(P, AUP_OP_JMP);
 
     patchJump(P, thenJump);
     emitByte(P, AUP_OP_POP);
 
-    if (match(P, AUP_TOK_ELSE)) {
-        if (match(P, AUP_TOK_IF)) {
-            goto _elseif;
-        }
-        else {
-            match(P, AUP_TOK_THEN);
-            statement(P);
-            current->ifNeedEnd = true;
-        }
+    if (check(P, AUP_TOK_ELSE) && !useThen) {
+        advance(P);
+        statement(P);
     }
-    else if (match(P, AUP_TOK_ELSEIF)) {
-    _elseif:
-        current->ifNeedEnd = true;
-        ifStatement(P);
-        current->ifNeedEnd = false;
-    }
-
-    if (useThen && current->ifNeedEnd) {
-        consume(P, AUP_TOK_END, "Expect 'end' to close 'if' statement.");
+    else if (match(P, AUP_TOK_ELSE)) {
+        beginScope(P);
+        while (!match(P, AUP_TOK_END) &&
+            !check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_EOF)) {
+            declaration(P);
+        }
+        endScope(P);
     }
 
     patchJump(P, elseJump);
@@ -1206,7 +1218,6 @@ static void statement(Parser *P)
         printStatement(P);
     }
     else if (match(P, AUP_TOK_IF)) {
-        P->compiler->ifNeedEnd = true;
         ifStatement(P);
     }
     else if (match(P, AUP_TOK_LOOP)) {
@@ -1229,17 +1240,6 @@ static void statement(Parser *P)
             AUP_TOK_RBRACE : AUP_TOK_END;
         beginScope(P);
         block(P, closing);
-        endScope(P);
-    }
-    else if (checkPrev(P, AUP_TOK_THEN) || checkPrev(P, AUP_TOK_ELSE)) {
-        beginScope(P);
-
-        while (!check(P, AUP_TOK_IF) && !check(P, AUP_TOK_ELSE) &&
-            !check(P, AUP_TOK_ELSEIF) && !check(P, AUP_TOK_END) && !check(P, AUP_TOK_EOF)) {
-            declaration(P);
-        }
-
-        P->compiler->ifNeedEnd = check(P, AUP_TOK_END);
         endScope(P);
     }
     else if (match(P, AUP_TOK_SEMICOLON)) {
@@ -1266,6 +1266,7 @@ aupFun *aup_compile(aupVM *vm, aupSrc *source)
     P.compiler = NULL;
     P.hadError = false;
     P.panicMode = false;
+    P.isElseIf = false;
 
     aup_initLexer(&L, source->buffer);
     initCompiler(&P, &C, TYPE_SCRIPT);
