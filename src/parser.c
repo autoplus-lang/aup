@@ -947,6 +947,7 @@ static void varDeclaration(Parser *P)
     }
 
     defineVariable(P, global);
+    match(P, AUP_TOK_SEMICOLON);
 }
 
 static void expressionStatement(Parser *P)
@@ -963,8 +964,6 @@ static void expressionStatement(Parser *P)
         error(P, "Unexpected expression syntax.");
         return;
     }
-
-    match(P, AUP_TOK_SEMICOLON);
 }
 
 static void ifStatement(Parser *P)
@@ -977,10 +976,7 @@ static void ifStatement(Parser *P)
     emitByte(P, AUP_OP_POP);
 
     bool useThen = !check(P, AUP_TOK_LBRACE);
-    if (useThen && !match(P, AUP_TOK_THEN)) {
-        error(P, "Expect 'then' after condition.");
-        return;
-    }
+    consume(P, AUP_TOK_THEN, "Expect 'then' after condition.");
 
     statement(P);
 
@@ -991,16 +987,16 @@ static void ifStatement(Parser *P)
 
     if (match(P, AUP_TOK_ELSE)) {
         if (match(P, AUP_TOK_IF)) {
-            current->ifNeedEnd = true;
-            ifStatement(P);
-            current->ifNeedEnd = false;
+            goto _elseif;
         }
         else {
             match(P, AUP_TOK_THEN);
             statement(P);
+            current->ifNeedEnd = true;
         }
     }
     else if (match(P, AUP_TOK_ELSEIF)) {
+    _elseif:
         current->ifNeedEnd = true;
         ifStatement(P);
         current->ifNeedEnd = false;
@@ -1252,6 +1248,8 @@ static void statement(Parser *P)
     else {
         expressionStatement(P);
     }
+
+    match(P, AUP_TOK_SEMICOLON);
 }
 
 aupFun *aup_compile(aupVM *vm, aupSrc *source)
