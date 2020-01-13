@@ -84,7 +84,7 @@ static aupChunk *currentChunk(Parser *P)
     return &P->compiler->function->chunk;
 }
 
-static void errorAt(Parser *P, aupTok *token, const char *message)
+static void errorAt(Parser *P, aupTok *token, const char *fmt, ...)
 {
     if (P->panicMode) return;
     P->panicMode = true;
@@ -101,7 +101,13 @@ static void errorAt(Parser *P, aupTok *token, const char *message)
         fprintf(stderr, " at '%.*s'", token->length, token->start);
     }
 
-    fprintf(stderr, ": %s\n", message);
+    va_list argp;
+    va_start(argp, fmt);
+    fprintf(stderr, ": ");
+    vfprintf(stderr, fmt, argp);
+    fprintf(stderr, "\n");
+    va_end(argp);
+
     fprintf(stderr, "  | %.*s\n", token->lineLength, token->lineStart);
     fprintf(stderr, "    %*s", token->column-1, "");
     for (int i = 0; i < token->length; i++) fputc('^', stderr);
@@ -111,15 +117,16 @@ static void errorAt(Parser *P, aupTok *token, const char *message)
     P->hadError = true; 
 }
 
-static void error(Parser *P, const char *message)
-{
-    errorAt(P, &P->previous, message);
-}
-
-static void errorAtCurrent(Parser *P, const char *message)
-{
-    errorAt(P, &P->current, message);
-}
+#define error(P, fmt, ...)          errorAt(P, &(P)->previous, fmt, ##__VA_ARGS__)
+#define errorAtCurrent(P, fmt, ...) errorAt(P, &(P)->current, fmt, ##__VA_ARGS__)
+#define consume(P, toktype, fmt, ...) \
+    do { \
+		if ((P)->current.type == (toktype)) { \
+			advance(P); \
+			break; \
+		} \
+		errorAtCurrent(P, fmt, ##__VA_ARGS__); \
+	} while (0)
 
 static void advance(Parser *P)
 {
@@ -131,16 +138,6 @@ static void advance(Parser *P)
 
         errorAtCurrent(P, P->current.start);
     }
-}
-
-static void consume(Parser *P, aupTokType type, const char* message)
-{
-    if (P->current.type == type) {
-        advance(P);
-        return;
-    }
-
-    errorAtCurrent(P, message);
 }
 
 static bool check(Parser *P, aupTokType type)
