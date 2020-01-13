@@ -898,8 +898,15 @@ static void function(Parser *P, FunType type)
     }
     else {
         // Block statement.
-        consume(P, AUP_TOK_LBRACE, "Expect '{' before function body.");
-        block(P);
+        aupTokType tokenEnd = match(P, AUP_TOK_LBRACE) ?
+            AUP_TOK_RBRACE : AUP_TOK_END;
+
+        while (!check(P, tokenEnd) && !check(P, AUP_TOK_EOF)) {
+            declaration(P);
+        }
+
+        consume(P, tokenEnd, "Expect '%s' to close the function body.",
+            (tokenEnd == AUP_TOK_RBRACE) ? "}" : "end");
     }
 
     // Create the function object.                                
