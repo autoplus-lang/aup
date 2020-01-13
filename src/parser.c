@@ -787,7 +787,9 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
 
     [AUP_TOK_AND]           = { NULL,     and_,    PREC_AND },
     [AUP_TOK_CLASS]         = { NULL,     NULL,    PREC_NONE },
+    [AUP_TOK_DO]            = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_ELSE]          = { NULL,     NULL,    PREC_NONE },
+    [AUP_TOK_END]           = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_FALSE]         = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_FOR]           = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_FUNC]          = { literal,  NULL,    PREC_NONE },
@@ -800,6 +802,7 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_PRINT]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_RETURN]        = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_SUPER]         = { NULL,     NULL,    PREC_NONE },
+    [AUP_TOK_THEN]          = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_THIS]          = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_TRUE]          = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_VAR]           = { NULL,     NULL,    PREC_NONE },

@@ -147,7 +147,15 @@ static aupTokType identifierType(aupLexer *L)
     switch (L->start[0]) {
         case 'a': return checkKeyword(L, 1, 2, "nd", AUP_TOK_AND);
         case 'c': return checkKeyword(L, 1, 4, "lass", AUP_TOK_CLASS);
-        case 'e': return checkKeyword(L, 1, 3, "lse", AUP_TOK_ELSE);
+        case 'd': return checkKeyword(L, 1, 1, "o", AUP_TOK_DO);
+        case 'e': 
+            if (L->current - L->start > 1) {
+                switch (L->start[1]) {
+                    case 'l': return checkKeyword(L, 2, 2, "se", AUP_TOK_ELSE);
+                    case 'n': return checkKeyword(L, 2, 1, "d", AUP_TOK_END);
+                }
+            }
+            break;
         case 'f':
             if (L->current - L->start > 1) {
                 switch (L->start[1]) {
@@ -175,7 +183,14 @@ static aupTokType identifierType(aupLexer *L)
         case 't':
             if (L->current - L->start > 1) {
                 switch (L->start[1]) {
-                    case 'h': return checkKeyword(L, 2, 2, "is", AUP_TOK_THIS);
+                    case 'h': 
+                        if (L->current - L->start > 2) {
+                            switch (L->start[2]) {
+                                case 'e': return checkKeyword(L, 3, 1, "n", AUP_TOK_THEN);
+                                case 'i': return checkKeyword(L, 3, 1, "s", AUP_TOK_THIS);
+                            }
+                        }
+                        break;                       
                     case 'r': return checkKeyword(L, 2, 2, "ue", AUP_TOK_TRUE);
                 }
             }

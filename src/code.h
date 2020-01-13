@@ -157,7 +157,9 @@ typedef enum {
     // Keywords.                                        
     AUP_TOK_AND,
     AUP_TOK_CLASS,
+    AUP_TOK_DO,
     AUP_TOK_ELSE,
+    AUP_TOK_END,
     AUP_TOK_FALSE,
     AUP_TOK_FOR,
     AUP_TOK_FUNC,
@@ -170,6 +172,7 @@ typedef enum {
     AUP_TOK_PRINT,
     AUP_TOK_RETURN,
     AUP_TOK_SUPER,
+    AUP_TOK_THEN,
     AUP_TOK_THIS,
     AUP_TOK_TRUE,
     AUP_TOK_VAR,
