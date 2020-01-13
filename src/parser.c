@@ -1037,6 +1037,19 @@ static void breakStatement(Parser *P)
     }
 }
 
+static void continueStatement(Parser *P)
+{
+    Compiler *current = P->compiler;
+    Loop *loop = current->currentLoop;
+
+    if (current->loopDepth == 0) {
+        error(P, "Cannot use 'continue' outside of a loop.");
+        return;
+    }
+
+    emitLoop(P, loop->start);
+}
+
 static void matchStatement(Parser *P)
 {
     expression(P);
@@ -1176,6 +1189,9 @@ static void statement(Parser *P)
     }
     else if (match(P, AUP_TOK_BREAK)) {
         breakStatement(P);
+    }
+    else if (match(P, AUP_TOK_CONTINUE)) {
+        continueStatement(P);
     }
     else if (match(P, AUP_TOK_LBRACE)) {
         beginScope(P);
