@@ -259,6 +259,7 @@ static void initCompiler(Parser *P, Compiler *compiler, FunType type)
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
     compiler->loopDepth = 0;
+    compiler->currentLoop = NULL;
     compiler->function = aup_newFunction(P->vm, P->source);
 
     if (type != TYPE_SCRIPT) {
@@ -992,10 +993,11 @@ static void ifStatement(Parser *P)
 static void loopStatetment(Parser *P)
 {
     // Init loop.
-    Loop loop;
-    loop.breakCount = 0;
-    P->compiler->loopDepth++;
-    P->compiler->currentLoop = &loop;
+    Loop loop = { 0 };
+    Compiler *current = P->compiler;
+
+    current->loopDepth++;
+    current->currentLoop = &loop;
 
     // Get start point.
     loop.start = currentChunk(P)->count;
@@ -1015,7 +1017,8 @@ static void loopStatetment(Parser *P)
     for (int i = 0; i < loop.breakCount; i++)
         patchJump(P, loop.breaks[i]);
 
-    P->compiler->loopDepth--;
+    current->loopDepth--;
+    current->currentLoop = NULL;
 }
 
 static void breakStatement(Parser *P)
