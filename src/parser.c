@@ -111,11 +111,13 @@ static void errorAt(Parser *P, aupTok *token, const char *fmt, ...)
     fprintf(stderr, "\n");
     va_end(argp);
 
-    fprintf(stderr, "  | %.*s\n", token->lineLength, token->lineStart);
-    fprintf(stderr, "    %*s", token->column-1, "");
+    int padding = snprintf(NULL, 0, "%3d", token->line);
+    fprintf(stderr, " %*s |\n", padding, "");
+    fprintf(stderr, " %*d | %.*s\n", padding, token->line, token->lineLength, token->lineStart);
+    fprintf(stderr, " %*s |%*s", padding, "", token->column, "");
     for (int i = 0; i < token->length; i++) fputc('^', stderr);
-
     fprintf(stderr, "\n");
+
     fflush(stderr);
     P->hadError = true; 
 }
