@@ -103,49 +103,49 @@ static const char *aup_op2Str(aupOp opcode) {
 
 typedef enum {
     // Single-character tokens.                         
-    AUP_TOK_LPAREN,
-    AUP_TOK_RPAREN,
-    AUP_TOK_LBRACKET,
-    AUP_TOK_RBRACKET,
-    AUP_TOK_LBRACE,
-    AUP_TOK_RBRACE,
+    AUP_TOK_LPAREN,             // (
+    AUP_TOK_RPAREN,             // )
+    AUP_TOK_LBRACKET,           // [
+    AUP_TOK_RBRACKET,           // ]
+    AUP_TOK_LBRACE,             // {
+    AUP_TOK_RBRACE,             // }
 
-    AUP_TOK_ARROW,
-    AUP_TOK_COMMA,
-    AUP_TOK_DOT,
-    AUP_TOK_SEMICOLON,
+    AUP_TOK_ARROW,              // -> =>
+    AUP_TOK_COMMA,              // ,
+    AUP_TOK_DOT,                // .
+    AUP_TOK_SEMICOLON,          // ;
 
-    AUP_TOK_COLON,
-    AUP_TOK_QMARK,
+    AUP_TOK_COLON,              // :
+    AUP_TOK_QMARK,              // ?
 
-    AUP_TOK_MINUS, 
-    AUP_TOK_PLUS,
-    AUP_TOK_SLASH,
-    AUP_TOK_STAR,
-    AUP_TOK_PERCENT,
+    AUP_TOK_MINUS,              // -
+    AUP_TOK_PLUS,               // +
+    AUP_TOK_SLASH,              // /
+    AUP_TOK_STAR,               // *
+    AUP_TOK_PERCENT,            // %
 
-    AUP_TOK_AMPERSAND,
-    AUP_TOK_VBAR,
-    AUP_TOK_TILDE,
-    AUP_TOK_CARET,
-    AUP_TOK_LESS_LESS,
-    AUP_TOK_GREATER_GREATER,
+    AUP_TOK_AMPERSAND,          // &
+    AUP_TOK_VBAR,               // |
+    AUP_TOK_TILDE,              // ~
+    AUP_TOK_CARET,              // ^
+    AUP_TOK_LESS_LESS,          // <<
+    AUP_TOK_GREATER_GREATER,    // >>
 
     // One or two character tokens.                     
-    AUP_TOK_BANG,
-    AUP_TOK_BANG_EQUAL,
-    AUP_TOK_EQUAL,
-    AUP_TOK_EQUAL_EQUAL,
-    AUP_TOK_GREATER,
-    AUP_TOK_GREATER_EQUAL,
-    AUP_TOK_LESS,
-    AUP_TOK_LESS_EQUAL,
+    AUP_TOK_BANG,               // !
+    AUP_TOK_BANG_EQUAL,         // !=
+    AUP_TOK_EQUAL,              // =
+    AUP_TOK_EQUAL_EQUAL,        // ==
+    AUP_TOK_GREATER,            // >
+    AUP_TOK_GREATER_EQUAL,      // >=
+    AUP_TOK_LESS,               // <
+    AUP_TOK_LESS_EQUAL,         // <=
 
-    AUP_TOK_PLUS_EQUAL,
-    AUP_TOK_MINUS_EQUAL,
-    AUP_TOK_STAR_EQUAL,
-    AUP_TOK_SLASH_EQUAL,
-    AUP_TOK_PERCENT_EQUAL,
+    AUP_TOK_PLUS_EQUAL,         // +=
+    AUP_TOK_MINUS_EQUAL,        // -=
+    AUP_TOK_STAR_EQUAL,         // *=
+    AUP_TOK_SLASH_EQUAL,        // /=
+    AUP_TOK_PERCENT_EQUAL,      // %=
 
     // Literals.                                        
     AUP_TOK_IDENTIFIER,
@@ -155,30 +155,30 @@ typedef enum {
     AUP_TOK_HEXADECIMAL,
 
     // Keywords.                                        
-    AUP_TOK_AND,
-    AUP_TOK_BREAK,
-    AUP_TOK_CLASS,
-    AUP_TOK_CONTINUE,
-    AUP_TOK_DO,
-    AUP_TOK_ELSE,
-    AUP_TOK_END,
-    AUP_TOK_FALSE,
-    AUP_TOK_FOR,
-    AUP_TOK_FUNC,
-    AUP_TOK_IF,
-    AUP_TOK_LOOP,
-    AUP_TOK_MATCH,
-    AUP_TOK_NIL,
-    AUP_TOK_NOT,
-    AUP_TOK_OR,
-    AUP_TOK_PRINT,
-    AUP_TOK_RETURN,
-    AUP_TOK_SUPER,
-    AUP_TOK_THEN,
-    AUP_TOK_THIS,
-    AUP_TOK_TRUE,
-    AUP_TOK_VAR,
-    AUP_TOK_WHILE,
+    AUP_TOK_AND,                // and
+    AUP_TOK_BREAK,              // break
+    AUP_TOK_CLASS,              // class
+    AUP_TOK_CONTINUE,           // continue
+    AUP_TOK_DO,                 // do
+    AUP_TOK_ELSE,               // else
+    AUP_TOK_END,                // end
+    AUP_TOK_FALSE,              // false
+    AUP_TOK_FOR,                // for
+    AUP_TOK_FUNC,               // func
+    AUP_TOK_IF,                 // if
+    AUP_TOK_LOOP,               // loop
+    AUP_TOK_MATCH,              // match
+    AUP_TOK_NIL,                // nil
+    AUP_TOK_NOT,                // not
+    AUP_TOK_OR,                 // or
+    AUP_TOK_PRINT,              // print
+    AUP_TOK_RETURN,             // return
+    AUP_TOK_SUPER,              // super
+    AUP_TOK_THEN,               // then
+    AUP_TOK_THIS,               // this
+    AUP_TOK_TRUE,               // true
+    AUP_TOK_VAR,                // var
+    AUP_TOK_WHILE,              // while
 
     AUP_TOK_ERROR,
     AUP_TOK_EOF,
