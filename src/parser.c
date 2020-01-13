@@ -1004,7 +1004,15 @@ static void loopStatetment(Parser *P)
 
     // Get start point.
     loop.start = currentChunk(P)->count;
-    expression(P);
+
+    // Condition.
+    if (check(P, AUP_TOK_LBRACE) || check(P, AUP_TOK_DO)) {
+        // Infinite loop.
+        emitByte(P, AUP_OP_TRUE);       
+    }
+    else {
+        expression(P);
+    }
 
     int jmpOut = emitJump(P, AUP_OP_JMPF);
 
