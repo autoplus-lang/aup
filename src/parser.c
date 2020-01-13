@@ -976,7 +976,7 @@ static void ifStatement(Parser *P)
     emitByte(P, AUP_OP_POP);
 
     bool useThen = !check(P, AUP_TOK_LBRACE);
-    consume(P, AUP_TOK_THEN, "Expect 'then' after condition.");
+    if (useThen) consume(P, AUP_TOK_THEN, "Expect 'then' after condition.");
 
     statement(P);
 
