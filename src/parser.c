@@ -72,6 +72,12 @@ typedef enum {
     TYPE_SCRIPT
 } FunType;
 
+typedef struct {
+    int start;
+    int breakCount;
+    int breaks[UINT8_COUNT];
+} Loop;
+
 struct _aupCompiler {
     Compiler *enclosing;
     aupFun *function;
@@ -80,6 +86,8 @@ struct _aupCompiler {
     int localCount;
     Upvalue upvalues[UINT8_COUNT];
     int scopeDepth;
+    Loop *currentLoop;
+    int loopDepth;
 };
 
 static aupChunk *currentChunk(Parser *P)
@@ -250,6 +258,7 @@ static void initCompiler(Parser *P, Compiler *compiler, FunType type)
     compiler->type = type;
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
+    compiler->loopDepth = 0;
     compiler->function = aup_newFunction(P->vm, P->source);
 
     if (type != TYPE_SCRIPT) {
@@ -982,7 +991,14 @@ static void ifStatement(Parser *P)
 
 static void loopStatetment(Parser *P)
 {
-    int loopStart = currentChunk(P)->count;
+    // Init loop.
+    Loop loop;
+    loop.breakCount = 0;
+    P->compiler->loopDepth++;
+    P->compiler->currentLoop = &loop;
+
+    // Get start point.
+    loop.start = currentChunk(P)->count;
     expression(P);
 
     int jmpOut = emitJump(P, AUP_OP_JMPF);
@@ -990,10 +1006,35 @@ static void loopStatetment(Parser *P)
     emitByte(P, AUP_OP_POP);
     statement(P);
 
-    emitLoop(P, loopStart);
+    emitLoop(P, loop.start);
 
     patchJump(P, jmpOut);
     emitByte(P, AUP_OP_POP);
+
+    // Patch all breaks.
+    for (int i = 0; i < loop.breakCount; i++)
+        patchJump(P, loop.breaks[i]);
+
+    P->compiler->loopDepth--;
+}
+
+static void breakStatement(Parser *P)
+{
+    Compiler *current = P->compiler;
+    Loop *loop = current->currentLoop;
+
+    if (current->loopDepth == 0) {
+        error(P, "Cannot use 'break' outside of a loop.");
+        return;
+    }
+
+    int jmpOut = emitJump(P, AUP_OP_JMP);
+    loop->breaks[loop->breakCount++] = jmpOut;
+
+    if (loop->breakCount > UINT8_COUNT) {
+        error(P, "Too many 'break' statements in this loop.");
+        return;
+    }
 }
 
 static void matchStatement(Parser *P)
@@ -1132,6 +1173,9 @@ static void statement(Parser *P)
     }
     else if (match(P, AUP_TOK_RETURN)) {
         returnStatement(P);
+    }
+    else if (match(P, AUP_TOK_BREAK)) {
+        breakStatement(P);
     }
     else if (match(P, AUP_TOK_LBRACE)) {
         beginScope(P);
