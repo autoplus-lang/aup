@@ -860,13 +860,14 @@ static void expression(Parser *P)
     parsePrecedence(P, PREC_ASSIGNMENT);
 }
 
-static void block(Parser *P)
+static void block(Parser *P, aupTokType closing)
 {
-    while (!check(P, AUP_TOK_RBRACE) && !check(P, AUP_TOK_EOF)) {
+    while (!check(P, closing) && !check(P, AUP_TOK_EOF)) {
         declaration(P);
     }
 
-    consume(P, AUP_TOK_RBRACE, "Expect '}' after block.");
+    consume(P, closing, "Expect '%s' after block.",
+        closing == AUP_TOK_RBRACE ? "}" : "end");
 }
 
 static void function(Parser *P, FunType type)
@@ -898,15 +899,10 @@ static void function(Parser *P, FunType type)
     }
     else {
         // Block statement.
-        aupTokType tokenEnd = match(P, AUP_TOK_LBRACE) ?
+        aupTokType closing = match(P, AUP_TOK_LBRACE) ?
             AUP_TOK_RBRACE : AUP_TOK_END;
 
-        while (!check(P, tokenEnd) && !check(P, AUP_TOK_EOF)) {
-            declaration(P);
-        }
-
-        consume(P, tokenEnd, "Expect '%s' to close the function body.",
-            (tokenEnd == AUP_TOK_RBRACE) ? "}" : "end");
+        block(P, closing);
     }
 
     // Create the function object.                                
@@ -1203,9 +1199,11 @@ static void statement(Parser *P)
     else if (match(P, AUP_TOK_CONTINUE)) {
         continueStatement(P);
     }
-    else if (match(P, AUP_TOK_LBRACE)) {
+    else if (match(P, AUP_TOK_LBRACE) || match(P, AUP_TOK_DO)) {
+        aupTokType closing = (P->previous.type == AUP_TOK_LBRACE) ?
+            AUP_TOK_RBRACE : AUP_TOK_END;
         beginScope(P);
-        block(P);
+        block(P, closing);
         endScope(P);
     }
     else if (match(P, AUP_TOK_SEMICOLON)) {
