@@ -62,3 +62,4 @@ _
 `JMP`   | `[s, s]` | `[-0, +0]` | - `ip += s`
 `JMPF`  | `[s, s]` | `[-0, +0]` | - `ip += s`, if top is false<br>- In **if** statement
 `JNE`   | `[s, s]` | `[-1, +0]` | - `ip += s`, if two top values are not equal<br>- In **match** statement
+`LOOP`  | `[s, s]` | `[-0, +0]` | - `ip -= s` (jump back)
