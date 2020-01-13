@@ -930,9 +930,7 @@ static void expressionStatement(Parser *P)
 
 static void ifStatement(Parser *P)
 {
-    consume(P, AUP_TOK_LPAREN, "Expect '(' after 'if'.");
     expression(P);
-    consume(P, AUP_TOK_RPAREN, "Expect ')' after condition.");
 
     int thenJump = emitJump(P, AUP_OP_JMPF);
     emitByte(P, AUP_OP_POP);
@@ -965,12 +963,11 @@ static void ifStatement(Parser *P)
 
 static void matchStatement(Parser *P)
 {
-    bool hadBrace;
-    int caseCount = 0;
-    int jmpOuts[UINT8_COUNT];
-
     expression(P);
-    hadBrace = match(P, AUP_TOK_LBRACE);
+    bool hadBrace = match(P, AUP_TOK_LBRACE);
+
+    int caseCount = 0;
+    int jmpOuts[MAX_CASES];
 
     if ((hadBrace && !check(P, AUP_TOK_RBRACE)) ||
         match(P, AUP_TOK_VBAR)) {
@@ -985,13 +982,13 @@ static void matchStatement(Parser *P)
             expression(P);
             int jmpNext = emitJump(P, AUP_OP_JNE);
 
-            consume(P, AUP_TOK_ARROW, "Extect an arrow after expression.");
+            consume(P, AUP_TOK_ARROW, "Extect '=>' after expression.");
             statement(P);
          
             jmpOuts[caseCount++] =  emitJump(P, AUP_OP_JMP);
             patchJump(P, jmpNext);
 
-            if (caseCount > UINT8_COUNT) {
+            if (caseCount > MAX_CASES) {
                 error(P, "Too many cases in 'match' statement.");
                 return;
             }
@@ -999,7 +996,10 @@ static void matchStatement(Parser *P)
             match(P, AUP_TOK_VBAR));
     }
 
-    if (hadBrace) consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' statement body.");
+    if (hadBrace) {
+        consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' statement body.");
+        return;
+    }
 
     // Patch all endings.
     for (int i = 0; i < caseCount; i++) patchJump(P, jmpOuts[i]);
