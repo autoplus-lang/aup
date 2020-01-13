@@ -587,7 +587,8 @@ int aup_execute(register aupVM *vm)
         CODE(JNE) {
             uint16_t offset = READ_WORD();
             aupVal cond = POP();
-            if (!aup_valuesEqual(PEEK(0), cond)) ip += offset;
+            //if (!aup_valuesEqual(PEEK(0), cond)) ip += offset;
+            if (memcmp(&PEEK(0), &cond, sizeof(aupVal)) != 0) ip += offset;
             NEXT;
         }
 
