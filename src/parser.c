@@ -8,6 +8,9 @@
 #include "vm.h"
 #include "gc.h"
 
+#define MAX_ARGS    64
+#define MAX_CASES   UINT8_COUNT
+
 typedef struct _aupCompiler Compiler;
 
 typedef struct {
@@ -430,19 +433,19 @@ static void defineVariable(Parser *P, uint8_t global)
 
 static uint8_t argumentList(Parser *P)
 {
-    uint8_t argCount = 0;
+    uint8_t argc = 0;
     if (!check(P, AUP_TOK_RPAREN)) {
         do {
+            argc++;
             expression(P);
-            argCount++;
-            if (argCount == 32) {
-                error(P, "Cannot have more than 32 arguments.");
+            if (argc >= MAX_ARGS) {
+                error(P, "Cannot have more than %d arguments.", MAX_ARGS);
             }
         } while (match(P, AUP_TOK_COMMA));
     }
 
     consume(P, AUP_TOK_RPAREN, "Expect ')' after arguments.");
-    return argCount;
+    return argc;
 }
 
 static void and_(Parser *P, bool canAssign)
@@ -847,12 +850,13 @@ static void function(Parser *P, FunType type)
     consume(P, AUP_TOK_LPAREN, "Expect '(' after function name.");
     if (!check(P, AUP_TOK_RPAREN)) {
         do {
-            int arity = ++P->compiler->function->arity;
-            if (arity > 32) {
-                errorAtCurrent(P, "Cannot have more than 32 parameters.");
-            }
             uint8_t paramConstant = parseVariable(P, "Expect parameter name.");
             defineVariable(P, paramConstant);
+
+            int arity = ++P->compiler->function->arity;
+            if (arity > MAX_ARGS) {
+                errorAtCurrent(P, "Cannot have more than %d parameters.", MAX_ARGS);
+            }
         } while (match(P, AUP_TOK_COMMA));
     }
     consume(P, AUP_TOK_RPAREN, "Expect ')' after parameters.");
@@ -1008,9 +1012,10 @@ static void printStatement(Parser *P)
     int count = 0;
 
     do {
-        expression(P);
         count++;
-        if (count > 32) {
+        expression(P);
+        
+        if (count > MAX_ARGS) {
             error(P, "Too many values in 'print' statement.");
             return;
         }
