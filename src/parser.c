@@ -23,11 +23,13 @@ typedef struct {
     aupTok previous;
     bool hadError;
     bool panicMode;
-    bool isElseIf;
 
     bool hadCall;
     bool hadAssign;
     int subExprs;
+
+    uint8_t ifChain[UINT8_COUNT];
+    uint8_t ifDepth;
 } Parser;
 
 typedef enum {
@@ -148,21 +150,9 @@ static void advance(Parser *P)
     P->previous = P->current;
 
     for (;;) {
-        if (P->isElseIf) {
-            P->current.type = AUP_TOK_IF;
-            P->isElseIf = false;
-            break;
-        }
-
         P->current = aup_scanToken(P->lexer);
-
-        if (P->current.type == AUP_TOK_ELSEIF) {
-            P->current.type = AUP_TOK_ELSE;
-            P->isElseIf = true;
-            break;
-        }
-
         if (P->current.type != AUP_TOK_ERROR) break;
+
         errorAtCurrent(P, P->current.start);
     }
 }
@@ -987,14 +977,15 @@ static void ifStatement(Parser *P)
     emitByte(P, AUP_OP_POP);
 
     bool useThen = match(P, AUP_TOK_THEN);
+    if (!useThen) P->ifChain[P->ifDepth - 1]--;
 
     if (!useThen) {
         statement(P);
     }
     else {
         beginScope(P);
-        while (!match(P, AUP_TOK_END) &&
-            !check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_EOF)) {
+        while (!check(P, AUP_TOK_END) && !check(P, AUP_TOK_ELSE) &&
+            !check(P, AUP_TOK_ELSEIF) && !check(P, AUP_TOK_EOF)) {
             declaration(P);
         }
         endScope(P);
@@ -1005,17 +996,30 @@ static void ifStatement(Parser *P)
     patchJump(P, thenJump);
     emitByte(P, AUP_OP_POP);
 
-    if (check(P, AUP_TOK_ELSE) && !useThen) {
-        advance(P);
+    if (!useThen && match(P, AUP_TOK_ELSE)) {
         statement(P);
     }
     else if (match(P, AUP_TOK_ELSE)) {
-        beginScope(P);
-        while (!match(P, AUP_TOK_END) &&
-            !check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_EOF)) {
-            declaration(P);
+        if (match(P, AUP_TOK_IF)) {
+            ifStatement(P);
+            P->ifChain[P->ifDepth - 1]++;
         }
-        endScope(P);
+        else {
+            beginScope(P);
+            while (!check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_END)
+                && !check(P, AUP_TOK_EOF)) {
+                declaration(P);
+            }
+            endScope(P);
+        }
+    }
+    else if (match(P, AUP_TOK_ELSEIF)) {
+        ifStatement(P);
+        P->ifChain[P->ifDepth - 1]++;
+    }
+
+    if (useThen && (P->ifChain[P->ifDepth - 1] == 0)) {
+        consume(P, AUP_TOK_END, "Expect 'end' after the block.");
     }
 
     patchJump(P, elseJump);
@@ -1218,7 +1222,9 @@ static void statement(Parser *P)
         printStatement(P);
     }
     else if (match(P, AUP_TOK_IF)) {
+        P->ifChain[P->ifDepth++] = 0;
         ifStatement(P);
+        P->ifDepth--;
     }
     else if (match(P, AUP_TOK_LOOP)) {
         loopStatetment(P);
@@ -1266,7 +1272,7 @@ aupFun *aup_compile(aupVM *vm, aupSrc *source)
     P.compiler = NULL;
     P.hadError = false;
     P.panicMode = false;
-    P.isElseIf = false;
+    P.ifDepth = 0;
 
     aup_initLexer(&L, source->buffer);
     initCompiler(&P, &C, TYPE_SCRIPT);
