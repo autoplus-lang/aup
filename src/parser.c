@@ -1025,6 +1025,75 @@ static void ifStatement(Parser *P)
     patchJump(P, elseJump);
 }
 
+static void forStatement(Parser *P)
+{
+    Loop loop = { 0 };
+    Compiler *current = P->compiler;
+    current->currentLoop = &loop;
+    current->loopDepth++;
+
+    beginScope(P);
+    bool useDo = !match(P, AUP_TOK_LPAREN);
+
+    if (match(P, AUP_TOK_SEMICOLON)) {
+        // No initializer.                                 
+    }
+    else if (match(P, AUP_TOK_VAR)) {
+        varDeclaration(P);
+    }
+    else {
+        expressionStatement(P);
+    }
+
+    int loopStart = currentChunk(P)->count;
+
+    int exitJump = -1;
+    if (!match(P, AUP_TOK_SEMICOLON)) {
+        expression(P);
+        consume(P, AUP_TOK_SEMICOLON, "Expect ';' after loop condition.");
+
+        // Jump out of the loop if the condition is false.           
+        exitJump = emitJump(P, AUP_OP_JMPF);
+        emitByte(P, AUP_OP_POP); // Condition.                              
+    }
+
+    if (useDo && !match(P, AUP_TOK_DO) || !match(P, AUP_TOK_RPAREN)) {
+        int bodyJump = emitJump(P, AUP_OP_JMP);
+
+        int incrementStart = currentChunk(P)->count;
+        expression(P);
+        emitByte(P, AUP_OP_POP);
+        if (!useDo) consume(P, AUP_TOK_RPAREN, "Expect ')' after for clauses.");
+
+        emitLoop(P, loopStart);
+        loopStart = incrementStart;
+        patchJump(P, bodyJump);
+    }
+
+    if (useDo && !check(P, AUP_TOK_DO)) {
+        errorAtCurrent(P, "Expect 'do' after for clauses.");
+        return;
+    }
+
+    statement(P);
+
+    emitLoop(P, loopStart);
+
+    if (exitJump != -1) {
+        patchJump(P, exitJump);
+        emitByte(P, AUP_OP_POP); // Condition.
+    }
+
+    // Patch all breaks.
+    for (int i = 0; i < loop.breakCount; i++)
+        patchJump(P, loop.breaks[i]);
+
+    endScope(P);
+
+    current->loopDepth--;
+    current->currentLoop = NULL;
+}
+
 static void loopStatetment(Parser *P)
 {
     // Init loop.
@@ -1225,6 +1294,9 @@ static void statement(Parser *P)
         P->ifChain[P->ifDepth++] = 0;
         ifStatement(P);
         P->ifDepth--;
+    }
+    else if (match(P, AUP_TOK_FOR)) {
+        forStatement(P);
     }
     else if (match(P, AUP_TOK_LOOP)) {
         loopStatetment(P);
