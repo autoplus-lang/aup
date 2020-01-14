@@ -1085,11 +1085,11 @@ static void forStatement(Parser *P)
         emitByte(P, AUP_OP_POP); // Condition.
     }
 
+    endScope(P);
+
     // Patch all breaks.
     for (int i = 0; i < loop.breakCount; i++)
         patchJump(P, loop.breaks[i]);
-
-    endScope(P);
 
     current->loopDepth--;
     current->currentLoop = NULL;
