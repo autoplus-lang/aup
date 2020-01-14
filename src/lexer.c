@@ -150,14 +150,7 @@ static aupTokType identifierType(aupLexer *L)
     switch (START[0]) {
         case 'a': return checkKeyword(L, 1, 2, "nd", AUP_TOK_AND);
         case 'b': return checkKeyword(L, 1, 4, "reak", AUP_TOK_BREAK);
-        case 'c':
-            if (LENGTH > 1) {
-                switch (L->start[1]) {
-                    case 'l': return checkKeyword(L, 2, 3, "ass", AUP_TOK_CLASS);
-                    case 'o': return checkKeyword(L, 2, 6, "ntinue", AUP_TOK_CONTINUE);
-                }
-            }
-            break;
+        case 'c': return checkKeyword(L, 1, 4, "lass", AUP_TOK_CLASS);
         case 'd': return checkKeyword(L, 1, 1, "o", AUP_TOK_DO);
         case 'e': 
             if (LENGTH > 1) {

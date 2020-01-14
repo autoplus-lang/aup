@@ -809,7 +809,6 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_AND]           = { NULL,     and_,    PREC_AND },
     [AUP_TOK_BREAK]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_CLASS]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_CONTINUE]      = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_DO]            = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_ELSE]          = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_ELSEIF]        = { NULL,     NULL,    PREC_NONE },
@@ -1164,19 +1163,6 @@ static void breakStatement(Parser *P)
     }
 }
 
-static void continueStatement(Parser *P)
-{
-    Compiler *current = P->compiler;
-    Loop *loop = current->currentLoop;
-
-    if (current->loopDepth == 0) {
-        error(P, "Cannot use 'continue' outside of a loop.");
-        return;
-    }
-
-    emitLoop(P, loop->start);
-}
-
 static void matchStatement(Parser *P)
 {
     expression(P);
@@ -1322,9 +1308,6 @@ static void statement(Parser *P)
     }
     else if (match(P, AUP_TOK_BREAK)) {
         breakStatement(P);
-    }
-    else if (match(P, AUP_TOK_CONTINUE)) {
-        continueStatement(P);
     }
     else if (match(P, AUP_TOK_LBRACE) || match(P, AUP_TOK_DO)) {
         aupTokType closing = (P->previous.type == AUP_TOK_LBRACE) ?

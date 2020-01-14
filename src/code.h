@@ -158,7 +158,6 @@ typedef enum {
     AUP_TOK_AND,                // and
     AUP_TOK_BREAK,              // break
     AUP_TOK_CLASS,              // class
-    AUP_TOK_CONTINUE,           // continue
     AUP_TOK_DO,                 // do
     AUP_TOK_ELSE,               // else
     AUP_TOK_ELSEIF,             // elseif
