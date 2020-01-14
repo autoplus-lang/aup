@@ -744,12 +744,6 @@ int aup_execute(register aupVM *vm)
             NEXT;
         }
 
-        CODE(BREAK) {
-            uint8_t locals = READ_BYTE();
-            vm->top -= locals;
-            NEXT;
-        }
-
         CODE_ERR() {
             ERROR("Bad opcode, got %d!", PREV_BYTE());
         }
