@@ -60,7 +60,8 @@
     _CODE(CLOSURE)  /* [k, ...] [-0, +0]    */ \
     _CODE(CLOSE)    /* []       [-1, +0]    */ \
     _CODE(ULD)      /* [u]      [-0, +1]    */ \
-    _CODE(UST)      /* [u]      [-0, +0]    */
+    _CODE(UST)      /* [u]      [-0, +0]    */ \
+    _CODE(BREAK)
 
 #define _CODE(x) AUP_OP_##x,
 typedef enum { OPCODES() AUP_OPCOUNT } aupOp;

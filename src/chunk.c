@@ -251,6 +251,9 @@ int aup_dasmInstruction(aupChunk *chunk, int offset)
         case AUP_OP_RET:
             return simpleInst(offset);
 
+        case AUP_OP_BREAK:
+            return byteInst(chunk, offset);
+
         default:
             printf("Unknown opcode, got %d.\n", i);
             return offset + 1;

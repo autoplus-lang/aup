@@ -589,6 +589,7 @@ int aup_execute(register aupVM *vm)
             aupVal cond = POP();
             //if (!aup_valuesEqual(PEEK(0), cond)) ip += offset;
             if (memcmp(&PEEK(0), &cond, sizeof(aupVal)) != 0) ip += offset;
+            else POP();
             NEXT;
         }
 
@@ -740,6 +741,12 @@ int aup_execute(register aupVM *vm)
         CODE(UST) {
             uint8_t slot = READ_BYTE();
             *frame->function->upvalues[slot]->location = PEEK(0);
+            NEXT;
+        }
+
+        CODE(BREAK) {
+            uint8_t locals = READ_BYTE();
+            vm->top -= locals;
             NEXT;
         }
 

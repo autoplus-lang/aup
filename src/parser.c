@@ -77,6 +77,7 @@ typedef enum {
 
 typedef struct {
     int start;
+    int scope;
     int breakCount;
     int breaks[UINT8_COUNT];
 } Loop;
@@ -310,6 +311,7 @@ static void beginScope(Parser *P)
 static void endScope(Parser *P)
 {
     Compiler *current = P->compiler;
+    Loop *loop = current->currentLoop;
     current->scopeDepth--;
 
     while (current->localCount > 0 &&
@@ -1102,6 +1104,7 @@ static void loopStatetment(Parser *P)
 
     current->loopDepth++;
     current->currentLoop = &loop;
+    loop.scope = current->scopeDepth;
 
     // Get start point.
     loop.start = currentChunk(P)->count;
@@ -1143,6 +1146,15 @@ static void breakStatement(Parser *P)
         return;
     }
 
+    // Store scope state.
+    int locals = current->localCount;
+    int depth = current->scopeDepth;
+    // Close all, down to loop scope.
+    do { endScope(P); } while (current->scopeDepth > loop->scope);
+    // Load the state.
+    current->localCount = locals;
+    current->scopeDepth = depth;
+        
     int jmpOut = emitJump(P, AUP_OP_JMP);
     loop->breaks[loop->breakCount++] = jmpOut;
 
@@ -1178,6 +1190,7 @@ static void matchStatement(Parser *P)
         do {
             // Default.
             if (match(P, AUP_TOK_ARROW)) {
+                emitByte(P, AUP_OP_POP);
                 statement(P);
                 jmpOuts[caseCount++] = emitJump(P, AUP_OP_JMP);
                 continue;
@@ -1205,10 +1218,10 @@ static void matchStatement(Parser *P)
         return;
     }
 
-    // Patch all endings.
-    for (int i = 0; i < caseCount; i++) patchJump(P, jmpOuts[i]);
     // Pop the input value.
     emitByte(P, AUP_OP_POP);
+    // Patch all endings.
+    for (int i = 0; i < caseCount; i++) patchJump(P, jmpOuts[i]);
 }
 
 static void printStatement(Parser *P)
