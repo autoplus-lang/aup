@@ -27,9 +27,6 @@ typedef struct {
     bool hadCall;
     bool hadAssign;
     int subExprs;
-
-    uint8_t ifChain[UINT8_COUNT];
-    uint8_t ifDepth;
 } Parser;
 
 typedef enum {
@@ -995,10 +992,8 @@ static void ifStmt(Parser *P, bool needEnd)
     patchJump(P, thenJump);
     emitByte(P, AUP_OP_POP);
 
-    if (!useThen && match(P, AUP_TOK_ELSE)) {
-        stmt(P);
-    }
-    else if (useThen && match(P, AUP_TOK_ELSE)) {
+    if (useThen && match(P, AUP_TOK_ELSE)) {
+        match(P, AUP_TOK_THEN);
         beginScope(P);
         while (!check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_END)
             && !check(P, AUP_TOK_EOF)) {
@@ -1185,7 +1180,7 @@ static void matchStmt(Parser *P)
             patchJump(P, jmpNext);
 
             if (caseCount > MAX_CASES) {
-                error(P, "Too many cases in 'match' stmt.");
+                error(P, "Too many cases in 'match' statement.");
                 return;
             }
         } while ((hadBrace && match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_RBRACE)) ||
@@ -1208,11 +1203,9 @@ static void printStmt(Parser *P)
     int count = 0;
 
     do {
-        count++;
-        expression(P);
-        
-        if (count > MAX_ARGS) {
-            error(P, "Too many values in 'print' stmt.");
+        expression(P);  
+        if (count++ >= MAX_ARGS) {
+            error(P, "Too many values in 'print' statement.");
             return;
         }
     } while (match(P, AUP_TOK_COMMA));
@@ -1330,7 +1323,6 @@ aupFun *aup_compile(aupVM *vm, aupSrc *source)
     P.compiler = NULL;
     P.hadError = false;
     P.panicMode = false;
-    P.ifDepth = 0;
 
     aup_initLexer(&L, source->buffer);
     initCompiler(&P, &C, TYPE_SCRIPT);
