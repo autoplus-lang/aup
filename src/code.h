@@ -178,7 +178,6 @@ typedef enum {
     AUP_TOK_THIS,               // this
     AUP_TOK_TRUE,               // true
     AUP_TOK_VAR,                // var
-    AUP_TOK_WHILE,              // while
 
     AUP_TOK_ERROR,
     AUP_TOK_EOF,

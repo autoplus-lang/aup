@@ -202,7 +202,6 @@ static aupTokType identifierType(aupLexer *L)
             }
             break;
         case 'v': return checkKeyword(L, 1, 2, "ar", AUP_TOK_VAR);
-        case 'w': return checkKeyword(L, 1, 4, "hile", AUP_TOK_WHILE);
     }
 
     return AUP_TOK_IDENTIFIER;

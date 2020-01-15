@@ -829,7 +829,6 @@ static ParseRule rules[AUP_TOKENCOUNT] = {
     [AUP_TOK_THIS]          = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_TRUE]          = { literal,  NULL,    PREC_NONE },
     [AUP_TOK_VAR]           = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_WHILE]         = { NULL,     NULL,    PREC_NONE },
 
     [AUP_TOK_ERROR]         = { NULL,     NULL,    PREC_NONE },
     [AUP_TOK_EOF]           = { NULL,     NULL,    PREC_NONE }          
@@ -1258,7 +1257,6 @@ static void synchronize(Parser *P)
             case AUP_TOK_IF:
             case AUP_TOK_LOOP:
             case AUP_TOK_MATCH:
-            case AUP_TOK_WHILE:
             case AUP_TOK_PRINT:
             case AUP_TOK_RETURN:
                 return;
