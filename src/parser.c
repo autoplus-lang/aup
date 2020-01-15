@@ -209,14 +209,13 @@ static void emitLoop(Parser *P, int loopStart)
 
 static void emitReturn(Parser *P)
 {
-    int count;
-    if ((count = currentChunk(P)->count) > 0 &&
-        currentChunk(P)->code[count - 1] == AUP_OP_RET) {
-        return;
+    int count = currentChunk(P)->count;
+    if (count == 0
+        || currentChunk(P)->code[count - 1] != AUP_OP_RET
+        || check(P, AUP_TOK_EOF)) {
+        emitByte(P, AUP_OP_NIL);
+        emitByte(P, AUP_OP_RET);
     }
-
-    emitByte(P, AUP_OP_NIL);
-    emitByte(P, AUP_OP_RET);
 }
 
 static uint8_t makeConstant(Parser *P, aupVal value)
@@ -232,11 +231,6 @@ static uint8_t makeConstant(Parser *P, aupVal value)
     }
 
     return (uint8_t)constant;
-}
-
-static void emitSmart(Parser *P, uint8_t op, int arg)
-{
-    emitBytes(P, op, (uint8_t)arg);
 }
 
 static void emitConstant(Parser *P, aupVal value)
@@ -459,7 +453,7 @@ static void defineVariable(Parser *P, uint8_t global)
         return;
     }
 
-    emitSmart(P, AUP_OP_DEF, global);
+    emitBytes(P, AUP_OP_DEF, global);
 }
 
 static uint8_t argumentList(Parser *P)
@@ -924,7 +918,7 @@ static void function(Parser *P, FunType type)
         }
     }
 
-    emitSmart(P, AUP_OP_CONST, constant);
+    emitBytes(P, AUP_OP_CONST, constant);
 }
 
 static void funcDecl(Parser *P)
@@ -937,16 +931,48 @@ static void funcDecl(Parser *P)
 
 static void varDecl(Parser *P)
 {
-    uint8_t global = parseVariable(P, "Expect variable name.");
+    Compiler *current = P->compiler;
+
+    int nvars = 0;
+    int nvals = 0;
+    uint8_t globals[MAX_ARGS];
+
+    do {
+        globals[nvars++] = parseVariable(P, "Expect variable name.");       
+        if (nvars > MAX_ARGS) {
+            error(P, "Too many variables in one variable declaration.");
+            return;
+        }
+    } while (match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_EOF));
 
     if (match(P, AUP_TOK_EQUAL)) {
-        expression(P);
-    }
-    else {
-        emitByte(P, AUP_OP_NIL);
+        do {
+            expression(P);
+            nvals++;
+            if (current->scopeDepth > 0 && nvars >= nvals) {
+                current->locals[current->localCount - (nvars - nvals + 1)].depth =
+                    current->scopeDepth;
+            }
+        } while (match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_EOF));
     }
 
-    defineVariable(P, global);
+    if (nvals > nvars) {
+        for (int i = 0; i < nvals - nvars; i++)
+            emitByte(P, AUP_OP_POP);
+    }
+    else {
+        for (int i = nvals; i < nvars; i++) {
+            if (current->scopeDepth > 0 && nvars >= nvals) {
+                current->locals[current->localCount - (nvars - i)].depth =
+                    current->scopeDepth;
+            }
+            emitByte(P, AUP_OP_NIL);
+        }
+    }
+
+    for (int i = nvars - 1; i >= 0; i--)
+        defineVariable(P, globals[i]);
+
     match(P, AUP_TOK_SEMICOLON);
 }
 
@@ -1200,17 +1226,17 @@ static void matchStmt(Parser *P)
 
 static void printStmt(Parser *P)
 {
-    int count = 0;
+    uint8_t nvals = 0;
 
     do {
         expression(P);  
-        if (count++ >= MAX_ARGS) {
+        if (nvals++ >= MAX_ARGS) {
             error(P, "Too many values in 'print' statement.");
             return;
         }
     } while (match(P, AUP_TOK_COMMA));
 
-    emitBytes(P, AUP_OP_PRINT, count);
+    emitBytes(P, AUP_OP_PRINT, nvals);
 }
 
 static void returnStmt(Parser *P)

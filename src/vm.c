@@ -305,15 +305,15 @@ int aup_execute(register aupVM *vm)
     INTERPRET
     {
         CODE(PRINT) {
-            int count = READ_BYTE();
+            int nvals = READ_BYTE();
 
-            for (int i = count-1; i >= 0; i--) {
+            for (int i = nvals - 1; i >= 0; i--) {
                 aup_printValue(PEEK(i));
                 if (i > 0) printf("\t");
             }
             printf("\n");
 
-            POPN(count);
+            POPN(nvals);
             NEXT;
         }
 
