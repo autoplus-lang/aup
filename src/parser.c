@@ -328,8 +328,8 @@ static void endScope(Parser *P)
 }
 
 static void expression(Parser *P);
-static void statement(Parser *P);
-static void declaration(Parser *P);
+static void stmt(Parser *P);
+static void decl(Parser *P);
 static ParseRule *getRule(aupTokType type);
 static void parsePrecedence(Parser *P, Precedence precedence);
 
@@ -874,7 +874,7 @@ static void expression(Parser *P)
 static void block(Parser *P, aupTokType closing)
 {
     while (!check(P, closing) && !check(P, AUP_TOK_EOF)) {
-        declaration(P);
+        decl(P);
     }
 
     consume(P, closing, "Expect '%s' after block.",
@@ -909,7 +909,7 @@ static void function(Parser *P, FunType type)
         emitByte(P, AUP_OP_RET);
     }
     else {
-        // Block statement.
+        // Block stmt.
         aupTokType closing = match(P, AUP_TOK_LBRACE) ?
             AUP_TOK_RBRACE : AUP_TOK_END;
 
@@ -931,7 +931,7 @@ static void function(Parser *P, FunType type)
     emitSmart(P, AUP_OP_CONST, constant);
 }
 
-static void funDeclaration(Parser *P)
+static void funcDecl(Parser *P)
 {
     uint8_t global = parseVariable(P, "Expect function name.");
     markInitialized(P);
@@ -939,7 +939,7 @@ static void funDeclaration(Parser *P)
     defineVariable(P, global);
 }
 
-static void varDeclaration(Parser *P)
+static void varDecl(Parser *P)
 {
     uint8_t global = parseVariable(P, "Expect variable name.");
 
@@ -954,7 +954,7 @@ static void varDeclaration(Parser *P)
     match(P, AUP_TOK_SEMICOLON);
 }
 
-static void expressionStatement(Parser *P)
+static void exprStmt(Parser *P)
 {
     P->hadCall = false;
     P->hadAssign = false;
@@ -970,7 +970,7 @@ static void expressionStatement(Parser *P)
     }
 }
 
-static void ifStatement(Parser *P)
+static void ifStmt(Parser *P)
 {
     expression(P);
 
@@ -981,13 +981,13 @@ static void ifStatement(Parser *P)
     if (!useThen) P->ifChain[P->ifDepth - 1]--;
 
     if (!useThen) {
-        statement(P);
+        stmt(P);
     }
     else {
         beginScope(P);
         while (!check(P, AUP_TOK_END) && !check(P, AUP_TOK_ELSE) &&
             !check(P, AUP_TOK_ELSEIF) && !check(P, AUP_TOK_EOF)) {
-            declaration(P);
+            decl(P);
         }
         endScope(P);
     }
@@ -998,24 +998,24 @@ static void ifStatement(Parser *P)
     emitByte(P, AUP_OP_POP);
 
     if (!useThen && match(P, AUP_TOK_ELSE)) {
-        statement(P);
+        stmt(P);
     }
     else if (match(P, AUP_TOK_ELSE)) {
         if (match(P, AUP_TOK_IF)) {
-            ifStatement(P);
+            ifStmt(P);
             P->ifChain[P->ifDepth - 1]++;
         }
         else {
             beginScope(P);
             while (!check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_END)
                 && !check(P, AUP_TOK_EOF)) {
-                declaration(P);
+                decl(P);
             }
             endScope(P);
         }
     }
     else if (match(P, AUP_TOK_ELSEIF)) {
-        ifStatement(P);
+        ifStmt(P);
         P->ifChain[P->ifDepth - 1]++;
     }
 
@@ -1026,7 +1026,7 @@ static void ifStatement(Parser *P)
     patchJump(P, elseJump);
 }
 
-static void forStatement(Parser *P)
+static void forStmt(Parser *P)
 {
     Loop loop = { 0 };
     Compiler *current = P->compiler;
@@ -1040,10 +1040,10 @@ static void forStatement(Parser *P)
         // No initializer.                                 
     }
     else if (match(P, AUP_TOK_VAR)) {
-        varDeclaration(P);
+        varDecl(P);
     }
     else {
-        expressionStatement(P);
+        exprStmt(P);
     }
 
     int loopStart = currentChunk(P)->count;
@@ -1076,7 +1076,7 @@ static void forStatement(Parser *P)
         return;
     }
 
-    statement(P);
+    stmt(P);
 
     emitLoop(P, loopStart);
 
@@ -1095,7 +1095,7 @@ static void forStatement(Parser *P)
     current->currentLoop = NULL;
 }
 
-static void loopStatetment(Parser *P)
+static void loopStmt(Parser *P)
 {
     // Init loop.
     Loop loop = { 0 };
@@ -1120,7 +1120,7 @@ static void loopStatetment(Parser *P)
     int jmpOut = emitJump(P, AUP_OP_JMPF);
 
     emitByte(P, AUP_OP_POP);
-    statement(P);
+    stmt(P);
 
     emitLoop(P, loop.start);
 
@@ -1135,7 +1135,7 @@ static void loopStatetment(Parser *P)
     current->currentLoop = NULL;
 }
 
-static void breakStatement(Parser *P)
+static void breakStmt(Parser *P)
 {
     Compiler *current = P->compiler;
     Loop *loop = current->currentLoop;
@@ -1163,7 +1163,7 @@ static void breakStatement(Parser *P)
     }
 }
 
-static void matchStatement(Parser *P)
+static void matchStmt(Parser *P)
 {
     expression(P);
     bool hadBrace = match(P, AUP_TOK_LBRACE);
@@ -1177,7 +1177,7 @@ static void matchStatement(Parser *P)
             // Default.
             if (match(P, AUP_TOK_ARROW)) {
                 emitByte(P, AUP_OP_POP);
-                statement(P);
+                stmt(P);
                 jmpOuts[caseCount++] = emitJump(P, AUP_OP_JMP);
                 continue;
             }
@@ -1186,13 +1186,13 @@ static void matchStatement(Parser *P)
             int jmpNext = emitJump(P, AUP_OP_JNE);
 
             consume(P, AUP_TOK_ARROW, "Extect '=>' after expression.");
-            statement(P);
+            stmt(P);
          
             jmpOuts[caseCount++] =  emitJump(P, AUP_OP_JMP);
             patchJump(P, jmpNext);
 
             if (caseCount > MAX_CASES) {
-                error(P, "Too many cases in 'match' statement.");
+                error(P, "Too many cases in 'match' stmt.");
                 return;
             }
         } while ((hadBrace && match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_RBRACE)) ||
@@ -1200,7 +1200,7 @@ static void matchStatement(Parser *P)
     }
 
     if (hadBrace) {
-        consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' statement body.");
+        consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' stmt body.");
         return;
     }
 
@@ -1210,7 +1210,7 @@ static void matchStatement(Parser *P)
     for (int i = 0; i < caseCount; i++) patchJump(P, jmpOuts[i]);
 }
 
-static void printStatement(Parser *P)
+static void printStmt(Parser *P)
 {
     int count = 0;
 
@@ -1219,7 +1219,7 @@ static void printStatement(Parser *P)
         expression(P);
         
         if (count > MAX_ARGS) {
-            error(P, "Too many values in 'print' statement.");
+            error(P, "Too many values in 'print' stmt.");
             return;
         }
     } while (match(P, AUP_TOK_COMMA));
@@ -1227,7 +1227,7 @@ static void printStatement(Parser *P)
     emitBytes(P, AUP_OP_PRINT, count);
 }
 
-static void returnStatement(Parser *P)
+static void returnStmt(Parser *P)
 {
     if (P->compiler->type == TYPE_SCRIPT) {
         error(P, "Cannot return from top-level code.");
@@ -1269,45 +1269,45 @@ static void synchronize(Parser *P)
     }
 }
 
-static void declaration(Parser *P)
+static void decl(Parser *P)
 {
     if (match(P, AUP_TOK_FUNC)) {
-        funDeclaration(P);
+        funcDecl(P);
     }
     else if (match(P, AUP_TOK_VAR)) {
-        varDeclaration(P);
+        varDecl(P);
     }
     else {
-        statement(P);
+        stmt(P);
     }
 
     if (P->panicMode) synchronize(P);
 }
 
-static void statement(Parser *P)
+static void stmt(Parser *P)
 {
     if (match(P, AUP_TOK_PRINT)) {
-        printStatement(P);
+        printStmt(P);
     }
     else if (match(P, AUP_TOK_IF)) {
         P->ifChain[P->ifDepth++] = 0;
-        ifStatement(P);
+        ifStmt(P);
         P->ifDepth--;
     }
     else if (match(P, AUP_TOK_FOR)) {
-        forStatement(P);
+        forStmt(P);
     }
     else if (match(P, AUP_TOK_LOOP)) {
-        loopStatetment(P);
+        loopStmt(P);
     }
     else if (match(P, AUP_TOK_MATCH)) {
-        matchStatement(P);
+        matchStmt(P);
     }
     else if (match(P, AUP_TOK_RETURN)) {
-        returnStatement(P);
+        returnStmt(P);
     }
     else if (match(P, AUP_TOK_BREAK)) {
-        breakStatement(P);
+        breakStmt(P);
     }
     else if (match(P, AUP_TOK_LBRACE) || match(P, AUP_TOK_DO)) {
         aupTokType closing = (P->previous.type == AUP_TOK_LBRACE) ?
@@ -1320,7 +1320,7 @@ static void statement(Parser *P)
         // Do nothing.
     }
     else {
-        expressionStatement(P);
+        exprStmt(P);
     }
 
     match(P, AUP_TOK_SEMICOLON);
@@ -1347,7 +1347,7 @@ aupFun *aup_compile(aupVM *vm, aupSrc *source)
     
     advance(&P);
     while (!match(&P, AUP_TOK_EOF)) {
-        declaration(&P);
+        decl(&P);
     }
 
     aupFun *function = endCompiler(&P);
