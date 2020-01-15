@@ -969,7 +969,7 @@ static void exprStmt(Parser *P)
     }
 }
 
-static void ifStmt(Parser *P)
+static void ifStmt(Parser *P, bool needEnd)
 {
     expression(P);
 
@@ -977,7 +977,6 @@ static void ifStmt(Parser *P)
     emitByte(P, AUP_OP_POP);
 
     bool useThen = match(P, AUP_TOK_THEN);
-    if (!useThen) P->ifChain[P->ifDepth - 1]--;
 
     if (!useThen) {
         stmt(P);
@@ -999,30 +998,25 @@ static void ifStmt(Parser *P)
     if (!useThen && match(P, AUP_TOK_ELSE)) {
         stmt(P);
     }
-    else if (match(P, AUP_TOK_ELSE)) {
-        if (match(P, AUP_TOK_IF)) {
-            ifStmt(P);
-            P->ifChain[P->ifDepth - 1]++;
+    else if (useThen && match(P, AUP_TOK_ELSE)) {
+        beginScope(P);
+        while (!check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_END)
+            && !check(P, AUP_TOK_EOF)) {
+            decl(P);
         }
-        else {
-            beginScope(P);
-            while (!check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_END)
-                && !check(P, AUP_TOK_EOF)) {
-                decl(P);
-            }
-            endScope(P);
-        }
+        endScope(P);
     }
     else if (match(P, AUP_TOK_ELSEIF)) {
-        ifStmt(P);
-        P->ifChain[P->ifDepth - 1]++;
+        ifStmt(P, true);
+        needEnd = false;
     }
-
-    if (useThen && (P->ifChain[P->ifDepth - 1] == 0)) {
-        consume(P, AUP_TOK_END, "Expect 'end' after the block.");
+    else if (match(P, AUP_TOK_ELSE)) {
+        stmt(P);
     }
 
     patchJump(P, elseJump);
+
+    if (useThen && needEnd) consume(P, AUP_TOK_END, "Expect 'end' after the block.");
 }
 
 static void forStmt(Parser *P)
@@ -1288,9 +1282,7 @@ static void stmt(Parser *P)
         printStmt(P);
     }
     else if (match(P, AUP_TOK_IF)) {
-        P->ifChain[P->ifDepth++] = 0;
-        ifStmt(P);
-        P->ifDepth--;
+        ifStmt(P, true);
     }
     else if (match(P, AUP_TOK_FOR)) {
         forStmt(P);
