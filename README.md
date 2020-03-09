@@ -26,4 +26,5 @@ The **AutoIt+** programming language, based on my [Lox implementation](https://g
   
 <br>
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d0c722a1ed1e41d6a97dce63c9122d40)](https://app.codacy.com/gh/autoitplus/aup?utm_source=github.com&utm_medium=referral&utm_content=autoitplus/aup&utm_campaign=Badge_Grade_Dashboard)
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L6W74V)
