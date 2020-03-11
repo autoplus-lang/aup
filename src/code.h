@@ -1,3 +1,5 @@
+#ifndef _AUP_CODE_H
+#define _AUP_CODE_H
 #pragma once
 
 #include "util.h"
@@ -213,3 +215,5 @@ aupFun *aup_compile(aupVM *vm, aupSrc *source);
 
 int aup_dasmInst(aupChunk *chunk, int offset);
 void aup_dasmChunk(aupChunk *chunk, const char *name);
+
+#endif
