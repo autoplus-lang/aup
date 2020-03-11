@@ -3,17 +3,27 @@
 
 #include "code.h"
 
-void aup_initLexer(aupLexer *L, const char *source)
-{
-    L->start = source;
-    L->current = source;
-    L->lineStart = source;
+struct Lexer {
+    const char *start;
+    const char *current;
+    const char *lineStart;
+    int line;
+    int position;
+};
 
-    L->line = 1;
-    L->position = 1;
+static THREAD_LOCAL struct Lexer L;
+
+void aup_initLexer(const char *source)
+{
+    L.start = source;
+    L.current = source;
+    L.lineStart = source;
+
+    L.line = 1;
+    L.position = 1;
 }
 
-static bool isAlpha(char c)
+static inline bool isAlpha(char c)
 {
     return (c >= 'a' && c <= 'z')
         || (c >= 'A' && c <= 'Z')
@@ -21,306 +31,352 @@ static bool isAlpha(char c)
         || (c == '$');
 }
 
-static bool isDigit(char c)
+static inline bool isDigit(char c)
 {
-    return (c >= '0')
-        && (c <= '9');
+    return (c >= '0' && c <= '9');
 }
 
-static bool isHexaDigit(char c)
+static inline bool isHexDigit(char c)
 {
-    return (c >= '0' && c <= '9')
+    return isDigit(c)
         || (c >= 'a' && c <= 'f')
         || (c >= 'A' && c <= 'F');
 }
 
-static bool isAtEnd(aupLexer *L)
+static bool isAtEnd()
 {
-    return *L->current == '\0';
+    return *L.current == '\0';
 }
 
-static char advance(aupLexer *L)
+static char advance()
 {
-    L->current++;
-    L->position++;
-    return L->current[-1];
+    L.current++;
+    L.position++;
+    return L.current[-1];
 }
 
-static char peek(aupLexer *L)
+static char peek()
 {
-    return *L->current;
+    return *L.current;
 }
 
-static char peekNext(aupLexer *L)
+static char peekNext()
 {
-    if (isAtEnd(L)) return '\0';
-    return L->current[1];
+    if (isAtEnd()) return '\0';
+    return L.current[1];
 }
 
-static void newLine(aupLexer *L)
+static void newLine()
 {
-    L->line++;
-    L->position = 0;
-    L->lineStart = L->current + 1;
+    L.line++;
+    L.position = 0;
+    L.lineStart = L.current + 1;
 }
 
-static bool match(aupLexer *L, char expected)
+static void tabIndent()
 {
-    if (isAtEnd(L)) return false;
-    if (*L->current != expected) return false;
+    L.position += 4 - 1;
+}
 
-    L->current++;
-    L->position++;
+static bool match(char expected)
+{
+    if (isAtEnd()) return false;
+    if (*L.current != expected) return false;
+
+    L.current++;
+    L.position++;
     return true;
 }
 
-static aupTok makeToken(aupLexer *L, aupTokType type)
+static aupTok makeToken(aupTTok type)
 {
     aupTok token;
     token.type = type;
-    token.start = L->start;
-    token.length = (int)(L->current - L->start);
-    token.line = L->line;
-    token.column = L->position - token.length;
-
-    const char *endLine = strchr(L->lineStart, '\n');
-    if (endLine == NULL) L->lineLength = (int)strlen(L->lineStart);
-    else L->lineLength = endLine - L->lineStart - 1;
-    token.lineStart = L->lineStart;
-    token.lineLength = L->lineLength;
+    token.start = L.start;
+    token.length = (int)(L.current - L.start);
+    token.line = L.line;
+    token.column = L.position - token.length;
+    token.lineStart = L.lineStart;
 
     return token;
 }
 
-static aupTok errorToken(aupLexer *L, const char *message)
+static aupTok errorToken(const char *message)
 {
-    aupTok token = makeToken(L, AUP_TOK_ERROR);
+    aupTok token = makeToken(AUP_TOK_ERROR);
     token.start = message;
 
     return token;
 }
 
-static void skipWhitespace(aupLexer *L)
+static void skipWhitespace()
 {
     for (;;) {
-        char c = peek(L);
-        switch (c) {
+        switch (peek()) {           
+            case '\t':
+                tabIndent();
+                goto _adv;
+            case '\n':
+                newLine();
+                goto _adv;
             case ' ':
             case '\r':
-            case '\t':
-                advance(L);
+            _adv:
+                advance();
                 break;
 
-            case '\n':
-                newLine(L);
-                advance(L);
-                break;
-
+            case ';':
+                goto _slc;
             case '/':
-                if (peekNext(L) == '/') {
-                    // A comment goes until the end of the line.   
-                    while (peek(L) != '\n' && !isAtEnd(L)) advance(L);
+                if (peekNext() == '/') {
+                    // Single-line comments
+                _slc:
+                    while (peek() != '\n' && !isAtEnd()) {
+                        advance();
+                    }
+                }
+                else if (peekNext() == '*') {
+                    // Multi-line comments
+                    advance();
+                    advance();
+                    while (true) {
+                        while (peek() != '*' && !isAtEnd()) {
+                            if (advance() == '\n') {
+                                newLine();
+                            }
+                        }
+                        if (peekNext() == '/') {
+                            break;
+                        }
+                        advance();
+                    }
+                    advance();
+                    advance();
                 }
                 else {
                     return;
                 }
                 break;
 
-        default:
-            return;
+            default:
+                return;
         }
     }
 }
 
-static aupTokType checkKeyword(aupLexer *L, int start, int length, const char *rest, aupTokType type)
+static aupTTok checkKeyword(int start, int length, const char *rest, aupTTok type)
 {
-    if (L->current - L->start == start + length &&
-        memcmp(L->start + start, rest, length) == 0) {
+    if (L.current - L.start == start + length &&
+        memcmp(L.start + start, rest, length) == 0) {
         return type;
     }
 
     return AUP_TOK_IDENTIFIER;
 }
 
-static aupTokType identifierType(aupLexer *L)
+static aupTTok identifierType()
 {
-#define START   (L->start)
-#define LENGTH  (L->current - L->start)
+#define START   (L.start)
+#define LENGTH  (L.current - L.start)
+#define CHECK(s, l, r, t) \
+    checkKeyword(s, l, r, AUP_TOK_KW_##t)
 
     switch (START[0]) {
-        case 'a': return checkKeyword(L, 1, 2, "nd", AUP_TOK_AND);
-        case 'b': return checkKeyword(L, 1, 4, "reak", AUP_TOK_BREAK);
-        case 'c': return checkKeyword(L, 1, 4, "lass", AUP_TOK_CLASS);
-        case 'd': return checkKeyword(L, 1, 1, "o", AUP_TOK_DO);
-        case 'e': 
-            if (LENGTH > 1) {
-                switch (START[1]) {
-                    case 'l':
-                        if (LENGTH >= 6) return checkKeyword(L, 2, 4, "seif", AUP_TOK_ELSEIF);
-                        return checkKeyword(L, 2, 2, "se", AUP_TOK_ELSE);
-                    case 'n': return checkKeyword(L, 2, 1, "d", AUP_TOK_END);
-                }
+        case 'a': return CHECK(1, 2, "nd",   AND);
+        case 'b': return CHECK(1, 4, "reak", BREAK);
+        case 'c':
+            if (LENGTH > 1) switch (START[1]) {
+                case 'a': return CHECK(2, 2, "se",  CASE);
+                case 'l': return CHECK(2, 3, "ass", CLASS);
             }
             break;
+        case 'd': return CHECK(1, 1, "o",    DO);
+        case 'e': return CHECK(1, 3, "lse",  ELSE);
         case 'f':
-            if (LENGTH > 1) {
-                switch (START[1]) {
-                    case 'a': return checkKeyword(L, 2, 3, "lse", AUP_TOK_FALSE);
-                    case 'o': return checkKeyword(L, 2, 1, "r", AUP_TOK_FOR);
-                    case 'u': return checkKeyword(L, 2, 2, "nc", AUP_TOK_FUNC);
-                }
+            if (LENGTH > 1) switch (START[1]) {
+                case 'a': return CHECK(2, 3, "lse", FALSE);
+                case 'o': return CHECK(2, 1, "r",   FOR);
+                case 'u': return CHECK(2, 2, "nc",  FUNC);
             }
             break;
-        case 'i': return checkKeyword(L, 1, 1, "f", AUP_TOK_IF);
-        case 'l': return checkKeyword(L, 1, 3, "oop", AUP_TOK_LOOP);
-        case 'm': return checkKeyword(L, 1, 4, "atch", AUP_TOK_MATCH);
+        case 'i': return CHECK(1, 1, "f", IF);
+        case 'm': return CHECK(1, 4, "atch", MATCH);
         case 'n':
-            if (LENGTH > 1) {
-                switch (START[1]) {
-                    case 'i': return checkKeyword(L, 2, 1, "l", AUP_TOK_NIL);
-                    case 'o': return checkKeyword(L, 2, 1, "t", AUP_TOK_NOT);
-                }
+            if (LENGTH > 1) switch (START[1]) {
+                case 'o': return CHECK(2, 1, "t",  NOT);
+                case 'i': return CHECK(2, 1, "l", NIL);
             }
             break;
-        case 'o': return checkKeyword(L, 1, 1, "r", AUP_TOK_OR);
-        case 'p': return checkKeyword(L, 1, 4, "rint", AUP_TOK_PRINT);
-        case 'r': return checkKeyword(L, 1, 5, "eturn", AUP_TOK_RETURN);
-        case 's': return checkKeyword(L, 1, 4, "uper", AUP_TOK_SUPER);
+        case 'o': return CHECK(1, 1, "r",     OR);
+        case 'p': return CHECK(1, 3, "uts",   PUTS);
+        case 'r': return CHECK(1, 5, "eturn", RETURN);
+        case 's': return CHECK(1, 5, "witch", SWITCH);
         case 't':
-            if (LENGTH > 1) {
-                switch (START[1]) {
-                    case 'h': 
-                        if (LENGTH > 2) {
-                            switch (START[2]) {
-                                case 'e': return checkKeyword(L, 3, 1, "n", AUP_TOK_THEN);
-                                case 'i': return checkKeyword(L, 3, 1, "s", AUP_TOK_THIS);
-                            }
-                        }
-                        break;                       
-                    case 'r': return checkKeyword(L, 2, 2, "ue", AUP_TOK_TRUE);
-                }
+            if (LENGTH > 1) switch (START[1]) {
+                case 'h': 
+                    if (LENGTH > 2) switch (START[2]) {
+                        case 'e':return CHECK(3, 1, "n", THEN);
+                        case 'i':return CHECK(3, 1, "s", THIS);
+                    }
+                    break;
+                case 'r': return CHECK(2, 2, "ue", TRUE);
             }
             break;
-        case 'v': return checkKeyword(L, 1, 2, "ar", AUP_TOK_VAR);
+        case 'v': return CHECK(1, 2, "ar",   VAR);
+        case 'w': return CHECK(1, 4, "hile", WHILE);
     }
+#undef START
+#undef LENGTH
+#undef CHECK
 
     return AUP_TOK_IDENTIFIER;
 }
 
-static aupTok identifier(aupLexer *L)
+static aupTok identifier()
 {
-    while (isAlpha(peek(L)) || isDigit(peek(L))) advance(L);
+    while (isAlpha(peek()) || isDigit(peek())) {
+        advance();
+    }
 
-    return makeToken(L, identifierType(L));
+    return makeToken(identifierType());
 }
 
-static aupTok number(aupLexer *L, char start)
+static aupTok number()
 {
-    if (start == '0' && isAlpha(peek(L))) {
-        if ((peek(L) == 'x' || peek(L) == 'X')) {
-            advance(L);
-            while (isAlpha(peek(L)) || isDigit(peek(L))) {
-                if (!isHexaDigit(peek(L))) {
-                    return errorToken(L, "Expect hexadecimal digit.");
+    if (L.start[0] == '0' && isAlpha(peek())) {
+        switch (peek()) {
+            case 'x':
+            case 'X': {
+                advance();
+                while (isAlpha(peek()) || isDigit(peek())) {
+                    if (!isHexDigit(peek())) {
+                        return errorToken("Expect hexadecimal digit.");
+                    }
+                    advance();
                 }
-                advance(L);
+                if (L.current - L.start <= 2) {
+                    return errorToken("Expect hexadecimal digit.");
+                }
+                return makeToken(AUP_TOK_HEXADECIMAL);
             }
-            if (L->current - L->start <= 2) {
-                return errorToken(L, "Expect hexadecimal digit.");
-            }
-            return makeToken(L, AUP_TOK_HEXADECIMAL);           
-        }
-        else {
-            return errorToken(L, "Unexpected number format.");
+            default:
+                return errorToken("Unknow number format.");
         }
     }
 
-    while (isDigit(peek(L))) advance(L);
+    while (isDigit(peek())) {
+        advance();
+    }
 
     // Look for a fractional part.             
-    if (peek(L) == '.' && isDigit(peekNext(L))) {
-        // Consume the ".".                      
-        advance(L);
+    if (peek() == '.' && isDigit(peekNext())) {
+        // Consume the point
+        advance();
 
-        while (isDigit(peek(L))) advance(L);
+        while (isDigit(peek())) {
+            advance();
+        }
 
-        return makeToken(L, AUP_TOK_NUMBER);
+        return makeToken(AUP_TOK_NUMBER);
     }
 
-    return makeToken(L, AUP_TOK_INTEGER);
+    return makeToken(AUP_TOK_INTEGER);
 }
 
-static aupTok string(aupLexer *L, char start)
+static aupTok string()
 {
-    while (peek(L) != start && !isAtEnd(L)) {
-        if (peek(L) == '\n') newLine(L);
-        advance(L);
+    char open = L.start[0];
+
+    while (peek() != open) {
+        if (isAtEnd() || peek() == '\n') {
+            return errorToken("Unterminated string.");
+        }
+        advance();
     }
 
-    if (isAtEnd(L)) return errorToken(L, "Unterminated string.");
-
-    // The closing quote.                                    
-    advance(L);
-    return makeToken(L, AUP_TOK_STRING);
+    advance();
+    return makeToken(AUP_TOK_STRING);
 }
 
-aupTok aup_scanToken(aupLexer *L)
+aupTok aup_scanToken()
 {
-    skipWhitespace(L);
+    skipWhitespace();
 
-    L->start = L->current;
+    L.start = L.current;
 
-    if (isAtEnd(L)) return makeToken(L, AUP_TOK_EOF);
+    if (isAtEnd()) return makeToken(AUP_TOK_EOF);
 
-    char c = advance(L);
-    if (isAlpha(c)) return identifier(L);
-    if (isDigit(c)) return number(L, c);
+    char c = advance();
+    if (isAlpha(c)) return identifier();
+    if (isDigit(c)) return number();
 
     switch (c) {
-        case '(': return makeToken(L, AUP_TOK_LPAREN);
-        case ')': return makeToken(L, AUP_TOK_RPAREN);
-        case '[': return makeToken(L, AUP_TOK_LBRACKET);
-        case ']': return makeToken(L, AUP_TOK_RBRACKET);
-        case '{': return makeToken(L, AUP_TOK_LBRACE);
-        case '}': return makeToken(L, AUP_TOK_RBRACE);
+        case '(': return makeToken(AUP_TOK_LPAREN);
+        case ')': return makeToken(AUP_TOK_RPAREN);
+        case '[': return makeToken(AUP_TOK_LBRACKET);
+        case ']': return makeToken(AUP_TOK_RBRACKET);
+        case '{': return makeToken(AUP_TOK_LBRACE);
+        case '}': return makeToken(AUP_TOK_RBRACE);
 
-        case ';': return makeToken(L, AUP_TOK_SEMICOLON);
-        case ',': return makeToken(L, AUP_TOK_COMMA);
-        case '.': return makeToken(L, AUP_TOK_DOT);
+        case ';': return makeToken(AUP_TOK_SEMICOLON);
+        case ',': return makeToken(AUP_TOK_COMMA);
+        case '.': return makeToken(AUP_TOK_DOT);
+        case ':': return makeToken(AUP_TOK_COLON);
+        case '?': return makeToken(match('.') ? AUP_TOK_QMARK_DOT : AUP_TOK_QMARK);
 
-        case ':': return makeToken(L, AUP_TOK_COLON);
-        case '?': return makeToken(L, AUP_TOK_QMARK);
+        case '~': return makeToken(AUP_TOK_TILDE);
+        case '^': return makeToken(match('=') ? AUP_TOK_CARET_EQUAL : AUP_TOK_CARET);
 
-        case '&': return makeToken(L, AUP_TOK_AMPERSAND);
-        case '|': return makeToken(L, AUP_TOK_VBAR);
-        case '~': return makeToken(L, AUP_TOK_TILDE);
-        case '^': return makeToken(L, AUP_TOK_CARET);
+        case '&': return makeToken(
+            match('&') ? AUP_TOK_KW_AND :
+            match('=') ? AUP_TOK_AMPERSAND_EQUAL : AUP_TOK_AMPERSAND);
+        case '|': return makeToken(
+            match('|') ? AUP_TOK_KW_OR :
+            match('=') ? AUP_TOK_VBAR_EQUAL : AUP_TOK_VBAR);
 
-        case '+': return makeToken(L, match(L, '=') ? AUP_TOK_PLUS_EQUAL : AUP_TOK_PLUS);
-        case '*': return makeToken(L, match(L, '=') ? AUP_TOK_STAR_EQUAL : AUP_TOK_STAR);
-        case '/': return makeToken(L, match(L, '=') ? AUP_TOK_SLASH_EQUAL : AUP_TOK_SLASH);
-        case '%': return makeToken(L, match(L, '=') ? AUP_TOK_PERCENT_EQUAL : AUP_TOK_PERCENT);
-        case '!': return makeToken(L, match(L, '=') ? AUP_TOK_BANG_EQUAL : AUP_TOK_BANG);
+        case '+': return makeToken(match('=') ? AUP_TOK_PLUS_EQUAL : AUP_TOK_PLUS);
+        case '/': return makeToken(match('=') ? AUP_TOK_SLASH_EQUAL : AUP_TOK_SLASH);
+        case '%': return makeToken(match('=') ? AUP_TOK_PERCENT_EQUAL : AUP_TOK_PERCENT);
+        case '!': return makeToken(match('=') ? AUP_TOK_BANG_EQUAL : AUP_TOK_BANG);
 
-        case '-': if (match(L, '>'))    return makeToken(L, AUP_TOK_ARROW);
-             else if (match(L, '='))    return makeToken(L, AUP_TOK_MINUS_EQUAL);
-                                        return makeToken(L, AUP_TOK_MINUS);
-
-        case '=': if (match(L, '>'))    return makeToken(L, AUP_TOK_ARROW);
-             else if (match(L, '='))    return makeToken(L, AUP_TOK_EQUAL_EQUAL);
-                                        return makeToken(L, AUP_TOK_EQUAL);
-
-        case '<': if (match(L, '<'))    return makeToken(L, AUP_TOK_LESS_LESS);
-             else if (match(L, '='))    return makeToken(L, AUP_TOK_LESS_EQUAL);
-                                        return makeToken(L, AUP_TOK_LESS);
-
-        case '>': if (match(L, '>'))    return makeToken(L, AUP_TOK_GREATER_GREATER);
-             else if (match(L, '='))    return makeToken(L, AUP_TOK_GREATER_EQUAL);
-                                        return makeToken(L, AUP_TOK_GREATER);
+        case '-':
+            if      (match('>')) return makeToken(AUP_TOK_ARROW);
+            else if (match('=')) return makeToken(AUP_TOK_MINUS_EQUAL);
+                                 return makeToken(AUP_TOK_MINUS);
+        case '=':
+            if      (match('>')) return makeToken(AUP_TOK_ARROW);
+            else if (match('=')) return makeToken(AUP_TOK_EQUAL_EQUAL);
+                                 return makeToken(AUP_TOK_EQUAL);
+        case '*':
+            if      (match('*')) return makeToken(AUP_TOK_STAR_STAR);
+            else if (match('=')) return makeToken(AUP_TOK_STAR_EQUAL);
+                                 return makeToken(AUP_TOK_STAR);
+        case '<':
+            if      (match('<')) return makeToken(AUP_TOK_LESS_LESS);
+            else if (match('=')) return makeToken(AUP_TOK_LESS_EQUAL);
+                                 return makeToken(AUP_TOK_LESS);
+        case '>':
+            if      (match('>')) return makeToken(AUP_TOK_GREATER_GREATER);
+            else if (match('=')) return makeToken(AUP_TOK_GREATER_EQUAL);
+                                 return makeToken(AUP_TOK_GREATER);
 
         case '\'':
-        case '\"': return string(L, c);
+        case '\"': return string();
     }
 
-    return errorToken(L, "Unexpected character.");
+    return errorToken("Unexpected character.");
+}
+
+aupTok aup_peekToken(int n)
+{
+    if (n <= 0) n = 1;
+
+    struct Lexer backup = L;
+    aupTok token;
+    
+    for (int i = 0; i < n; i++)
+        token = aup_scanToken();
+
+    L = backup;
+    return token;
 }

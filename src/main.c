@@ -1,22 +1,21 @@
 #include <stdio.h>
-
 #include "vm.h"
 
 int main(int argc, char **argv)
 {
-    if (argc < 2) {
-        printf("Usage: aup [file]\n");
+    if (argc != 2) {
+        printf("usage: aup [file]\n");
         return 0;
     }
 
-    aupVM *vm = aup_create();
-    int ret = AUP_INIT_ERROR;
+    aupSrc *source = aup_newSource(argv[1]);
+    if (source != NULL) {
+        aupVM *vm = aup_createVM(NULL);
+        aup_interpret(vm, source);
 
-    if (vm != NULL) {
-        aup_loadMath(vm);
-        ret = aup_doFile(vm, argv[argc - 1]);
-        aup_close(vm);
+        aup_closeVM(vm);
+        aup_freeSource(source);
     }
 
-    return ret;
+    return 0;
 }

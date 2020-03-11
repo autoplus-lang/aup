@@ -2,26 +2,55 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <math.h>
 
-#include "vm.h"
+#include "util.h"
 #include "code.h"
-#include "object.h"
-#include "table.h"
-#include "gc.h"
+#include "vm.h"
+#include "value.h"
 
 static void resetStack(aupVM *vm)
 {
     vm->top = vm->stack;
     vm->frameCount = 0;
-    vm->openUpvalues = NULL;
+}
+
+aupVM *aup_createVM(aupVM *from)
+{
+    aupVM *vm = malloc(sizeof(aupVM));
+    memset(vm, '\0', sizeof(aupVM));
+
+    if (from != NULL) {
+        vm->gc = from->gc;
+        vm->next = from->next;
+        from->next = vm;
+    }
+    else {
+        vm->gc = malloc(sizeof(aupGC));
+        aup_initGC(vm->gc);
+        vm->next = vm;
+    }
+
+    resetStack(vm);
+    return vm;
+}
+
+void aup_closeVM(aupVM *vm)
+{
+    if (vm == NULL) return;
+
+    if (vm->next == vm) {
+        aup_freeGC(vm->gc);
+        free(vm->gc);
+    }
+
+    free(vm);
 }
 
 static void runtimeError(aupVM *vm, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "\nError: ");
     vfprintf(stderr, format, args);
     va_end(args);
     fputs("\n", stderr);
@@ -30,12 +59,10 @@ static void runtimeError(aupVM *vm, const char *format, ...)
         aupFrame *frame = &vm->frames[i];
         aupFun *function = frame->function;
         // -1 because the IP is sitting on the next instruction to be
-        // executed.                                                 
-        size_t instruction = frame->ip - function->chunk.code - 1;
-        const char *fname = frame->function->chunk.source->fname;
-        int line = frame->function->chunk.lines[instruction];
-        int column = frame->function->chunk.columns[instruction];
-        fprintf(stderr, "[%s:%d:%d] in ", fname, line, column);
+        // executed.
+        size_t offset = frame->ip - function->chunk.code - 1;
+        fprintf(stderr, "[%d:%d] in ",
+            function->chunk.lines[offset], function->chunk.columns[offset]);
         if (function->name == NULL) {
             fprintf(stderr, "script\n");
         }
@@ -44,126 +71,17 @@ static void runtimeError(aupVM *vm, const char *format, ...)
         }
     }
 
-    fflush(stderr);
     resetStack(vm);
 }
 
-static void printStack(aupVM *vm, int n)
-{
-    printf("\n== stack trace ==\n");
-
-    for (int i = 0; i < n; i++) {
-        aupVal val = vm->stack[i];
-
-        if (vm->stack - vm->top == i)
-            printf("[#] ");
-        else
-            printf("[%d] ", i);
-
-        printf("%-6s -> ", aup_typeofValue(val));
-        aup_printValue(val);
-        printf("\n");
-    }
-}
-
-aupVM *aup_create()
-{
-    aupVM *vm = malloc(sizeof(aupVM));
-    if (vm == NULL) return NULL;
-
-    memset(vm->stack, '\0', sizeof(vm->stack));
-    memset(vm->frames, '\0', sizeof(vm->frames));
-
-    vm->gc = malloc(sizeof(aupGC));
-    vm->globals = malloc(sizeof(aupTab));
-    vm->strings = malloc(sizeof(aupTab));
-
-    vm->numRoots = 0;
-    vm->compiler = NULL;
-    vm->next = NULL;
-
-    vm->errmsg = NULL;
-    vm->hadError = false;
-
-    aup_initGC(vm->gc);
-    aup_initTable(vm->globals);
-    aup_initTable(vm->strings);
-
-    resetStack(vm);
-    return vm;
-}
-
-void aup_close(aupVM *vm)
-{
-    if (vm == NULL) return;
-
-    if (vm->next == NULL) {
-        aup_freeTable(vm->globals);
-        aup_freeTable(vm->strings);
-        aup_freeGC(vm->gc);
-
-        free(vm->globals);
-        free(vm->strings);
-        free(vm->gc);
-    }
-
-    free(vm->errmsg);
-    free(vm);
-}
-
-aupVM *aup_cloneVM(aupVM *from)
-{
-    aupVM *vm = malloc(sizeof(aupVM));
-    if (vm == NULL) return NULL;
-
-    memset(vm->stack, '\0', sizeof(vm->stack));
-    memset(vm->frames, '\0', sizeof(vm->frames));
-
-    vm->numRoots = 0;
-    vm->compiler = NULL;
-    vm->errmsg = NULL;
-    vm->hadError = false;
-
-    vm->gc = from->gc;
-    vm->globals = from->globals;
-    vm->strings = from->strings;
-    vm->next = from;
-
-    resetStack(vm);
-    return vm;
-}
-
-#define PUSH(v)     *((vm)->top++) = (v)
-#define POP()       *(--(vm)->top)
-#define POPN(n)     *((vm)->top -= (n))
-#define PEEK(i)     ((vm)->top[-1 - (i)])
-
-static void concatenate(aupVM *vm)
-{
-    aupStr *b = AUP_AS_STR(PEEK(0));
-    aupStr *a = AUP_AS_STR(PEEK(1));
-
-    int length = a->length + b->length;
-    char *chars = malloc((length + 1) * sizeof(char));
-    memcpy(chars, a->chars, a->length);
-    memcpy(chars + a->length, b->chars, b->length);
-    chars[length] = '\0';
-
-    aupStr *result = aup_takeString(vm, chars, length);
-    POP();
-    POP();
-    PUSH(AUP_OBJ(result));
-}
-
-static bool prepareCall(aupVM *vm, aupFun *function, int argCount)
+static bool call(aupVM *vm, aupFun *function, int argCount)
 {
     if (argCount != function->arity) {
         runtimeError(vm, "Expected %d arguments but got %d.",
             function->arity, argCount);
         return false;
     }
-
-    if (vm->frameCount == AUP_MAX_FRAMES) {
+    else if (vm->frameCount == AUP_MAX_FRAMES) {
         runtimeError(vm, "Stack overflow.");
         return false;
     }
@@ -172,646 +90,481 @@ static bool prepareCall(aupVM *vm, aupFun *function, int argCount)
     frame->function = function;
     frame->ip = function->chunk.code;
 
-    frame->slots = vm->top - argCount - 1;
+    frame->stack = vm->top;
     return true;
 }
 
-bool aup_call(aupVM *vm, aupVal callee, int argCount)
+static bool callValue(aupVM *vm, aupVal callee, int argCount)
 {
-    if (AUP_IS_OBJ(callee)) {
-        switch (AUP_OBJTYPE(callee)) {
-            case AUP_TFUN:
-                return prepareCall(vm, AUP_AS_FUN(callee), argCount);
+    if (aup_isObj(callee)) {
+        switch (aup_objType(callee)) {
+            case AUP_OFUN:
+                return call(vm, aup_asFun(callee), argCount);
 
             default:
                 // Non-callable object type.                   
                 break;
         }
     }
-    else if (AUP_IS_CFN(callee)) {
-        aupCFn native = AUP_AS_CFN(callee);
-        aupVal result = native(vm, argCount, vm->top - argCount);
-        if (vm->hadError) {
-            runtimeError(vm, "%s", vm->errmsg);
-            return false;
-        }
-        vm->top -= argCount + 1;
-        PUSH(result);
-        return true;
-    }
 
     runtimeError(vm, "Can only call functions and classes.");
     return false;
 }
 
-static aupUpv *captureUpvalue(aupVM *vm, aupVal *local)
+static int exec(aupVM *vm)
 {
-    aupUpv *prevUpvalue = NULL;
-    aupUpv *upvalue = vm->openUpvalues;
-
-    while (upvalue != NULL && upvalue->location > local) {
-        prevUpvalue = upvalue;
-        upvalue = upvalue->next;
-    }
-
-    if (upvalue != NULL && upvalue->location == local) return upvalue;
-
-    aupUpv *createdUpvalue = aup_newUpvalue(vm, local);
-    createdUpvalue->next = upvalue;
-
-    if (prevUpvalue == NULL) {
-        vm->openUpvalues = createdUpvalue;
-    }
-    else {
-        prevUpvalue->next = createdUpvalue;
-    }
-
-    return createdUpvalue;
-}
-
-static void closeUpvalues(aupVM *vm, aupVal *last)
-{
-    while (vm->openUpvalues != NULL && vm->openUpvalues->location >= last) {
-        aupUpv *upvalue = vm->openUpvalues;
-        upvalue->closed = *upvalue->location;
-        upvalue->location = &upvalue->closed;
-        vm->openUpvalues = upvalue->next;
-    }
-}
-
-int aup_execute(register aupVM *vm)
-{
-    register uint8_t *ip;
-    register aupVal *stack;
-    register aupVal *consts;
+    register uint32_t *ip;
     register aupFrame *frame;
+    register aupTab   *globals;
+    register aupVal   left, right;
 
 #define STORE_FRAME() \
-    frame->ip = ip
+	frame->ip = ip
 
 #define LOAD_FRAME() \
-    frame = &vm->frames[vm->frameCount - 1]; \
-	ip = frame->ip; \
-    stack = frame->slots; \
-    consts = frame->function->chunk.constants.values
-
-#define STACK           (stack)
-#define CONSTS          (consts)
-
-#define PREV_BYTE()     (ip[-1])
-#define READ_BYTE()     *(ip++)
-#define READ_WORD()     (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
-
-#define READ_CONST()    CONSTS[READ_BYTE()]
-#define READ_STR()      AUP_AS_STR(READ_CONST())
+	frame = &vm->frames[vm->frameCount - 1]; \
+	ip = frame->ip
 
 #define ERROR(fmt, ...) \
-    do { \
-        STORE_FRAME(); \
-        runtimeError(vm, fmt, ##__VA_ARGS__); \
-        return AUP_RUNTIME_ERROR; \
-    } while (0)
+    STORE_FRAME(), \
+    runtimeError(vm, fmt, ##__VA_ARGS__)
 
-#if defined(_MSC_VER) && !defined(__clang__)
-// Never try the 'computed goto' below on MSVC x86!
-#if 0 //defined(_M_IX86) || (defined(_WIN32) && !defined(_WIN64))
+#define FETCH() aup_getOp(*ip++)
+#define READ()  (ip[-1])
+
+#define R(i)    (frame->stack[i])
+#define K(i)    (frame->function->chunk.constants.values[i])
+
+#define A       aup_getA(READ())
+#define B       aup_getB(READ())
+#define C       aup_getC(READ())
+
+#define Op      aup_getOp(READ())
+#define Axx     aup_getAxx(READ())
+#define Bxx     aup_getBxx(READ())
+
+#define RA      R(aup_getA(READ()))
+#define RB      R(aup_getB(READ()))
+#define RC      R(aup_getC(READ()))
+
+#define KA      K(aup_getA(READ()))
+#define KB      K(aup_getB(READ()))
+#define KC      K(aup_getC(READ()))
+
+#define sB      aup_getsB(READ())
+#define sC      aup_getsC(READ())
+
+#define RKB     (sB ? KB : RB)
+#define RKC     (sC ? KC : RC)
+
+#if defined(_MSC_VER)
+// Switched goto
+#define _CODE(x)        case AUP_OP_##x: goto _lbl_##x;
+#define INTERPRET       switch (FETCH()) { AUP_OPCODES() default: goto _lbl_err; }
+#define NEXT            INTERPRET
+#define CODE(x)         _lbl_##x:
+#define CODE_ERR()      _lbl_err:
+#elif defined(__GNUC__) || defined(__clang__)
+// Computed goto
+#define _CODE(x)        &&_lbl_##x,
+    static void *_lbls[AUP_OPCOUNT] = { AUP_OPCODES() };
 #define INTERPRET       NEXT;
-#define CODE(x)         _OP_##x:
-#define CODE_ERR()      
-#define NEXT            do { size_t i = READ_BYTE() * sizeof(size_t); __asm {mov ecx, [i]} __asm {jmp _jtab[ecx]} } while (0)
-    static size_t _jtab[OPCODE_COUNT];
-    if (_jtab[0] == 0) {
-#define _CODE(x) __asm { mov _jtab[TYPE _jtab * OP_##x], offset _OP_##x }
-        OPCODES();
-#undef _CODE
-    }
+#define NEXT            goto *_lbls[FETCH()]
+#define CODE(x)         _lbl_##x:
+#define CODE_ERR()      _err:
 #else
-#define INTERPRET       _loop: switch(READ_BYTE())
+// Giant switch
+#define INTERPRET       _loop: switch(FETCH())
+#define NEXT            goto _loop
 #define CODE(x)         case AUP_OP_##x:
 #define CODE_ERR()      default:
-#define NEXT            goto _loop
-#endif
-#else
-#define INTERPRET       NEXT;
-#define CODE(x)         _AUP_OP_##x:
-#define CODE_ERR()      _err:
-#define NEXT            goto *_jtab[READ_BYTE()]
-#define _CODE(x)        &&_AUP_OP_##x,
-    static void *_jtab[AUP_OPCOUNT] = { OPCODES() };
 #endif
 
     LOAD_FRAME();
+    globals = &vm->gc->globals;
 
     INTERPRET
     {
-        CODE(PRINT) {
-            int nvals = READ_BYTE();
-
-            for (int i = nvals - 1; i >= 0; i--) {
-                aup_printValue(PEEK(i));
-                if (i > 0) printf("\t");
+        CODE(PRI) // @ %R
+        {
+            int start = A, count = B;
+            for (int i = 0; i < count; i++) {
+                aup_printValue(R(start + i));
+                if (i < count - 1) printf("\t");
             }
             printf("\n");
-
-            POPN(nvals);
+            fflush(stdout);
             NEXT;
         }
 
-        CODE(POP) {
-            POP();
+        CODE(PSH) // %R
+        {
+            NEXT;
+        }
+        CODE(POP) // %R
+        {
             NEXT;
         }
 
-        CODE(NIL) {
-            PUSH(AUP_NIL);
+        CODE(NIL) // %R = nil
+        {
+            RA = aup_vNil;
+            NEXT;
+        }
+        CODE(BOOL) // %R = %bool
+        {
+            RA = aup_vBool(sB);
             NEXT;
         }
 
-        CODE(TRUE) {
-            PUSH(AUP_TRUE);
-            NEXT;
-        }
-
-        CODE(FALSE) {
-            PUSH(AUP_FALSE);
-            NEXT;
-        }
-
-        CODE(INT) {
-            PUSH(AUP_NUM(READ_BYTE()));
-            NEXT;
-        }
-
-        CODE(INTL) {
-            PUSH(AUP_NUM(READ_WORD()));
-            NEXT;
-        }
-
-        CODE(CONST) {
-            PUSH(READ_CONST());
-            NEXT;
-        }
-
-        CODE(CALL) {
-            int argCount = READ_BYTE();
+        CODE(CALL) // %R %argc
+        {
+            int argc = B;
 
             STORE_FRAME();
-            if (!aup_call(vm, PEEK(argCount), argCount)) {
+            //vm->top = &R_A();
+
+            if (!callValue(vm, *(vm->top = &RA), argc)) {
                 return AUP_RUNTIME_ERROR;
             }
 
             LOAD_FRAME();
             NEXT;
         }
-
-        CODE(RET) {
-            aupVal result = POP();
-            closeUpvalues(vm, frame->slots);
-
+        CODE(RET) // ?isNil %RK
+        {
+            //closeUpvalues(vm, frame->stack);
             if (--vm->frameCount == 0) {
-                POP();
-#ifdef AUP_DEBUG
-                printStack(vm, 10);
-#endif
+                //pop();
                 return AUP_OK;
             }
-
-            vm->top = frame->slots;
-            PUSH(result);
-
+            //vm->top = frame->stack;
+            R(0) = A ? RKB : aup_vNil;
             LOAD_FRAME();
             NEXT;
         }
 
-        CODE(NOT) {
-            aupVal value = POP();
-            PUSH(AUP_BOOL(AUP_IS_FALSEY(value)));
+        CODE(JMP) // %offset
+        {
+            ip += Axx;
+            NEXT;
+        }
+        CODE(JMPF) // %offset %RK
+        {
+            if (aup_isFalsey(RKC)) ip += Axx;
+            NEXT;
+        }
+        CODE(JNE) // %offset %RK
+        {
+            int c = C;
+            //if (!aup_isEqual(R(c - 1), R(c))) ip += Axx;
+            if (memcmp(&R(c-1), &R(c), sizeof(aupVal)) != 0) ip += Axx;
             NEXT;
         }
 
-        CODE(NEG) {
-            switch (PEEK(0).type) {
-                case AUP_TBOOL:
-                    PUSH(AUP_NUM(-(char)AUP_AS_BOOL(POP())));
-                    NEXT;
-                case AUP_TNUM:
-                    PUSH(AUP_NUM(-AUP_AS_NUM(POP())));
+        CODE(NOT) // %R %RK
+        {
+            RA = aup_vBool(aup_isFalsey(RKB));
+            NEXT;
+        } 
+        CODE(LT) // %R = %RK < %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vBool(aup_asNum(left) < aup_asNum(right));
                     NEXT;
                 default:
-                    ERROR("Operands must be a number/boolean.");
-            }          
-        }
-
-        CODE(BNOT) {
-            if (AUP_IS_NUM(PEEK(0))) {
-                PUSH(AUP_NUM((double)~AUP_AS_INT64(POP())));
-                NEXT;
+                    ERROR("Cannot perform < operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
             }
-            ERROR("Operands must be a number.");
         }
-
-        CODE(EQ) {
-            aupVal b = POP();
-            aupVal a = POP();
-            PUSH(AUP_BOOL(aup_valuesEqual(a, b)));
+        CODE(LE) // %R = %RK <= %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vBool(aup_asNum(left) <= aup_asNum(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform <= operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(GT) // %R = %RK > %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vBool(aup_asNum(left) > aup_asNum(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform > operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(GE) // %R = %RK >= %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vBool(aup_asNum(left) >= aup_asNum(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform >= operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(EQ) // %R = %RK == %RK
+        {
+            RA = aup_vBool(aup_isEqual(RKB, RKC));
             NEXT;
         }
 
-        CODE(LT) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                double b = AUP_AS_NUM(POP());
-                double a = AUP_AS_NUM(POP());
-                PUSH(AUP_BOOL(a < b));
-                NEXT;
+        CODE(NEG) // %R = -%RK
+        {
+            right = RKB;
+            switch (aup_typeof(right)) {
+                case AUP_TNUM:
+                    RA = aup_vNum(-aup_asNum(right));
+                    NEXT;
+                case AUP_TBOOL:
+                    RA = aup_vNum(-(char)aup_asBool(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform - operator, got <%s>.",
+                        aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
             }
-            ERROR("Operands must be two numbers.");
+        }
+        CODE(ADD) // %R = %RK + %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asNum(left) + aup_asNum(right));
+                    NEXT;
+                case AUP_TNUM_BOOL:
+                    RA = aup_vNum(aup_asNum(left) + (char)aup_asBool(right));
+                    NEXT;
+                case AUP_TBOOL_NUM:               
+                    RA = aup_vNum((char)aup_asBool(left) + aup_asNum(right));
+                    NEXT;
+                case AUP_TOBJ_NIL:
+                case AUP_TOBJ_BOOL:
+                case AUP_TOBJ_NUM:
+                    // TODO
+                case AUP_TNIL_OBJ:
+                case AUP_TBOOL_OBJ:
+                case AUP_TNUM_OBJ:
+                    // TODO
+                case AUP_TOBJ_OBJ:
+                    // TODO
+                default:
+                    ERROR("Cannot perform + operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(SUB) // %R = %RK - %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asNum(left) - aup_asNum(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform - operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(MUL) // %R = %RK * %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asNum(left) * aup_asNum(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform * operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(DIV) // %R = %RK / %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asNum(left) / aup_asNum(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform / operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(MOD) // %R = %RK % %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(fmod(aup_asNum(left), aup_asNum(right)));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform % operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(POW) // %R = %RK ** %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(pow(aup_asNum(left), aup_asNum(right)));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform ** operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
         }
 
-        CODE(LE) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                double b = AUP_AS_NUM(POP());
-                double a = AUP_AS_NUM(POP());
-                PUSH(AUP_BOOL(a <= b));
-                NEXT;
+        CODE(BNOT) // %R = ~%RK
+        {
+            right = RKB;
+            switch (aup_typeof(right)) {
+                case AUP_TNUM:
+                    RA = aup_vNum(~aup_asI64(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform ~ operator, got <%s>.",
+                        aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
             }
-            ERROR("Operands must be two numbers.");
+        }
+        CODE(BAND) // %R = %RK & %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asI64(left) & aup_asI64(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform & operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(BOR) // %R = %RK | %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asI64(left) | aup_asI64(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform | operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(BXOR) // %R = %RK ^ %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asI64(left) ^ aup_asI64(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform ^ operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(SHL) // %R = %RK << %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asI64(left) << aup_asI64(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform << operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
+        }
+        CODE(SHR) // %R = %RK >> %RK
+        {
+            left = RKB, right = RKC;
+            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+                case AUP_TNUM_NUM:
+                    RA = aup_vNum(aup_asI64(left) >> aup_asI64(right));
+                    NEXT;
+                default:
+                    ERROR("Cannot perform >> operator, got <%s> and <%s>.",
+                        aup_typeName(left), aup_typeName(right));
+                    return AUP_RUNTIME_ERROR;
+            }
         }
 
-        CODE(ADD) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                double b = AUP_AS_NUM(POP());
-                double a = AUP_AS_NUM(POP());
-                PUSH(AUP_NUM(a + b));
-                NEXT;
-            }
-            else if (AUP_IS_STR(PEEK(1)) && AUP_IS_STR(PEEK(0))) {
-                concatenate(vm);
-                NEXT;
-            }
-            ERROR("Operands must be two numbers or strings.");
+        CODE(MOV) // %R = %R
+        {
+            RA = RB;
+            NEXT;
         }
-
-        CODE(SUB) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                double b = AUP_AS_NUM(POP());
-                double a = AUP_AS_NUM(POP());
-                PUSH(AUP_NUM(a - b));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(MUL) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                double b = AUP_AS_NUM(POP());
-                double a = AUP_AS_NUM(POP());
-                PUSH(AUP_NUM(a * b));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(DIV) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                double b = AUP_AS_NUM(POP());
-                double a = AUP_AS_NUM(POP());
-                PUSH(AUP_NUM(a / b));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(MOD) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                int64_t b = AUP_AS_INT64(POP());
-                int64_t a = AUP_AS_INT64(POP());
-                PUSH(AUP_NUM((double)(a % b)));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(BAND) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                int64_t b = AUP_AS_INT64(POP());
-                int64_t a = AUP_AS_INT64(POP());
-                PUSH(AUP_NUM((double)(a & b)));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(BOR) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                int64_t b = AUP_AS_INT64(POP());
-                int64_t a = AUP_AS_INT64(POP());
-                PUSH(AUP_NUM((double)(a | b)));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(BXOR) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                int64_t b = AUP_AS_INT64(POP());
-                int64_t a = AUP_AS_INT64(POP());
-                PUSH(AUP_NUM((double)(a ^ b)));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(SHL) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                int64_t b = AUP_AS_INT64(POP());
-                int64_t a = AUP_AS_INT64(POP());
-                PUSH(AUP_NUM((double)(a << b)));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(SHR) {
-            if (AUP_IS_NUM(PEEK(1)) && AUP_IS_NUM(PEEK(0))) {
-                int64_t b = AUP_AS_INT64(POP());
-                int64_t a = AUP_AS_INT64(POP());
-                PUSH(AUP_NUM((double)(a >> b)));
-                NEXT;
-            }
-            ERROR("Operands must be two numbers.");
-        }
-
-        CODE(DEF) {
-            aupStr *name = READ_STR();
-            aup_setTable(vm->globals, name, PEEK(0));
-            POP();
+        CODE(LD) // %R = %RK
+        {
+            RA = RKB;
             NEXT;
         }
 
-        CODE(GLD) {
-            aupStr *name = READ_STR();
-            aupVal value = AUP_NIL;      
-            aup_getTable(vm->globals, name, &value);
-            PUSH(value);
+        CODE(GLD) // %R = G.%K
+        {
+            aupStr *name = aup_asStr(KB);
+            aup_getKey(globals, name, &RA);
+            NEXT;
+        }
+        CODE(GST) // G.%K = %RK (?nil)
+        {
+            aupStr *name = aup_asStr(KA);
+            aup_setKey(globals, name, sC ? aup_vNil : RKB);
             NEXT;
         }
 
-        CODE(GST) {
-            aupStr *name = READ_STR();
-            aup_setTable(vm->globals, name, PEEK(0));
-            NEXT;
+        CODE(GET)
+        {
+        }
+        CODE(SET)
+        {
         }
 
-        CODE(LD) {
-            PUSH(STACK[READ_BYTE()]);
-            NEXT;
-        }
-
-        CODE(ST) {
-            STACK[READ_BYTE()] = PEEK(0);
-            NEXT;
-        }
-
-        CODE(JMP) {
-            uint16_t offset = READ_WORD();
-            ip += offset;
-            NEXT;
-        }
-
-        CODE(JMPF) {
-            uint16_t offset = READ_WORD();
-            if (AUP_IS_FALSEY(PEEK(0))) ip += offset;
-            NEXT;
-        }
-
-        CODE(JNE) {
-            uint16_t offset = READ_WORD();
-            aupVal cond = POP();
-            //if (!aup_valuesEqual(PEEK(0), cond)) ip += offset;
-            if (memcmp(&PEEK(0), &cond, sizeof(aupVal)) != 0) ip += offset;
-            else POP();
-            NEXT;
-        }
-
-        CODE(LOOP) {
-            uint16_t offset = READ_WORD();
-            ip -= offset;
-            NEXT;
-        }
-
-        CODE(MAP) {
-            uint8_t count = READ_BYTE();
-            aupMap *map = aup_newMap(vm);
-
-            for (aupVal i = AUP_NUM(count - 1); AUP_AS_NUM(i) >= 0; AUP_AS_NUM(i)--) {
-                aup_setHash(&map->hash, AUP_AS_RAW(i), PEEK((int)AUP_AS_NUM(i)));
-            }
-
-            POPN(count);
-            PUSH(AUP_OBJ(map));
-            NEXT;
-        }
-
-        CODE(GET) {
-            if (AUP_IS_MAP(PEEK(0))) {
-                aupMap *map = AUP_AS_MAP(PEEK(0));
-                aupStr *name = READ_STR();
-                aupVal value = AUP_NIL;
-                aup_getTable(&map->table, name, &value);
-                POP();
-                PUSH(value);
-            }
-            else {
-                ERROR("Operands must be a map.");
-            }
-            NEXT;
-        }
-
-        CODE(SET) {
-            if (AUP_IS_MAP(PEEK(1))) {
-                aupMap *map = AUP_AS_MAP(PEEK(1));
-                aupStr *name = READ_STR();
-                aupVal value = PEEK(0);
-                aup_setTable(&map->table, name, value);
-                POP();
-                POP();
-                PUSH(value);
-            }
-            else {
-                ERROR("Operands must be a map.");
-            }
-            NEXT;
-        }
-
-        CODE(GETI) {
-            if (AUP_IS_MAP(PEEK(1))) {
-                if (AUP_IS_NUM(PEEK(0))) {
-                    aupMap *map = AUP_AS_MAP(PEEK(1));
-                    uint64_t key = AUP_AS_RAW(PEEK(0));
-                    aupVal value = AUP_NIL;
-                    aup_getHash(&map->hash, key, &value);
-
-                    POP();
-                    POP();
-                    PUSH(value);
-                }
-                else if (AUP_IS_STR(PEEK(0))) {
-                    aupMap *map = AUP_AS_MAP(PEEK(1));
-                    aupStr *key = AUP_AS_STR(PEEK(0));
-                    aupVal value = AUP_NIL;
-                    aup_getTable(&map->table, key, &value);
-
-                    POP();
-                    POP();
-                    PUSH(value);
-                }
-                else {
-                    ERROR("Operands must be a number or string.");
-                }
-            }
-            else {
-                ERROR("Operands must be a map.");
-            }
-            NEXT;
-        }
-
-        CODE(SETI) {
-            if (AUP_IS_MAP(PEEK(2))) {
-                if (AUP_IS_NUM(PEEK(1))) {
-                    aupMap *map = AUP_AS_MAP(PEEK(2));
-                    uint64_t key = AUP_AS_RAW(PEEK(1));
-                    aupVal value = POP();
-                    aup_setHash(&map->hash, key, value);
-
-                    POP();
-                    POP();
-                    PUSH(value);
-                }
-                else if (AUP_IS_STR(PEEK(1)))
-                {
-                    aupMap *map = AUP_AS_MAP(PEEK(2));
-                    aupStr *key = AUP_AS_STR(PEEK(1));
-                    aupVal value = POP();
-                    aup_setTable(&map->table, key, value);
-
-                    POP();
-                    POP();
-                    PUSH(value);
-                }
-                else {
-                    ERROR("Operands must be a number or string.");
-                }
-            }
-            else {
-                ERROR("Operands must be a map.");
-            }
-            NEXT;
-        }
-
-        CODE(CLOSURE) {
-            aupFun *function = AUP_AS_FUN(READ_CONST());
-            aup_makeClosure(function);
-
-            for (int i = 0; i < function->upvalueCount; i++) {
-                uint8_t isLocal = READ_BYTE();
-                uint8_t index = READ_BYTE();
-                if (isLocal) {
-                    function->upvalues[i] = captureUpvalue(vm, frame->slots + index);
-                }
-                else {
-                    function->upvalues[i] = frame->function->upvalues[index];
-                }
-            }
-
-            NEXT;
-        }
-
-        CODE(CLOSE) {
-            closeUpvalues(vm, vm->top - 1);
-            POP();
-            NEXT;
-        }
-
-        CODE(ULD) {
-            uint8_t slot = READ_BYTE();
-            PUSH(*frame->function->upvalues[slot]->location);
-            NEXT;
-        }
-
-        CODE(UST) {
-            uint8_t slot = READ_BYTE();
-            *frame->function->upvalues[slot]->location = PEEK(0);
-            NEXT;
-        }
-
-        CODE_ERR() {
-            ERROR("Bad opcode, got %d!", PREV_BYTE());
+        CODE_ERR()
+        {
+            ERROR("Bad opcode, got %3d.", Op);
+            return AUP_RUNTIME_ERROR;
         }
     }
 
     return AUP_OK;
 }
 
-int aup_doFile(aupVM *vm, const char *fname)
+int aup_interpret(aupVM *vm, aupSrc *source)
 {
-    int result = AUP_COMPILE_ERROR;
-    aupSrc *source = aup_newSource(fname);
+    aupFun *function = aup_compile(vm, source);
+    if (function == NULL)
+        return AUP_COMPILE_ERROR;
 
-    if (source != NULL) {
-        aupFun *function = aup_compile(vm, source);
-        if (function == NULL) return AUP_COMPILE_ERROR;
+    //push(OBJ_VAL(function));
+    *vm->top = aup_vObj(function);
+    callValue(vm, aup_vObj(function), 0);
 
-        aupVal script = AUP_OBJ(function);
-
-        PUSH(script);
-        aup_call(vm, script, 0);
-
-        result = aup_execute(vm);  
-    }
-
-    aup_freeSource(source);
-    return result;
-}
-
-aupVal aup_error(aupVM *vm, const char *msg, ...)
-{
-    va_list ap;
-
-    va_start(ap, msg);
-    int len = vsnprintf(NULL, 0, msg, ap);
-    va_end(ap);
-
-    char *buf = malloc((len + 1) * sizeof(char));
-
-    va_start(ap, msg);
-    vsnprintf(buf, len + 1, msg, ap);
-    va_end(ap);
-
-    buf[len] = '\0';
-    vm->hadError = true;
-    vm->errmsg = buf;
-
-    return AUP_NIL;
-}
-
-void aup_push(aupVM *vm, aupVal value)
-{
-    if (vm->hadError) return;
-    PUSH(value);
-}
-
-void aup_pop(aupVM *vm)
-{
-    if (vm->hadError) return;
-    POP();
-}
-
-void aup_pushRoot(aupVM *vm, aupObj *object)
-{
-    vm->tempRoots[vm->numRoots++] = object;
-}
-
-void aup_popRoot(aupVM *vm)
-{
-    vm->numRoots--;
+    return exec(vm);
 }

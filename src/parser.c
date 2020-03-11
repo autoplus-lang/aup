@@ -5,18 +5,19 @@
 
 #include "code.h"
 #include "object.h"
-#include "vm.h"
-#include "gc.h"
 
-#define MAX_ARGS    64
-#define MAX_CASES   UINT8_COUNT
+#define MAX_ARGS    32
+#define MAX_LOCALS  244
+#define MAX_CASES   128
 
-typedef struct _aupCompiler Compiler;
+#define REG     int
 
-typedef struct {
-    aupVM *vm;
-    aupLexer *lexer;
-    aupSrc *source;
+typedef struct _Compiler Compiler;
+
+struct Parser
+{
+    aupVM    *vm;
+    aupSrc   *source;
     Compiler *compiler;
 
     aupTok current;
@@ -26,83 +27,91 @@ typedef struct {
 
     bool hadCall;
     bool hadAssign;
-    int subExprs;
-} Parser;
+    int  subExprs;
+};
+
+static THREAD_LOCAL struct Parser P;
 
 typedef enum {
     PREC_NONE,
-    PREC_ASSIGNMENT,  // =
+    PREC_ASSIGNMENT,  // = += -= *= /= %= |= &= ^=
     PREC_TERNARY,     // ?:
-    PREC_OR,          // or       
-    PREC_AND,         // and
-    PREC_BOR,		  // |
-    PREC_BXOR,		  // ^
+    PREC_OR,          // or ||
+    PREC_AND,         // and &&
+    PREC_BOR,         // |
+    PREC_BXOR,        // ^
     PREC_BAND,		  // &
-    PREC_EQUALITY,    // == !=
+    PREC_EQUALITY,    // == !=    
     PREC_COMPARISON,  // < > <= >=
     PREC_SHIFT,       // << >>
     PREC_TERM,        // + -      
-    PREC_FACTOR,      // * /      
-    PREC_UNARY,       // ! - ~
-    PREC_CALL,        // . ()
+    PREC_FACTOR,      // * / %
+    PREC_EXPONENT,    // **
+    PREC_UNARY,       // ! - not
+    PREC_CALL,        // . () ?.
     PREC_PRIMARY
 } Precedence;
 
-typedef void (* ParseFn)(Parser *P, bool canAssign);
+typedef REG (* PrefixFn)(REG dest, bool canAssign);
+typedef REG (* InfixFn)(REG dest, REG left, bool canAssign);
+#define PARSE_PREFIX(n)  REG n(REG dest, bool canAssign)
+#define PARSE_INFIX(n)   REG n(REG dest, REG left, bool canAssign)
 
 typedef struct {
-    ParseFn prefix;
-    ParseFn infix;
+    PrefixFn prefix;
+    InfixFn infix;
     Precedence precedence;
 } ParseRule;
 
 typedef struct {
     aupTok name;
     int depth;
-    bool isCaptured;
 } Local;
-
-typedef struct {
-    uint8_t index;
-    bool isLocal;
-} Upvalue;
 
 typedef enum {
     TYPE_FUNCTION,
     TYPE_SCRIPT
-} FunType;
+} TFunc;
 
-typedef struct {
-    int start;
-    int scope;
-    int breakCount;
-    int breaks[UINT8_COUNT];
-} Loop;
-
-struct _aupCompiler {
+struct _Compiler {
     Compiler *enclosing;
     aupFun *function;
-    FunType type;
+    TFunc type;
+
     Local locals[UINT8_COUNT];
     int localCount;
-    Upvalue upvalues[UINT8_COUNT];
     int scopeDepth;
-    Loop *currentLoop;
-    int loopDepth;
-    bool ifNeedEnd;
+
+    REG regCount;
 };
 
-static aupChunk *currentChunk(Parser *P)
+#define VM          P.vm
+#define COMPILER    P.compiler
+#define PREVIOUS    P.previous
+#define CURRENT     P.current
+#define CHUNK       getChunk()
+
+#define REG_COUNT   COMPILER->regCount
+#define PUSH()      (REG_COUNT++)
+#define POP()       (--REG_COUNT)
+#define POP_N(n)    (REG_COUNT -= (n))
+#define PEEK(i)     (REG_COUNT - 1 - (i))
+
+#define IS_K(r)     ((r) > UINT8_MAX)
+#define IS_NEWLINE() \
+    (CURRENT.line > PREVIOUS.line)
+
+static aupChunk *getChunk()
 {
-    return &P->compiler->function->chunk;
+    return &P.compiler->function->chunk;
 }
 
-static void errorAt(Parser *P, aupTok *token, const char *fmt, ...)
+static void errorAt(aupTok *token, const char *fmt, ...)
 {
-    if (P->panicMode) return;
-    P->panicMode = true;
+    if (P.panicMode) return;
+    P.panicMode = true;
 
-    fprintf(stderr, "[%s:%d:%d] Error", P->source->fname, token->line, token->column);
+    fprintf(stderr, "[%d:%d] Error", token->line, token->column);
 
     if (token->type == AUP_TOK_EOF) {
         fprintf(stderr, " at end");
@@ -114,220 +123,200 @@ static void errorAt(Parser *P, aupTok *token, const char *fmt, ...)
         fprintf(stderr, " at '%.*s'", token->length, token->start);
     }
 
-    va_list argp;
-    va_start(argp, fmt);
+    va_list ap;
+    va_start(ap, fmt);
     fprintf(stderr, ": ");
-    vfprintf(stderr, fmt, argp);
+    vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-    va_end(argp);
+    va_end(ap);
 
-    int padding = snprintf(NULL, 0, "%3d", token->line);
-    fprintf(stderr, " %*s |\n", padding, "");
-    fprintf(stderr, " %*d | %.*s\n", padding, token->line, token->lineLength, token->lineStart);
-    fprintf(stderr, " %*s |%*s", padding, "", token->column, "");
-    for (int i = 0; i < token->length; i++) fputc('^', stderr);
-    fprintf(stderr, "\n");
-
-    fflush(stderr);
-    P->hadError = true; 
+    P.hadError = true;
 }
 
-#define error(P, fmt, ...)          errorAt(P, &(P)->previous, fmt, ##__VA_ARGS__)
-#define errorAtCurrent(P, fmt, ...) errorAt(P, &(P)->current, fmt, ##__VA_ARGS__)
-#define consume(P, toktype, fmt, ...) \
+#define error(fmt, ...) \
+    errorAt(&PREVIOUS, fmt, ##__VA_ARGS__)
+
+#define errorAtCurrent(fmt, ...) \
+    errorAt(&P.current, fmt, ##__VA_ARGS__)
+
+#define consume(ttok, fmt, ...) \
     do { \
-		if ((P)->current.type == (toktype)) { \
-			advance(P); \
+		if (P.current.type == (ttok)) { \
+			advance(); \
 			break; \
 		} \
-		errorAtCurrent(P, fmt, ##__VA_ARGS__); \
+		errorAtCurrent(fmt, ##__VA_ARGS__); \
 	} while (0)
 
-static void advance(Parser *P)
+static bool preparse(aupTok token)
 {
-    P->previous = P->current;
+    // TODO
+    return false;
+}
+
+static void advance()
+{
+    PREVIOUS = CURRENT;
 
     for (;;) {
-        P->current = aup_scanToken(P->lexer);
-        if (P->current.type != AUP_TOK_ERROR) break;
+        aupTok token = aup_scanToken();
 
-        errorAtCurrent(P, P->current.start);
+        if (token.type == AUP_TOK_ERROR) {
+            CURRENT = token;
+            errorAtCurrent(CURRENT.start);
+        }
+        else {
+            CURRENT = preparse(token) ?
+                aup_scanToken() : token;
+            break;
+        }
     }
 }
 
-static bool check(Parser *P, aupTokType type)
+static bool check(aupTTok type)
 {
-    return P->current.type == type;
+    return P.current.type == type;
 }
 
-static bool checkPrev(Parser *P, aupTokType type)
+static bool match(aupTTok type)
 {
-    return P->previous.type == type;
-}
-
-static bool match(Parser *P, aupTokType type)
-{
-    if (!check(P, type)) return false;
-    advance(P);
+    if (!check(type)) return false;
+    advance();
     return true;
 }
 
-static void emitByte(Parser *P, uint8_t byte)
+static void emit(uint32_t instruction)
 {
-    aup_emitChunk(currentChunk(P), byte,
-        P->previous.line, P->previous.column);
+    aup_emitChunk(getChunk(),
+        instruction, PREVIOUS.line, PREVIOUS.column);
 }
 
-static void emitBytes(Parser *P, uint8_t byte1, uint8_t byte2)
+static int emitJump(aupOp jmpOp, REG src)
 {
-    emitByte(P, byte1);
-    emitByte(P, byte2);
+    if (jmpOp == AUP_OP_JMP)
+        emit(aup_OpAxx(jmpOp, 0));
+    else
+        emit(aup_OpAxxCx(jmpOp, 0, src));
+    
+    return getChunk()->count - 1;
 }
 
-static void emitWord(Parser *P, uint16_t word)
+static void patchJump(int offset)
 {
-    emitBytes(P, (word >> 8) & 0xFF, word & 0xFF);
+    // -1, backtrack after [ip++].
+    aupChunk *chunk = getChunk();
+    int jump = chunk->count - offset - 1;
+
+    if (jump > INT16_MAX) {
+        error("Too much code to jump over.");
+    }
+
+    uint32_t i = chunk->code[offset];
+    uint8_t op = aup_getOp(i);
+    REG RK = aup_getCx(i);
+
+    // Patch the hole.
+    i = aup_OpAxxCx(op, jump, RK);
+    chunk->code[offset] = i;
 }
 
-static int emitJump(Parser *P, uint8_t instruction)
+static void emitReturn(REG src)
 {
-    emitByte(P, instruction);
-    emitBytes(P, 0, 0);
-    return currentChunk(P)->count - 2;
-}
+    aupChunk *chunk = getChunk();
 
-static void emitLoop(Parser *P, int loopStart)
-{
-    emitByte(P, AUP_OP_LOOP);
-
-    int offset = currentChunk(P)->count - loopStart + 2;
-    if (offset > UINT16_MAX) error(P, "Loop body too large.");
-
-    emitByte(P, (offset >> 8) & 0xff);
-    emitByte(P, offset & 0xff);
-}
-
-static void emitReturn(Parser *P)
-{
-    int count = currentChunk(P)->count;
-    if (count == 0
-        || currentChunk(P)->code[count - 1] != AUP_OP_RET
-        || check(P, AUP_TOK_EOF)) {
-        emitByte(P, AUP_OP_NIL);
-        emitByte(P, AUP_OP_RET);
+    if (chunk->count == 0 || aup_getOp(chunk->code[chunk->count - 1]) != AUP_OP_RET) {
+        if (src == -1) {
+            emit(aup_OpA(AUP_OP_RET, false));
+        }
+        else {
+            emit(aup_OpABx(AUP_OP_RET, true, src));
+        }
     }
 }
 
-static uint8_t makeConstant(Parser *P, aupVal value)
+static uint8_t makeConstant(aupVal value)
 {
-    bool isObject = AUP_IS_OBJ(value);
-    if (isObject) aup_pushRoot(P->vm, AUP_AS_OBJ(value));
-    int constant = aup_pushArray(&currentChunk(P)->constants, value, false);
-    if (isObject) aup_popRoot(P->vm);
-
+    int constant = aup_addConstant(getChunk(), value);
     if (constant > UINT8_MAX) {
-        error(P, "Too many constants in one chunk.");
+        error("Too many constants in one chunk.");
         return 0;
     }
 
     return (uint8_t)constant;
 }
 
-static void emitConstant(Parser *P, aupVal value)
+static REG emitConstant(aupVal value)
 {
-    uint8_t constant = makeConstant(P, value);
-    emitBytes(P, AUP_OP_CONST, constant);
+    return makeConstant(value) + UINT8_COUNT;
 }
 
-static void patchJump(Parser *P, int offset)
+static void initCompiler(Compiler *compiler, TFunc type)
 {
-    // -2 to adjust for the bytecode for the jump offset itself.
-    int jump = currentChunk(P)->count - offset - 2;
-
-    if (jump > UINT16_MAX) {
-        error(P, "Too much code to jump over.");
-    }
-
-    currentChunk(P)->code[offset] = (jump >> 8) & 0xff;
-    currentChunk(P)->code[offset + 1] = jump & 0xff;
-}
-
-static void initCompiler(Parser *P, Compiler *compiler, FunType type)
-{
-    compiler->enclosing = P->compiler;
+    compiler->enclosing = COMPILER;
     compiler->function = NULL;
     compiler->type = type;
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
-    compiler->loopDepth = 0;
-    compiler->currentLoop = NULL;
-    compiler->function = aup_newFunction(P->vm, P->source);
+    compiler->function = aup_newFunction(VM, P.source);
+
+    COMPILER = compiler;
+    REG_COUNT = 0;
 
     if (type != TYPE_SCRIPT) {
-        compiler->function->name = aup_copyString(P->vm, P->previous.start,
-            P->previous.length);
+        COMPILER->function->name = aup_copyString(VM, PREVIOUS.start,
+            PREVIOUS.length);
     }
 
-    Local *local = &compiler->locals[compiler->localCount++];
+    Local *local = &COMPILER->locals[COMPILER->localCount++];
     local->depth = 0;
-    local->isCaptured = false;
     local->name.start = "";
     local->name.length = 0;
-
-    P->compiler = compiler;
+    PUSH();
 }
 
-static aupFun *endCompiler(Parser *P)
+static aupFun *endCompiler()
 {
-    emitReturn(P);
-    aupFun *function = P->compiler->function;
+    emitReturn(-1);
+    aupFun *function = COMPILER->function;
 
-#ifdef AUP_DEBUG
-    if (!P->hadError) {
-        aup_dasmChunk(currentChunk(P), function->name == NULL ? "<script>"
-            : function->name->chars);
+    if (!P.hadError) {
+        aup_dasmChunk(CHUNK,
+            function->name != NULL ? function->name->chars : "<script>");
     }
-#endif
 
-    P->compiler = P->compiler->enclosing;
+    COMPILER = COMPILER->enclosing;
     return function;
 }
 
-static void beginScope(Parser *P)
+static void beginScope()
 {
-    Compiler *current = P->compiler;
-    current->scopeDepth++;
+    COMPILER->scopeDepth++;
 }
 
-static void endScope(Parser *P)
+static void endScope()
 {
-    Compiler *current = P->compiler;
-    Loop *loop = current->currentLoop;
-    current->scopeDepth--;
+    COMPILER->scopeDepth--;
 
-    while (current->localCount > 0 &&
-        current->locals[current->localCount - 1].depth >
-        current->scopeDepth) {
-        if (current->locals[current->localCount - 1].isCaptured) {
-            emitByte(P, AUP_OP_CLOSE);
-        }
-        else {
-            emitByte(P, AUP_OP_POP);
-        }
-        current->localCount--;
+    while (COMPILER->localCount > 0 &&
+        COMPILER->locals[COMPILER->localCount - 1].depth > COMPILER->scopeDepth) {
+        //emitByte(OP_POP);
+        COMPILER->localCount--;
     }
 }
 
-static void expression(Parser *P);
-static void stmt(Parser *P);
-static void decl(Parser *P);
-static ParseRule *getRule(aupTokType type);
-static void parsePrecedence(Parser *P, Precedence precedence);
+static void stmt();
+static void decl();
+static REG  expr(REG dest);
+static REG  exprEx(REG dest);
+static REG  exprPrec(REG dest, Precedence prec);
+static REG  parsePrec(REG dest, Precedence prec);
+static ParseRule *getRule(aupTTok type);
 
-static uint8_t identifierConstant(Parser *P, aupTok *name)
+static uint8_t identifierConstant(aupTok *name)
 {
-    aupStr *id = aup_copyString(P->vm, name->start, name->length);
-    return makeConstant(P, AUP_OBJ(id));
+    aupStr *identifier = aup_copyString(VM,
+        name->start, name->length);
+    return makeConstant(aup_vObj(identifier));
 }
 
 static bool identifiersEqual(aupTok *a, aupTok *b)
@@ -336,13 +325,13 @@ static bool identifiersEqual(aupTok *a, aupTok *b)
     return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static int resolveLocal(Parser *P, Compiler *compiler, aupTok *name)
+static int resolveLocal(Compiler *compiler, aupTok *name)
 {
     for (int i = compiler->localCount - 1; i >= 0; i--) {
         Local *local = &compiler->locals[i];
         if (identifiersEqual(name, &local->name)) {
             if (local->depth == -1) {
-                error(P, "Cannot read local variable in its own initializer.");
+                error("Cannot read local variable in its own initializer.");
             }
             return i;
         }
@@ -351,1022 +340,739 @@ static int resolveLocal(Parser *P, Compiler *compiler, aupTok *name)
     return -1;
 }
 
-static int addUpvalue(Parser *P, Compiler *compiler, uint8_t index, bool isLocal)
+static void addLocal(aupTok name)
 {
-    int upvalueCount = compiler->function->upvalueCount;
-
-    for (int i = 0; i < upvalueCount; i++) {
-        Upvalue *upvalue = &compiler->upvalues[i];
-        if (upvalue->index == index && upvalue->isLocal == isLocal) {
-            return i;
-        }
-    }
-
-    if (upvalueCount == UINT8_COUNT) {
-        error(P, "Too many closure variables in function.");
-        return 0;
-    }
-
-    compiler->upvalues[upvalueCount].isLocal = isLocal;
-    compiler->upvalues[upvalueCount].index = index;
-    return compiler->function->upvalueCount++;
-}
-
-static int resolveUpvalue(Parser *P, Compiler *compiler, aupTok* name)
-{
-    if (compiler->enclosing == NULL) return -1;
-
-    int local = resolveLocal(P, compiler->enclosing, name);
-    if (local != -1) {
-        compiler->enclosing->locals[local].isCaptured = true;
-        return addUpvalue(P, compiler, (uint8_t)local, true);
-    }
-
-    int upvalue = resolveUpvalue(P, compiler->enclosing, name);
-    if (upvalue != -1) {
-        return addUpvalue(P, compiler, (uint8_t)upvalue, false);
-    }
-
-    return -1;
-}
-
-static void addLocal(Parser *P, aupTok name)
-{
-    Compiler *current = P->compiler;
-
-    if (current->localCount == UINT8_COUNT) {
-        error(P, "Too many local variables in function.");
+    if (COMPILER->localCount == UINT8_COUNT) {
+        error("Too many local variables in function.");
         return;
     }
 
-    Local *local = &current->locals[current->localCount++];
+    Local *local = &COMPILER->locals[COMPILER->localCount++];
     local->name = name;
     local->depth = -1;
-    local->isCaptured = false;
 }
 
-static void declareVariable(Parser *P)
+static void declareVariable()
 {
-    Compiler *current = P->compiler;
-
     // Global variables are implicitly declared.
-    if (current->scopeDepth == 0) return;
+    if (COMPILER->scopeDepth == 0) return;
 
-    aupTok *name = &P->previous;
-    for (int i = current->localCount - 1; i >= 0; i--) {
-        Local *local = &current->locals[i];
-        if (local->depth != -1 && local->depth < current->scopeDepth) {
+    aupTok *name = &PREVIOUS;
+    for (int i = COMPILER->localCount - 1; i >= 0; i--) {
+        Local *local = &COMPILER->locals[i];
+        if (local->depth != -1 && local->depth < COMPILER->scopeDepth) {
             break;
         }
 
         if (identifiersEqual(name, &local->name)) {
-            error(P, "Variable with this name already declared in this scope.");
+            error("Variable with this name already declared in this scope.");
         }
     }
 
-    addLocal(P, *name);
+    addLocal(*name);
 }
 
-static uint8_t parseVariable(Parser *P, const char *errorMessage)
+static uint8_t parseVariable(const char *errorMessage)
 {
-    consume(P, AUP_TOK_IDENTIFIER, errorMessage);
+    consume(AUP_TOK_IDENTIFIER, errorMessage);
 
-    declareVariable(P);
-    if (P->compiler->scopeDepth > 0) return 0;
+    declareVariable();
+    if (COMPILER->scopeDepth > 0) return 0;
 
-    return identifierConstant(P, &P->previous);
+    return identifierConstant(&PREVIOUS);
 }
 
-static void markInitialized(Parser *P)
+static void markInitialized()
 {
-    Compiler *current = P->compiler;
+    if (COMPILER->scopeDepth == 0) return;
 
-    if (current->scopeDepth == 0) return;
-    current->locals[current->localCount - 1].depth =
-        current->scopeDepth;
+    COMPILER->locals[COMPILER->localCount - 1].depth =
+        COMPILER->scopeDepth;
 }
 
-static void defineVariable(Parser *P, uint8_t global)
+static void defineVariable(REG global, REG src)
 {
-    if (P->compiler->scopeDepth > 0) {
-        markInitialized(P);
+    if (COMPILER->scopeDepth > 0) {
+        markInitialized();
         return;
     }
 
-    emitBytes(P, AUP_OP_DEF, global);
+    if (src == -1)
+        emit(aup_OpAsC(AUP_OP_GST, global, true));
+    else
+        emit(aup_OpABx(AUP_OP_GST, global, src));
 }
 
-static uint8_t argumentList(Parser *P)
+static uint8_t argumentList()
 {
-    uint8_t argc = 0;
-    if (!check(P, AUP_TOK_RPAREN)) {
+    uint8_t argCount = 0;
+    if (!check(AUP_TOK_RPAREN)) {
         do {
-            argc++;
-            expression(P);
-            if (argc >= MAX_ARGS) {
-                error(P, "Cannot have more than %d arguments.", MAX_ARGS);
+            exprEx(-1);
+            if (++argCount > MAX_ARGS) {
+                error("Cannot have more than %d arguments.", MAX_ARGS);
             }
-        } while (match(P, AUP_TOK_COMMA));
+        } while (match(AUP_TOK_COMMA));
     }
 
-    consume(P, AUP_TOK_RPAREN, "Expect ')' after arguments.");
-    return argc;
+    consume(AUP_TOK_RPAREN, "Expect ')' after arguments.");
+    return argCount;
 }
 
-static void and_(Parser *P, bool canAssign)
+static PARSE_INFIX(and_)
 {
-    int endJump = emitJump(P, AUP_OP_JMPF);
+    int endJump = emitJump(AUP_OP_JMPF, left);
 
-    emitByte(P, AUP_OP_POP);
-    parsePrecedence(P, PREC_AND);
+    dest = exprPrec(dest, PREC_AND);
+    patchJump(endJump);
 
-    patchJump(P, endJump);
+    return dest;
 }
 
-static void binary(Parser *P, bool canAssign)
+static PARSE_INFIX(or__)
 {
-    // Remember the operator.                                
-    aupTokType operatorType = P->previous.type;
+    int elseJump = emitJump(AUP_OP_JMPF, left);
+    int endJump = emitJump(AUP_OP_JMP, -1);
+
+    patchJump(elseJump);
+
+    exprPrec(left, PREC_OR);
+    patchJump(endJump);
+
+    return left;
+}
+
+static PARSE_INFIX(binary)
+{
+    // Remember the operator.
+    aupTTok operatorType = PREVIOUS.type;
 
     // Compile the right operand.                            
     ParseRule *rule = getRule(operatorType);
-    parsePrecedence(P, (Precedence)(rule->precedence + 1));
+    REG right = parsePrec(-1, (Precedence)(rule->precedence + 1));
+    POP();
 
-    // Emit the operator instruction.                        
+    // Emit the operator instruction.
     switch (operatorType) {
-        case AUP_TOK_EQUAL_EQUAL:   emitByte(P, AUP_OP_EQ); break;
-        case AUP_TOK_LESS:          emitByte(P, AUP_OP_LT); break;
-        case AUP_TOK_LESS_EQUAL:    emitByte(P, AUP_OP_LE); break;
-
-        case AUP_TOK_BANG_EQUAL:    emitBytes(P, AUP_OP_EQ, AUP_OP_NOT); break;
-        case AUP_TOK_GREATER:       emitBytes(P, AUP_OP_LE, AUP_OP_NOT); break;
-        case AUP_TOK_GREATER_EQUAL: emitBytes(P, AUP_OP_LT, AUP_OP_NOT); break;
-
-        case AUP_TOK_PLUS:          emitByte(P, AUP_OP_ADD); break;
-        case AUP_TOK_MINUS:         emitByte(P, AUP_OP_SUB); break;
-        case AUP_TOK_STAR:          emitByte(P, AUP_OP_MUL); break;
-        case AUP_TOK_SLASH:         emitByte(P, AUP_OP_DIV); break;
-        case AUP_TOK_PERCENT:       emitByte(P, AUP_OP_MOD); break;
-
-        case AUP_TOK_AMPERSAND:     emitByte(P, AUP_OP_BAND); break;
-        case AUP_TOK_VBAR:          emitByte(P, AUP_OP_BOR); break;
-        case AUP_TOK_CARET:         emitByte(P, AUP_OP_BXOR); break;
-
-        case AUP_TOK_LESS_LESS:     emitByte(P, AUP_OP_SHL); break;
+        case AUP_TOK_LESS:
+            emit(aup_OpABxCx(AUP_OP_LT, dest, left, right));
+            break;
+        case AUP_TOK_LESS_EQUAL:
+            emit(aup_OpABxCx(AUP_OP_LE, dest, left, right));
+            break;
+        case AUP_TOK_EQUAL_EQUAL:
+            emit(aup_OpABxCx(AUP_OP_EQ, dest, left, right));
+            break;
+        case AUP_TOK_BANG_EQUAL:
+            emit(aup_OpABxCx(AUP_OP_EQ, dest, left, right));
+            emit(aup_OpABx(AUP_OP_NOT, dest, dest));
+            break;
+        case AUP_TOK_GREATER:
+            emit(aup_OpABxCx(AUP_OP_GT, dest, left, right));
+            break;
+        case AUP_TOK_GREATER_EQUAL:
+            emit(aup_OpABxCx(AUP_OP_GE, dest, left, right));
+            break;
+        case AUP_TOK_PLUS:
+            emit(aup_OpABxCx(AUP_OP_ADD, dest, left, right));
+            break;
+        case AUP_TOK_MINUS:
+            emit(aup_OpABxCx(AUP_OP_SUB, dest, left, right));
+            break;
+        case AUP_TOK_STAR:
+            emit(aup_OpABxCx(AUP_OP_MUL, dest, left, right));
+            break;
+        case AUP_TOK_SLASH:
+            emit(aup_OpABxCx(AUP_OP_DIV, dest, left, right));
+            break;
+        case AUP_TOK_PERCENT:
+            emit(aup_OpABxCx(AUP_OP_MOD, dest, left, right));
+            break;
+        case AUP_TOK_STAR_STAR:
+            emit(aup_OpABxCx(AUP_OP_POW, dest, left, right));
+            break;
+        case AUP_TOK_AMPERSAND:
+            emit(aup_OpABxCx(AUP_OP_BAND, dest, left, right));
+            break;
+        case AUP_TOK_VBAR:
+            emit(aup_OpABxCx(AUP_OP_BOR, dest, left, right));
+            break;
+        case AUP_TOK_CARET:
+            emit(aup_OpABxCx(AUP_OP_BXOR, dest, left, right));
+            break;
+        case AUP_TOK_LESS_LESS:
+            emit(aup_OpABxCx(AUP_OP_SHL, dest, left, right));
+            break;
         case AUP_TOK_GREATER_GREATER:
-                                    emitByte(P, AUP_OP_SHR); break;
-
-        default:
-            return; // Unreachable.                              
+            emit(aup_OpABxCx(AUP_OP_SHR, dest, left, right));
+            break;
     }
+
+    return dest;
 }
 
-static void call(Parser *P, bool canAssign)
+static PARSE_INFIX(call)
 {
-    uint8_t argCount = argumentList(P);
-    emitBytes(P, AUP_OP_CALL, argCount);
+    int argc = argumentList();
+
+    emit(aup_OpAB(AUP_OP_CALL, dest, argc));
+    POP_N(argc);
+
+    return dest;
 }
 
-static void dot(Parser *P, bool canAssign)
+static PARSE_INFIX(dot_)
 {
-    consume(P, AUP_TOK_IDENTIFIER, "Expect member name.");
-    uint8_t name = identifierConstant(P, &P->previous);
-
-    if (canAssign && match(P, AUP_TOK_EQUAL)) {
-        expression(P);
-        emitBytes(P, AUP_OP_SET, (uint8_t)name);
-    }
-    else {
-        emitBytes(P, AUP_OP_GET, (uint8_t)name);
-    }
+    // TODO
+    return dest;
 }
 
-static void index_(Parser *P, bool canAssign)
+static PARSE_PREFIX(member)
 {
-    expression(P);
-    consume(P, AUP_TOK_RBRACKET, "Expected closing ']'");
+    bool isDtor = match(AUP_TOK_TILDE);
 
-    if (canAssign && match(P, AUP_TOK_EQUAL)) {
-        expression(P);
-        emitByte(P, AUP_OP_SETI);
+    if (match(AUP_TOK_LPAREN)) {
 
-        P->hadAssign = true;
     }
     else {
-        emitByte(P, AUP_OP_GETI);
+
     }
+
+    // TODO
+    return dest;
 }
 
-static void ternary(Parser *P, bool canAssign)
+static PARSE_INFIX(nullCond)
 {
-    int jmp1 = emitJump(P, AUP_OP_JMPF);
-    emitByte(P, AUP_OP_POP);
-
-    expression(P);
-    int jmp2 = emitJump(P, AUP_OP_JMP);
-    
-    consume(P, AUP_TOK_COLON, "Expect ':' after value.");
-
-    patchJump(P, jmp1);
-    emitByte(P, AUP_OP_POP);
-    expression(P);
-
-    patchJump(P, jmp2);
+    error("This operator is not implemented!");
+    return dest;
 }
 
-static void literal(Parser *P, bool canAssign)
+static PARSE_INFIX(ternary)
 {
-    switch (P->previous.type) {
-        case AUP_TOK_FALSE:   emitByte(P, AUP_OP_FALSE); break;
-        case AUP_TOK_NIL:     emitByte(P, AUP_OP_NIL); break;
-        case AUP_TOK_TRUE:    emitByte(P, AUP_OP_TRUE); break;
-        case AUP_TOK_FUNC:     emitBytes(P, AUP_OP_LD, 0); break;
-        default:
-            return; // Unreachable.                   
+    int jmp1 = emitJump(AUP_OP_JMPF, left);
+
+    exprEx(left);
+    int jmp2 = emitJump(AUP_OP_JMP, -1);
+
+    consume(AUP_TOK_COLON, "Expect ':' after value.");
+
+    patchJump(jmp1);
+    exprEx(left);
+
+    patchJump(jmp2);
+
+    return dest;
+}
+
+static PARSE_PREFIX(literal)
+{
+    switch (PREVIOUS.type) {
+        case AUP_TOK_KW_NIL:
+            emit(aup_OpA(AUP_OP_NIL, dest));
+            break;
+        case AUP_TOK_KW_TRUE:
+            emit(aup_OpAsB(AUP_OP_BOOL, dest, true));
+            break;
+        case AUP_TOK_KW_FALSE:
+            emit(aup_OpAsB(AUP_OP_BOOL, dest, false));
+            break;
+        case AUP_TOK_KW_FUNC:
+            emit(aup_OpAB(AUP_OP_MOV, dest, 0));
+            break;
     }
+
+    return dest;
 }
 
-static void grouping(Parser *P, bool canAssign)
+static PARSE_PREFIX(grouping)
 {
-    expression(P);
-    consume(P, AUP_TOK_RPAREN, "Expect ')' after expression.");
+    dest = expr(dest);
+    consume(AUP_TOK_RPAREN, "Expect ')' after expression.");
+
+    return dest;
 }
 
-static void integer(Parser *P, bool canAssign)
+static PARSE_PREFIX(number)
 {
-    int64_t i = 0;
+    double value = strtod(PREVIOUS.start, NULL);
+    return emitConstant(aup_vNum(value));
+}
 
-    switch (P->previous.type) {
+static PARSE_PREFIX(integer)
+{
+    int64_t value = 0;
+
+    switch (PREVIOUS.type) {
         case AUP_TOK_INTEGER:
-            i = strtoll(P->previous.start, NULL, 10);
+            value = atoll(PREVIOUS.start);
             break;
         case AUP_TOK_HEXADECIMAL:
-            i = strtoll(P->previous.start + 2, NULL, 16);
+            value = strtoll(PREVIOUS.start + 2, NULL, 16);
             break;
     }
 
-    if (i <= UINT8_MAX) {
-        emitBytes(P, AUP_OP_INT, (uint8_t)i);
-    }
-    else if (i <= UINT16_MAX) {
-        emitByte(P, AUP_OP_INTL);
-        emitWord(P, (uint16_t)i);
-    }
-    else {
-        emitConstant(P, AUP_NUM((double)i));
-    }
+    return emitConstant(aup_vNum(value));
 }
 
-static void number(Parser *P, bool canAssign)
+static PARSE_PREFIX(string)
 {
-    double n = strtod(P->previous.start, NULL);
-    emitConstant(P, AUP_NUM(n));
+    int length = PREVIOUS.length - 2;
+    const char *start = PREVIOUS.start + 1;
+
+    aupStr *string = aup_copyString(VM, start, length);
+    return emitConstant(aup_vObj(string));
 }
 
-static void string(Parser *P, bool canAssign)
+static REG namedVariable(aupTok name, REG dest, bool canAssign)
 {
-    aupStr *s = aup_copyString(P->vm,
-        P->previous.start + 1, P->previous.length - 2);
-
-    emitConstant(P, AUP_OBJ(s));
-}
-
-static void map(Parser *P, bool canAssign)
-{
-    uint8_t count = 0;
-
-    if (!check(P, AUP_TOK_RBRACKET)) {
-        do {
-            expression(P);
-            count++;
-        } while (match(P, AUP_TOK_COMMA));
-    }
-
-    consume(P, AUP_TOK_RBRACKET, "Expected closing ']'.");
-    emitBytes(P, AUP_OP_MAP, count);
-}
-
-static void namedVariable(Parser *P, aupTok name, bool canAssign)
-{
-    uint8_t getOp, setOp;
-    int arg = resolveLocal(P, P->compiler, &name);
+    bool isLocal = false;
+    uint8_t loadOp, storeOp;
+    int arg = resolveLocal(COMPILER, &name);
 
     if (arg != -1) {
-        getOp = AUP_OP_LD;
-        setOp = AUP_OP_ST;
-    }
-    else if ((arg = resolveUpvalue(P, P->compiler, &name)) != -1) {
-        getOp = AUP_OP_ULD;
-        setOp = AUP_OP_UST;
+        isLocal = true;
+        loadOp = AUP_OP_LD;
+        storeOp = AUP_OP_LD;
     }
     else {
-        arg = identifierConstant(P, &name);
-        getOp = AUP_OP_GLD;
-        setOp = AUP_OP_GST;
+        arg = identifierConstant(&name);
+        loadOp = AUP_OP_GLD;
+        storeOp = AUP_OP_GST;
     }
 
-    if (canAssign && match(P, AUP_TOK_EQUAL)) {
-        expression(P);
-        emitBytes(P, setOp, (uint8_t)arg);
+    if (canAssign && match(AUP_TOK_EQUAL)) {
+        REG src = exprEx(dest);
+        emit(aup_OpABx(storeOp, arg, src));
 
-        P->hadAssign = true;
-    }
-    else if (canAssign && match(P, AUP_TOK_PLUS_EQUAL)) {
-        namedVariable(P, name, false);
-        expression(P);
-        emitByte(P, AUP_OP_ADD);
-        emitBytes(P, setOp, (uint8_t)arg);
-
-        P->hadAssign = true;
-    }
-    else if (canAssign && match(P, AUP_TOK_MINUS_EQUAL)) {
-        namedVariable(P, name, false);
-        expression(P);
-        emitByte(P, AUP_OP_SUB);
-        emitBytes(P, setOp, (uint8_t)arg);
-
-        P->hadAssign = true;
-    }
-    else if (canAssign && match(P, AUP_TOK_STAR_EQUAL)) {
-        namedVariable(P, name, false);
-        expression(P);
-        emitByte(P, AUP_OP_MUL);
-        emitBytes(P, setOp, (uint8_t)arg);
-
-        P->hadAssign = true;
-    }
-    else if (canAssign && match(P, AUP_TOK_SLASH_EQUAL)) {
-        namedVariable(P, name, false);
-        expression(P);
-        emitByte(P, AUP_OP_DIV);
-        emitBytes(P, setOp, (uint8_t)arg);
-
-        P->hadAssign = true;
-    }
-    else if (canAssign && match(P, AUP_TOK_PERCENT_EQUAL)) {
-        namedVariable(P, name, false);
-        expression(P);
-        emitByte(P, AUP_OP_MOD);
-        emitBytes(P, setOp, (uint8_t)arg);
-
-        P->hadAssign = true;
+        dest = src;
+        P.hadAssign = true;
     }
     else {
-        emitBytes(P, getOp, (uint8_t)arg);
+        if (isLocal) return arg;
+        emit(aup_OpABx(loadOp, dest, arg));
     }
+
+    return dest;
 }
 
-static void variable(Parser *P, bool canAssign)
+static PARSE_PREFIX(variable)
 {
-    namedVariable(P, P->previous, canAssign);
+    return namedVariable(PREVIOUS, dest, canAssign);
 }
 
-static void or_(Parser *P, bool canAssign)
+static PARSE_PREFIX(unary)
 {
-    int elseJump = emitJump(P, AUP_OP_JMPF);
-    int endJump = emitJump(P, AUP_OP_JMP);
-
-    patchJump(P, elseJump);
-    emitByte(P, AUP_OP_POP);
-
-    parsePrecedence(P, PREC_OR);
-    patchJump(P, endJump);
-}
-
-static void unary(Parser *P, bool canAssign)
-{
-    aupTokType operatorType = P->previous.type;
+    aupTTok operatorType = PREVIOUS.type;
 
     // Compile the operand.                        
-    parsePrecedence(P, PREC_UNARY);
+    REG right = parsePrec(dest, PREC_UNARY);
 
     // Emit the operator instruction.              
     switch (operatorType) {
-        case AUP_TOK_NOT:
-        case AUP_TOK_BANG:      emitByte(P, AUP_OP_NOT); break;
-        case AUP_TOK_MINUS:     emitByte(P, AUP_OP_NEG); break;
-        case AUP_TOK_TILDE:     emitByte(P, AUP_OP_BNOT); break;
-        default:
-            return; // Unreachable.                    
+        case AUP_TOK_TILDE:
+            emit(aup_OpABx(AUP_OP_BNOT, dest, right));
+            break;
+        case AUP_TOK_KW_NOT:
+        case AUP_TOK_BANG:
+            emit(aup_OpABx(AUP_OP_NOT, dest, right));
+            break;
+        case AUP_TOK_MINUS:
+            emit(aup_OpABx(AUP_OP_NEG, dest, right));
+            break;
     }
+
+    return dest;
 }
 
-static ParseRule rules[AUP_TOKENCOUNT] = {
-    [AUP_TOK_LPAREN]        = { grouping, call,    PREC_CALL },
-    [AUP_TOK_RPAREN]        = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_LBRACKET]      = { map,      index_,  PREC_CALL },
-    [AUP_TOK_RBRACKET]      = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_LBRACE]        = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_RBRACE]        = { NULL,     NULL,    PREC_NONE },
-
-    [AUP_TOK_ARROW]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_COMMA]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_DOT]           = { NULL,     dot,     PREC_CALL },
-
-    [AUP_TOK_COLON]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_QMARK]         = { NULL,     ternary, PREC_TERNARY },
-
-    [AUP_TOK_MINUS]         = { unary,    binary,  PREC_TERM },
-    [AUP_TOK_PLUS]          = { NULL,     binary,  PREC_TERM },
-    [AUP_TOK_SEMICOLON]     = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_SLASH]         = { NULL,     binary,  PREC_FACTOR },
-    [AUP_TOK_STAR]          = { NULL,     binary,  PREC_FACTOR },
-    [AUP_TOK_PERCENT]       = { NULL,     binary,  PREC_FACTOR },
-
-    [AUP_TOK_AMPERSAND]     = { NULL,     binary,  PREC_BAND },
-    [AUP_TOK_VBAR]          = { NULL,     binary,  PREC_BOR },
-    [AUP_TOK_TILDE]         = { unary,    NULL,    PREC_NONE },
-    [AUP_TOK_CARET]         = { NULL,     binary,  PREC_BXOR },
-
-    [AUP_TOK_LESS_LESS]     = { NULL,     binary,  PREC_SHIFT },
-    [AUP_TOK_GREATER_GREATER]
-                            = { NULL,     binary,  PREC_SHIFT },
-
-    [AUP_TOK_BANG]          = { unary,    NULL,    PREC_NONE },
-    [AUP_TOK_BANG_EQUAL]    = { NULL,     binary,  PREC_EQUALITY },
-    [AUP_TOK_EQUAL]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_EQUAL_EQUAL]   = { NULL,     binary,  PREC_EQUALITY },
-    [AUP_TOK_GREATER]       = { NULL,     binary,  PREC_COMPARISON },
-    [AUP_TOK_GREATER_EQUAL] = { NULL,     binary,  PREC_COMPARISON },
-    [AUP_TOK_LESS]          = { NULL,     binary,  PREC_COMPARISON },
-    [AUP_TOK_LESS_EQUAL]    = { NULL,     binary,  PREC_COMPARISON },
-
-    [AUP_TOK_IDENTIFIER]    = { variable, NULL,    PREC_NONE },
-    [AUP_TOK_STRING]        = { string,   NULL,    PREC_NONE },
-    [AUP_TOK_NUMBER]        = { number,   NULL,    PREC_NONE },
-    [AUP_TOK_INTEGER]       = { integer,  NULL,    PREC_NONE },
-    [AUP_TOK_HEXADECIMAL]   = { integer,  NULL,    PREC_NONE },
-
-    [AUP_TOK_AND]           = { NULL,     and_,    PREC_AND },
-    [AUP_TOK_BREAK]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_CLASS]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_DO]            = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_ELSE]          = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_ELSEIF]        = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_END]           = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_FALSE]         = { literal,  NULL,    PREC_NONE },
-    [AUP_TOK_FOR]           = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_FUNC]          = { literal,  NULL,    PREC_NONE },
-    [AUP_TOK_IF]            = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_LOOP]          = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_MATCH]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_NIL]           = { literal,  NULL,    PREC_NONE },
-    [AUP_TOK_NOT]           = { unary,    NULL,    PREC_NONE },
-    [AUP_TOK_OR]            = { NULL,     or_,     PREC_OR },
-    [AUP_TOK_PRINT]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_RETURN]        = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_SUPER]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_THEN]          = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_THIS]          = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_TRUE]          = { literal,  NULL,    PREC_NONE },
-    [AUP_TOK_VAR]           = { NULL,     NULL,    PREC_NONE },
-
-    [AUP_TOK_ERROR]         = { NULL,     NULL,    PREC_NONE },
-    [AUP_TOK_EOF]           = { NULL,     NULL,    PREC_NONE }          
+static ParseRule rules[] = {
+    // Characters
+    [AUP_TOK_LPAREN         ] = { grouping, call,       PREC_CALL       },
+    [AUP_TOK_RPAREN         ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_LBRACE         ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_RBRACE         ] = { NULL,     NULL,       PREC_NONE       },
+    //
+    [AUP_TOK_COMMA          ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_DOT            ] = { NULL,     dot_,       PREC_CALL       },
+    [AUP_TOK_COLON          ] = { member,   NULL,       PREC_NONE       },
+    [AUP_TOK_SEMICOLON      ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_QMARK          ] = { NULL,     ternary,    PREC_TERNARY    },
+    //
+    [AUP_TOK_MINUS          ] = { unary,    binary,     PREC_TERM       },
+    [AUP_TOK_PLUS           ] = { NULL,     binary,     PREC_TERM       },
+    [AUP_TOK_SLASH          ] = { NULL,     binary,     PREC_FACTOR     },
+    [AUP_TOK_STAR           ] = { NULL,     binary,     PREC_FACTOR     },
+    [AUP_TOK_PERCENT        ] = { NULL,     binary,     PREC_FACTOR     },
+    //
+    [AUP_TOK_AMPERSAND      ] = { NULL,     binary,     PREC_BAND       },
+    [AUP_TOK_VBAR           ] = { NULL,     binary,     PREC_BOR        },
+    [AUP_TOK_TILDE          ] = { unary,    NULL,       PREC_NONE       },
+    [AUP_TOK_CARET          ] = { NULL,     binary,     PREC_BXOR       },
+    [AUP_TOK_LESS_LESS      ] = { NULL,     binary,     PREC_SHIFT      },
+    [AUP_TOK_GREATER_GREATER] = { NULL,     binary,     PREC_SHIFT      },
+    //
+    [AUP_TOK_BANG           ] = { unary,    NULL,       PREC_NONE       },
+    [AUP_TOK_BANG_EQUAL     ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_BANG_EQUAL     ] = { NULL,     binary,     PREC_EQUALITY   },
+    [AUP_TOK_EQUAL_EQUAL    ] = { NULL,     binary,     PREC_EQUALITY   },
+    [AUP_TOK_GREATER        ] = { NULL,     binary,     PREC_COMPARISON },
+    [AUP_TOK_GREATER_EQUAL  ] = { NULL,     binary,     PREC_COMPARISON },
+    [AUP_TOK_LESS           ] = { NULL,     binary,     PREC_COMPARISON },
+    [AUP_TOK_LESS_EQUAL     ] = { NULL,     binary,     PREC_COMPARISON },
+    //
+    [AUP_TOK_AMPERSAND_EQUAL] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_VBAR_EQUAL     ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_CARET_EQUAL    ] = { NULL,     NULL,       PREC_NONE       },
+    //
+    [AUP_TOK_PLUS_EQUAL     ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_MINUS_EQUAL    ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_STAR_EQUAL     ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_SLASH_EQUAL    ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_PERCENT_EQUAL  ] = { NULL,     NULL,       PREC_NONE       },
+    //
+    [AUP_TOK_STAR_STAR      ] = { NULL,     binary,     PREC_EXPONENT   },
+    [AUP_TOK_QMARK_DOT      ] = { NULL,     nullCond,   PREC_CALL       },
+    [AUP_TOK_ARROW          ] = { NULL,     NULL,       PREC_NONE       },
+    // Literals
+    [AUP_TOK_IDENTIFIER     ] = { variable, NULL,       PREC_NONE       },
+    [AUP_TOK_STRING         ] = { string,   NULL,       PREC_NONE       },
+    [AUP_TOK_NUMBER         ] = { number,   NULL,       PREC_NONE       },
+    [AUP_TOK_INTEGER        ] = { integer,  NULL,       PREC_NONE       },
+    [AUP_TOK_HEXADECIMAL    ] = { integer,  NULL,       PREC_NONE       },
+    // Keywords
+    [AUP_TOK_KW_AND         ] = { NULL,     and_,       PREC_AND        },
+    [AUP_TOK_KW_BREAK       ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_CASE        ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_CLASS       ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_DO          ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_ELSE        ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_FALSE       ] = { literal,  NULL,       PREC_NONE       },
+    [AUP_TOK_KW_FOR         ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_FUNC        ] = { literal,  NULL,       PREC_NONE       },
+    [AUP_TOK_KW_IF          ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_MATCH       ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_NIL         ] = { literal,  NULL,       PREC_NONE       },
+    [AUP_TOK_KW_NOT         ] = { unary,    NULL,       PREC_NONE       },
+    [AUP_TOK_KW_OR          ] = { NULL,     or__,       PREC_OR         },
+    [AUP_TOK_KW_PUTS        ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_RETURN      ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_SUPER       ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_SWITCH      ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_THEN        ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_THIS        ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_TRUE        ] = { literal,  NULL,       PREC_NONE       },
+    [AUP_TOK_KW_VAR         ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_KW_WHILE       ] = { NULL,     NULL,       PREC_NONE       },
+    //
+    [AUP_TOK_ERROR          ] = { NULL,     NULL,       PREC_NONE       },
+    [AUP_TOK_EOF            ] = { NULL,     NULL,       PREC_NONE       },   
 };
 
-static void parsePrecedence(Parser *P, Precedence precedence)
+static REG parsePrec(REG dest, Precedence prec)
 {
-    advance(P);
-    ParseFn prefixRule = getRule(P->previous.type)->prefix;
+    if (dest < 0) dest = PUSH();
+
+    advance();
+    PrefixFn prefixRule = getRule(PREVIOUS.type)->prefix;
     if (prefixRule == NULL) {
-        error(P, "Expect expression.");
-        return;
+        error("Expect expression.");
+        return -1;
     }
 
-    bool canAssign = precedence <= PREC_ASSIGNMENT;
-    prefixRule(P, canAssign);
-    P->subExprs++;
+    bool canAssign = prec <= PREC_ASSIGNMENT;
+    REG src = prefixRule(dest, canAssign);
+    P.subExprs++;
 
-    while (precedence <= getRule(P->current.type)->precedence) {
-        if (P->current.line > P->previous.line) break;
-        if (check(P, AUP_TOK_LPAREN)) P->hadCall = true;
-        advance(P);
-        ParseFn infixRule = getRule(P->previous.type)->infix;
-        infixRule(P, canAssign);
+    while (prec <= getRule(CURRENT.type)->precedence && !IS_NEWLINE()) {
+        if (check(AUP_TOK_LPAREN)) {
+            P.hadCall = true;
+        }
+        advance();
+        InfixFn infixRule = getRule(PREVIOUS.type)->infix;
+        src = infixRule(dest, src, canAssign);
+        //P.subExprs++;
     }
 
-    if (canAssign && match(P, AUP_TOK_EQUAL)) {
-        error(P, "Invalid assignment target.");
+    if (canAssign && match(AUP_TOK_EQUAL)) {
+        error("Invalid assignment target.");
+        return -1;
     }
+
+    return src;
 }
 
-static ParseRule *getRule(aupTokType type)
+static ParseRule *getRule(aupTTok type)
 {
     return &rules[type];
 }
 
-static void expression(Parser *P)
+static void block()
 {
-    parsePrecedence(P, PREC_ASSIGNMENT);
-}
-
-static void block(Parser *P, aupTokType closing)
-{
-    while (!check(P, closing) && !check(P, AUP_TOK_EOF)) {
-        decl(P);
+    while (!check(AUP_TOK_RBRACE) && !check(AUP_TOK_EOF)) {
+        decl();
     }
 
-    consume(P, closing, "Expect '%s' after block.",
-        closing == AUP_TOK_RBRACE ? "}" : "end");
+    consume(AUP_TOK_RBRACE, "Expect '}' after block.");
 }
 
-static void function(Parser *P, FunType type)
+static REG exprPrec(REG dest, Precedence prec)
+{
+    P.hadCall = false;
+    P.hadAssign = false;
+    P.subExprs = 0;
+
+    dest = parsePrec(dest, prec);
+
+    if (P.subExprs <= 1) {
+        REG src = dest;
+        REG dest = PEEK(0);
+        emit(aup_OpABx(AUP_OP_LD, dest, src));
+    }
+
+    return dest;
+}
+
+static REG exprEx(REG dest)
+{
+    return exprPrec(dest, PREC_ASSIGNMENT);
+}
+
+static REG expr(REG dest)
+{
+    return parsePrec(dest, PREC_ASSIGNMENT);
+}
+
+static REG func(TFunc type)
 {
     Compiler compiler;
-    initCompiler(P, &compiler, type);
-    beginScope(P);
+    initCompiler(&compiler, type);
+    beginScope();
 
     // Compile the parameter list.                                
-    consume(P, AUP_TOK_LPAREN, "Expect '(' after function name.");
-    if (!check(P, AUP_TOK_RPAREN)) {
+    consume(AUP_TOK_LPAREN, "Expect '(' after function name.");
+    if (!check(AUP_TOK_RPAREN)) {
         do {
-            uint8_t paramConstant = parseVariable(P, "Expect parameter name.");
-            defineVariable(P, paramConstant);
-
-            int arity = ++P->compiler->function->arity;
-            if (arity > MAX_ARGS) {
-                errorAtCurrent(P, "Cannot have more than %d parameters.", MAX_ARGS);
+            if (++COMPILER->function->arity > 255) {
+                errorAtCurrent("Cannot have more than 255 parameters.");
             }
-        } while (match(P, AUP_TOK_COMMA));
+            uint8_t paramConstant = parseVariable("Expect parameter name.");
+            defineVariable(paramConstant, -1);
+            PUSH();
+        } while (match(AUP_TOK_COMMA));
     }
-    consume(P, AUP_TOK_RPAREN, "Expect ')' after parameters.");
+    consume(AUP_TOK_RPAREN, "Expect ')' after parameters.");
 
-    // The body.                     
-    if (match(P, AUP_TOK_EQUAL) || match(P, AUP_TOK_ARROW)) {
-        // Single expression
-        expression(P);
-        emitByte(P, AUP_OP_RET);
-    }
-    else {
-        // Block stmt.
-        aupTokType closing = match(P, AUP_TOK_LBRACE) ?
-            AUP_TOK_RBRACE : AUP_TOK_END;
-
-        block(P, closing);
-    }
+    // The body.                                                  
+    consume(AUP_TOK_LBRACE, "Expect '{' before function body.");
+    block();
 
     // Create the function object.                                
-    aupFun *function = endCompiler(P);
-    uint8_t constant = makeConstant(P, AUP_OBJ(function));
+    aupFun *function = endCompiler();
+    return emitConstant(aup_vObj(function));
+}
 
-    if (function->upvalueCount > 0) {
-        emitBytes(P, AUP_OP_CLOSURE, constant);
-        for (int i = 0; i < function->upvalueCount; i++) {
-            emitByte(P, compiler.upvalues[i].isLocal ? 1 : 0);
-            emitByte(P, compiler.upvalues[i].index);
-        }
+static void funcDecl()
+{
+    uint8_t global = parseVariable("Expect function name.");
+    markInitialized();
+    REG src = func(TYPE_FUNCTION);
+
+    defineVariable(global, src);
+}
+
+static void varDecl()
+{
+    uint8_t global = parseVariable("Expect variable name.");
+    REG src = -1;   // nil
+
+    if (match(AUP_TOK_EQUAL)) {
+        src = exprEx(-1);
     }
 
-    emitBytes(P, AUP_OP_CONST, constant);
+    defineVariable(global, src);
 }
 
-static void funcDecl(Parser *P)
+static void exprStmt()
 {
-    uint8_t global = parseVariable(P, "Expect function name.");
-    markInitialized(P);
-    function(P, TYPE_FUNCTION);
-    defineVariable(P, global);
+    exprEx(-1);
+
+    //if ((P.subExprs <= 1 && !P.hadCall) ||
+    //    (P.subExprs > 1 && !P.hadCall && !P.hadAssign)) {
+    //    error("Unexpected expression syntax.");
+    //}
+
+    if (!P.hadCall &&
+        (P.subExprs <= 1 || !P.hadAssign)) {
+        error("Unexpected expression syntax.");
+    }
 }
 
-static void varDecl(Parser *P)
+static void ifStmt()
 {
-    Compiler *current = P->compiler;
+    REG src = expr(-1);
 
-    int nvars = 0;
-    int nvals = 0;
-    uint8_t globals[MAX_ARGS];
+    if (!match(AUP_TOK_KW_THEN) && !check(AUP_TOK_LBRACE)) {
+        error("Expect 'then' or a block after condition.");
+        return;
+    }
+
+    int thenJump = emitJump(AUP_OP_JMPF, src);
+    POP();
+    stmt();
+
+    if (match(AUP_TOK_KW_ELSE)) {
+        int elseJump = emitJump(AUP_OP_JMP, -1);
+        patchJump(thenJump);
+        stmt();
+        patchJump(elseJump);
+    }
+    else {
+        patchJump(thenJump);
+    }
+}
+
+static void putsStmt()
+{
+    int count = 0;
+    REG src = PEEK(-1);
 
     do {
-        globals[nvars++] = parseVariable(P, "Expect variable name.");       
-        if (nvars > MAX_ARGS) {
-            error(P, "Too many variables in one variable declaration.");
-            return;
-        }
-    } while (match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_EOF));
+        exprEx(-1);
+        count++;
+    } while (match(AUP_TOK_COMMA));
 
-    if (match(P, AUP_TOK_EQUAL)) {
-        do {
-            expression(P);
-            nvals++;
-            if (current->scopeDepth > 0 && nvars >= nvals) {
-                current->locals[current->localCount - (nvars - nvals + 1)].depth =
-                    current->scopeDepth;
-            }
-        } while (match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_EOF));
-    }
-
-    if (nvals > nvars) {
-        for (int i = 0; i < nvals - nvars; i++)
-            emitByte(P, AUP_OP_POP);
-    }
-    else {
-        for (int i = nvals; i < nvars; i++) {
-            if (current->scopeDepth > 0 && nvars >= nvals) {
-                current->locals[current->localCount - (nvars - i)].depth =
-                    current->scopeDepth;
-            }
-            emitByte(P, AUP_OP_NIL);
-        }
-    }
-
-    for (int i = nvars - 1; i >= 0; i--)
-        defineVariable(P, globals[i]);
-
-    match(P, AUP_TOK_SEMICOLON);
+    emit(aup_OpAB(AUP_OP_PRI, src, count));
+    POP_N(count);
 }
 
-static void exprStmt(Parser *P)
+static void returnStmt()
 {
-    P->hadCall = false;
-    P->hadAssign = false;
-    P->subExprs = 0;
-
-    expression(P);
-    emitByte(P, AUP_OP_POP);
-
-    if ((P->subExprs <= 1 && !P->hadCall) ||
-        (P->subExprs > 1 && !P->hadCall && !P->hadAssign)) {
-        error(P, "Unexpected expression syntax.");
-        return;
-    }
-}
-
-static void ifStmt(Parser *P, bool needEnd)
-{
-    expression(P);
-
-    int thenJump = emitJump(P, AUP_OP_JMPF);
-    emitByte(P, AUP_OP_POP);
-
-    bool useThen = match(P, AUP_TOK_THEN);
-
-    if (!useThen) {
-        stmt(P);
-    }
-    else {
-        beginScope(P);
-        while (!check(P, AUP_TOK_END) && !check(P, AUP_TOK_ELSE) &&
-            !check(P, AUP_TOK_ELSEIF) && !check(P, AUP_TOK_EOF)) {
-            decl(P);
-        }
-        endScope(P);
-    }
-
-    int elseJump = emitJump(P, AUP_OP_JMP);
-
-    patchJump(P, thenJump);
-    emitByte(P, AUP_OP_POP);
-
-    if (useThen && match(P, AUP_TOK_ELSE)) {
-        match(P, AUP_TOK_THEN);
-        beginScope(P);
-        while (!check(P, AUP_TOK_ELSE) && !check(P, AUP_TOK_END)
-            && !check(P, AUP_TOK_EOF)) {
-            decl(P);
-        }
-        endScope(P);
-    }
-    else if (match(P, AUP_TOK_ELSEIF)) {
-        ifStmt(P, true);
-        needEnd = false;
-    }
-    else if (match(P, AUP_TOK_ELSE)) {
-        stmt(P);
-    }
-
-    patchJump(P, elseJump);
-
-    if (useThen && needEnd) consume(P, AUP_TOK_END, "Expect 'end' after the block.");
-}
-
-static void forStmt(Parser *P)
-{
-    Loop loop = { 0 };
-    Compiler *current = P->compiler;
-    current->currentLoop = &loop;
-    current->loopDepth++;
-
-    beginScope(P);
-    bool useDo = !match(P, AUP_TOK_LPAREN);
-
-    if (match(P, AUP_TOK_SEMICOLON)) {
-        // No initializer.                                 
-    }
-    else if (match(P, AUP_TOK_VAR)) {
-        varDecl(P);
-    }
-    else {
-        exprStmt(P);
-    }
-
-    int loopStart = currentChunk(P)->count;
-
-    int exitJump = -1;
-    if (!match(P, AUP_TOK_SEMICOLON)) {
-        expression(P);
-        consume(P, AUP_TOK_SEMICOLON, "Expect ';' after loop condition.");
-
-        // Jump out of the loop if the condition is false.           
-        exitJump = emitJump(P, AUP_OP_JMPF);
-        emitByte(P, AUP_OP_POP); // Condition.                              
-    }
-
-    if (useDo && !match(P, AUP_TOK_DO) || !match(P, AUP_TOK_RPAREN)) {
-        int bodyJump = emitJump(P, AUP_OP_JMP);
-
-        int incrementStart = currentChunk(P)->count;
-        expression(P);
-        emitByte(P, AUP_OP_POP);
-        if (!useDo) consume(P, AUP_TOK_RPAREN, "Expect ')' after for clauses.");
-
-        emitLoop(P, loopStart);
-        loopStart = incrementStart;
-        patchJump(P, bodyJump);
-    }
-
-    if (useDo && !check(P, AUP_TOK_DO)) {
-        errorAtCurrent(P, "Expect 'do' after for clauses.");
+    if (COMPILER->type == TYPE_SCRIPT) {
+        error("Cannot return from top-level code.");
         return;
     }
 
-    stmt(P);
-
-    emitLoop(P, loopStart);
-
-    if (exitJump != -1) {
-        patchJump(P, exitJump);
-        emitByte(P, AUP_OP_POP); // Condition.
-    }
-
-    endScope(P);
-
-    // Patch all breaks.
-    for (int i = 0; i < loop.breakCount; i++)
-        patchJump(P, loop.breaks[i]);
-
-    current->loopDepth--;
-    current->currentLoop = NULL;
-}
-
-static void loopStmt(Parser *P)
-{
-    // Init loop.
-    Loop loop = { 0 };
-    Compiler *current = P->compiler;
-
-    current->loopDepth++;
-    current->currentLoop = &loop;
-    loop.scope = current->scopeDepth;
-
-    // Get start point.
-    loop.start = currentChunk(P)->count;
-
-    // Condition.
-    if (check(P, AUP_TOK_LBRACE) || check(P, AUP_TOK_DO)) {
-        // Infinite loop.
-        emitByte(P, AUP_OP_TRUE);       
+    if (check(AUP_TOK_RBRACE) || IS_NEWLINE()) {
+        emitReturn(-1);
     }
     else {
-        expression(P);
-    }
-
-    int jmpOut = emitJump(P, AUP_OP_JMPF);
-
-    emitByte(P, AUP_OP_POP);
-    stmt(P);
-
-    emitLoop(P, loop.start);
-
-    patchJump(P, jmpOut);
-    emitByte(P, AUP_OP_POP);
-
-    // Patch all breaks.
-    for (int i = 0; i < loop.breakCount; i++)
-        patchJump(P, loop.breaks[i]);
-
-    current->loopDepth--;
-    current->currentLoop = NULL;
-}
-
-static void breakStmt(Parser *P)
-{
-    Compiler *current = P->compiler;
-    Loop *loop = current->currentLoop;
-
-    if (current->loopDepth == 0) {
-        error(P, "Cannot use 'break' outside of a loop.");
-        return;
-    }
-
-    // Store scope state.
-    int locals = current->localCount;
-    int depth = current->scopeDepth;
-    // Close all, down to loop scope.
-    do { endScope(P); } while (current->scopeDepth > loop->scope);
-    // Load the state.
-    current->localCount = locals;
-    current->scopeDepth = depth;
-        
-    int jmpOut = emitJump(P, AUP_OP_JMP);
-    loop->breaks[loop->breakCount++] = jmpOut;
-
-    if (loop->breakCount > UINT8_COUNT) {
-        error(P, "Too many 'break' statements in this loop.");
-        return;
+        REG src = expr(-1);
+        emitReturn(src);
     }
 }
 
-static void matchStmt(Parser *P)
+static void matchStmt()
 {
-    expression(P);
-    bool hadBrace = match(P, AUP_TOK_LBRACE);
-
     int caseCount = 0;
     int jmpOuts[MAX_CASES];
+    REG src = PEEK(-1); exprEx(-1);
 
-    if ((hadBrace && !check(P, AUP_TOK_RBRACE)) ||
-        match(P, AUP_TOK_VBAR)) {
-        do {
-            // Default.
-            if (match(P, AUP_TOK_ARROW)) {
-                emitByte(P, AUP_OP_POP);
-                stmt(P);
-                jmpOuts[caseCount++] = emitJump(P, AUP_OP_JMP);
-                continue;
-            }
+    while (match(AUP_TOK_VBAR)) {
+        // The default
+        if (match(AUP_TOK_ARROW)) {
+            stmt();
+            jmpOuts[caseCount++] = emitJump(AUP_OP_JMP, -1);
+        }
+        else {
+            exprEx(-1); POP();
+            int jmpNext = emitJump(AUP_OP_JNE, src + 1);            
 
-            expression(P);
-            int jmpNext = emitJump(P, AUP_OP_JNE);
+            consume(AUP_TOK_ARROW, "Extect '=>' after expression.");
+            stmt();
 
-            consume(P, AUP_TOK_ARROW, "Extect '=>' after expression.");
-            stmt(P);
-         
-            jmpOuts[caseCount++] =  emitJump(P, AUP_OP_JMP);
-            patchJump(P, jmpNext);
+            jmpOuts[caseCount++] = emitJump(AUP_OP_JMP, -1);
+            patchJump(jmpNext);
+        }
 
-            if (caseCount > MAX_CASES) {
-                error(P, "Too many cases in 'match' statement.");
-                return;
-            }
-        } while ((hadBrace && match(P, AUP_TOK_COMMA) && !check(P, AUP_TOK_RBRACE)) ||
-            match(P, AUP_TOK_VBAR));
-    }
-
-    if (hadBrace) {
-        consume(P, AUP_TOK_RBRACE, "Exprect '}' after 'match' stmt body.");
-        return;
-    }
-
-    // Pop the input value.
-    emitByte(P, AUP_OP_POP);
-    // Patch all endings.
-    for (int i = 0; i < caseCount; i++) patchJump(P, jmpOuts[i]);
-}
-
-static void printStmt(Parser *P)
-{
-    uint8_t nvals = 0;
-
-    do {
-        expression(P);  
-        if (nvals++ >= MAX_ARGS) {
-            error(P, "Too many values in 'print' statement.");
+        if (caseCount > MAX_CASES) {
+            error("Too many cases in 'match' statement.");
             return;
         }
-    } while (match(P, AUP_TOK_COMMA));
-
-    emitBytes(P, AUP_OP_PRINT, nvals);
+    }
+    
+    POP();
+    for (int i = 0; i < caseCount; i++) patchJump(jmpOuts[i]);
 }
 
-static void returnStmt(Parser *P)
+static void synchronize()
 {
-    if (P->compiler->type == TYPE_SCRIPT) {
-        error(P, "Cannot return from top-level code.");
-    }
+    P.panicMode = false;
 
-    if (match(P, AUP_TOK_SEMICOLON) ||
-        check(P, AUP_TOK_RBRACE)) {
-        emitReturn(P);
-    }
-    else {
-        expression(P);
-        emitByte(P, AUP_OP_RET);
-    }
-}
+    while (CURRENT.type != AUP_TOK_EOF) {
+        //if (PREVIOUS.type == AUP_TOK_SEMICOLON) return;
+        if (IS_NEWLINE()) return;
 
-static void synchronize(Parser *P)
-{
-    P->panicMode = false;
-
-    while (P->current.type != AUP_TOK_EOF) {
-        if (P->previous.type == AUP_TOK_SEMICOLON) return;
-
-        switch (P->current.type) {
-            case AUP_TOK_CLASS:
-            case AUP_TOK_FUNC:
-            case AUP_TOK_VAR:
-            case AUP_TOK_FOR:
-            case AUP_TOK_IF:
-            case AUP_TOK_LOOP:
-            case AUP_TOK_MATCH:
-            case AUP_TOK_PRINT:
-            case AUP_TOK_RETURN:
+        switch (CURRENT.type) {
+            case AUP_TOK_KW_CLASS:
+            case AUP_TOK_KW_FUNC:
+            case AUP_TOK_KW_VAR:
+            case AUP_TOK_KW_FOR:
+            case AUP_TOK_KW_IF:
+            case AUP_TOK_KW_WHILE:
+            case AUP_TOK_KW_PUTS:
+            case AUP_TOK_KW_RETURN:
                 return;
-            default:; // Do nothing.
         }
 
-        advance(P);
+        advance();
     }
 }
 
-static void decl(Parser *P)
+static void decl()
 {
-    if (match(P, AUP_TOK_FUNC)) {
-        funcDecl(P);
+    if (match(AUP_TOK_KW_VAR)) {
+        varDecl();
     }
-    else if (match(P, AUP_TOK_VAR)) {
-        varDecl(P);
+    else if (match(AUP_TOK_KW_FUNC)) {
+        funcDecl();
     }
     else {
-        stmt(P);
+        stmt();
     }
 
-    if (P->panicMode) synchronize(P);
+    if (P.panicMode) synchronize();
 }
 
-static void stmt(Parser *P)
+static void stmt()
 {
-    if (match(P, AUP_TOK_PRINT)) {
-        printStmt(P);
+    if (match(AUP_TOK_KW_PUTS)) {
+        putsStmt();
     }
-    else if (match(P, AUP_TOK_IF)) {
-        ifStmt(P, true);
+    else if (match(AUP_TOK_KW_IF)) {
+        ifStmt();
     }
-    else if (match(P, AUP_TOK_FOR)) {
-        forStmt(P);
+    else if (match(AUP_TOK_KW_RETURN)) {
+        returnStmt();
     }
-    else if (match(P, AUP_TOK_LOOP)) {
-        loopStmt(P);
+    else if (match(AUP_TOK_KW_MATCH)) {
+        matchStmt();
     }
-    else if (match(P, AUP_TOK_MATCH)) {
-        matchStmt(P);
-    }
-    else if (match(P, AUP_TOK_RETURN)) {
-        returnStmt(P);
-    }
-    else if (match(P, AUP_TOK_BREAK)) {
-        breakStmt(P);
-    }
-    else if (match(P, AUP_TOK_LBRACE) || match(P, AUP_TOK_DO)) {
-        aupTokType closing = (P->previous.type == AUP_TOK_LBRACE) ?
-            AUP_TOK_RBRACE : AUP_TOK_END;
-        beginScope(P);
-        block(P, closing);
-        endScope(P);
-    }
-    else if (match(P, AUP_TOK_SEMICOLON)) {
-        // Do nothing.
+    else if (match(AUP_TOK_LBRACE)) {
+        beginScope();
+        block();
+        endScope();
     }
     else {
-        exprStmt(P);
+        exprStmt();
     }
-
-    match(P, AUP_TOK_SEMICOLON);
 }
 
 aupFun *aup_compile(aupVM *vm, aupSrc *source)
 {
-    aupLexer L;
-    Parser P;
-    Compiler C;
-
-    vm->compiler = &C;
-
-    P.vm = vm;
-    P.source = source;
-    P.lexer = &L;
-    P.compiler = NULL;
+    VM = vm;
+    COMPILER = NULL;
     P.hadError = false;
     P.panicMode = false;
 
-    aup_initLexer(&L, source->buffer);
-    initCompiler(&P, &C, TYPE_SCRIPT);
-    
-    advance(&P);
-    while (!match(&P, AUP_TOK_EOF)) {
-        decl(&P);
+    Compiler compiler;
+    initCompiler(&compiler, TYPE_SCRIPT);
+    aup_initLexer(source->buffer);
+   
+    advance();
+    while (!match(AUP_TOK_EOF)) {
+        decl();
     }
 
-    aupFun *function = endCompiler(&P);
+    aupFun *function = endCompiler();
     return P.hadError ? NULL : function;
-}
-
-void aup_markCompilerRoots(aupVM *vm)
-{
-    Compiler *compiler = vm->compiler;
-    while (compiler != NULL) {
-        aup_markObject(vm, (aupObj *)compiler->function);
-        compiler = compiler->enclosing;
-    }
 }

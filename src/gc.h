@@ -2,7 +2,7 @@
 #define _AUP_GC_H
 #pragma once
 
-#include "common.h"
+#include "util.h"
 #include "object.h"
 
 struct _aupGC {
@@ -10,17 +10,22 @@ struct _aupGC {
     size_t allocated;
     aupObj *objects;
     aupObj **grayStack;
-    int grayCount;
-    int grayCapacity;
+    int    grayCount;
+    int    graySpace;
+
+    aupTab strings;
+    aupTab globals;
 };
+
+#define aup_pushRoot(vm, obj) \
+    (vm)->tempRoots[(vm)->numRoots++] = (obj)
+#define aup_popRoot(vm) \
+    (vm)->numRoots--
 
 void aup_initGC(aupGC *gc);
 void aup_freeGC(aupGC *gc);
 
-void *aup_realloc(aupVM *vm, aupGC *gc, void *ptr, size_t old, size_t new);
 void aup_collect(aupVM *vm);
-
-void aup_markValue(aupVM *vm, aupVal value);
-void aup_markObject(aupVM *vm, aupObj *object);
+void *aup_realloc(aupVM *vm, aupGC *gc, void *ptr, size_t old, size_t _new);
 
 #endif

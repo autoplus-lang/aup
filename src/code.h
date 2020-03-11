@@ -1,137 +1,144 @@
-#ifndef _AUP_CODE_H
-#define _AUP_CODE_H
 #pragma once
 
-#include "common.h"
+#include "util.h"
 #include "value.h"
 
-#define OPCODES() \
-/*        opcodes      args     stack       description */ \
-    _CODE(PRINT)   	/* [n]      [-1, +0]    */ \
-    _CODE(POP)     	/* []       [-1, +0]    */ \
+#define AUP_OPCODES() \
+    _CODE(PRI)      \
     \
-    _CODE(CALL)    	/* [n]      [-n, +1]    */ \
-    _CODE(RET)     	/* []       [-1, +0]    */ \
+    _CODE(PSH)      \
+    _CODE(POP)      \
     \
-    _CODE(NIL)     	/* []       [-0, +1]    push nil to stack */ \
-    _CODE(TRUE)    	/* []       [-0, +1]    push true to stack */ \
-    _CODE(FALSE)   	/* []       [-0, +1]    push false to stack */ \
-    _CODE(INT)   	/* [b]      [-0, +1]    */ \
-    _CODE(INTL)   	/* [b, b]   [-0, +1]    */ \
-    _CODE(CONST)   	/* [k]      [-0, +1]    push a constant from (k) to stack */ \
+    _CODE(NIL)      \
+    _CODE(BOOL)     \
     \
-    _CODE(NEG)     	/* []       [-1, +1]    */ \
-    _CODE(NOT)     	/* []       [-1, +1]    */ \
-    _CODE(BNOT)     /* []       [-1, +1]    */ \
+    _CODE(CALL)     \
+    _CODE(RET)      \
     \
-    _CODE(LT)      	/* []       [-1, +1]    */ \
-    _CODE(LE)      	/* []       [-1, +1]    */ \
-    _CODE(EQ)      	/* []       [-1, +1]    */ \
+    _CODE(JMP)      \
+    _CODE(JMPF)     \
+    _CODE(JNE)      \
     \
-    _CODE(ADD)     	/* []       [-2, +1]    */ \
-    _CODE(SUB)     	/* []       [-2, +1]    */ \
-    _CODE(MUL)     	/* []       [-2, +1]    */ \
-    _CODE(DIV)     	/* []       [-2, +1]    */ \
-    _CODE(MOD)     	/* []       [-2, +1]    */ \
+    _CODE(NOT)      \
+    _CODE(LT)       \
+    _CODE(LE)       \
+    _CODE(GT)       \
+    _CODE(GE)       \
+    _CODE(EQ)       \
     \
-    _CODE(BAND)     /* []       [-2, +1]    */ \
-    _CODE(BOR)     	/* []       [-2, +1]    */ \
-    _CODE(BXOR)     /* []       [-2, +1]    */ \
-    _CODE(SHL)     	/* []       [-2, +1]    */ \
-    _CODE(SHR)     	/* []       [-2, +1]    */ \
+    _CODE(NEG)      \
+    _CODE(ADD)      \
+    _CODE(SUB)      \
+    _CODE(MUL)      \
+    _CODE(DIV)      \
+    _CODE(MOD)      \
+    _CODE(POW)      \
     \
-    _CODE(DEF)     	/* [k]      [-1, +0]    pop a value from stack and define as (k) in global */ \
-    _CODE(GLD)     	/* [k]      [-0, +1]    push a from (k) in global to stack */ \
-    _CODE(GST)     	/* [k]      [-0, +0]    set a value from stack as (k) in global */ \
+    _CODE(BNOT)     \
+    _CODE(BAND)     \
+    _CODE(BOR)      \
+    _CODE(BXOR)     \
+    _CODE(SHL)      \
+    _CODE(SHR)      \
     \
-    _CODE(JMP)     	/* [s, s]   [-0, +0]    */ \
-    _CODE(JMPF)    	/* [s, s]   [-0, +0]    */ \
-    _CODE(JNE)      /* [s, s]   [-1, +0]    */ \
-    _CODE(LOOP)     /* [s, s]   [-0, +0]    */ \
+    _CODE(MOV)      \
+    _CODE(LD)       \
     \
-    _CODE(LD)      	/* [s]      [-0, +1]    */ \
-    _CODE(ST)      	/* [s]      [-0, +0]    */ \
-    _CODE(MAP)      /* []       [-0, +1]    */ \
-    _CODE(GET)      /* [k]      [-1, +1]    */ \
-    _CODE(SET)      /* [k]      [-2, +1]    */ \
-    _CODE(GETI)     /* []       [-2, +1]    */ \
-    _CODE(SETI)     /* []       [-3, +1]    */ \
+    _CODE(GLD)      \
+    _CODE(GST)      \
     \
-    _CODE(CLOSURE)  /* [k, ...] [-0, +0]    */ \
-    _CODE(CLOSE)    /* []       [-1, +0]    */ \
-    _CODE(ULD)      /* [u]      [-0, +1]    */ \
-    _CODE(UST)      /* [u]      [-0, +0]    */
+    _CODE(GET)      \
+    _CODE(SET)
 
 #define _CODE(x) AUP_OP_##x,
-typedef enum { OPCODES() AUP_OPCOUNT } aupOp;
+typedef enum { AUP_OPCODES() AUP_OPCOUNT } aupOp;
 #undef _CODE
 
-#define AUP_CODEPAGE    256
+static const char *aup_opName(aupOp opcode) {
+#define _CODE(x) #x,
+    static const char *names[] = { AUP_OPCODES() };
+    return names[opcode];
+#undef _CODE
+}
+
+#define aup_OpA(Op, A)              ((uint32_t)((Op) | (((A) & 0xFF) << 6)))
+#define aup_OpAB(Op, A, B)          ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((B)  & 0xFF)   << 14)))
+#define aup_OpAC(Op, A, C)          ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((C)  & 0xFF)   << 23)))
+#define aup_OpABC(Op, A, B, C)      ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((B)  & 0xFF)   << 14) | (((C)  & 0xFF)  << 23)))
+#define aup_OpABx(Op, A, Bx)        ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((Bx) & 0x1FF)  << 14) ))
+#define aup_OpACx(Op, A, Bx)        ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((Cx) & 0x1FF)  << 23) ))
+#define aup_OpABxCx(Op, A, Bx, Cx)  ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((Bx) & 0x1FF)  << 14) | (((Cx) & 0x1FF) << 23)))
+#define aup_OpAsB(Op, A, sB)        ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((sB) & 1)      << 22)))
+#define aup_OpAsC(Op, A, sC)        ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((sC) & 1)      << 31)))
+#define aup_OpAsBsC(Op, A, sB, sC)  ((uint32_t)((Op) | (((A) & 0xFF) << 6) | (((sB) & 1)      << 22) | (((sC) & 1)     << 31)))
+
+#define aup_OpAxx(Op, Axx)          ((uint32_t)((Op) | ((uint16_t)(Axx) << 6)))
+#define aup_OpAxxCx(Op, Axx, Cx)    ((uint32_t)((Op) | ((uint16_t)(Axx) << 6)                        | (((Cx) & 0x1FF) << 23)))
+#define aup_OpABxx(Op, A, Bxx)      ((uint32_t)((Op) | (((A) & 0xFF) << 6) | ((uint16_t)(Bxx) << 14)))
+
+#define aup_getOp(i)                ((aupOp)   ( (i) &  0x3F       ))
+#define aup_getA(i)                 ((uint8_t) ( (i) >> 6          ))
+#define aup_getB(i)                 ((uint8_t) ( (i) >> 14         ))
+#define aup_getC(i)                 ((uint8_t) ( (i) >> 23         ))
+#define aup_getBx(i)                ((uint16_t)(((i) >> 14) & 0x1FF))
+#define aup_getCx(i)                ((uint16_t)(((i) >> 23) & 0x1FF))
+#define aup_getsB(i)                ((uint8_t) (((i) >> 22) & 1    ))
+#define aup_getsC(i)                ((uint8_t) (((i) >> 31) & 1    ))
+#define aup_getAxx(i)               ((int16_t) ( (i) >> 6          ))
+#define aup_getBxx(i)               ((uint16_t)( (i) >> 14         ))
 
 typedef struct {
-    char *buffer;
-    char *fname;
+    char   *buffer;
+    char   *fname;
     size_t size;
 } aupSrc;
 
-aupSrc *aup_newSource(const char *file);
+aupSrc *aup_newSource(const char *fname);
 void aup_freeSource(aupSrc *source);
 
 typedef struct {
-    int count;
-    int capacity;
-    uint8_t *code;
+    int      count;
+    int      space;
+    uint32_t *code;
     uint16_t *lines;
     uint16_t *columns;
-    aupSrc *source;
-    aupArr constants;
+    aupSrc   *source;
+    aupArr   constants;
 } aupChunk;
 
 void aup_initChunk(aupChunk *chunk, aupSrc *source);
 void aup_freeChunk(aupChunk *chunk);
-void aup_emitChunk(aupChunk *chunk, uint8_t byte, int line, int column);
-
-void aup_dasmChunk(aupChunk *chunk, const char *name);
-int aup_dasmInstruction(aupChunk *chunk, int offset);
-
-static const char *aup_op2Str(aupOp opcode) {
-#define _CODE(x) #x,
-    static const char *tab[] = { OPCODES() };
-#undef _CODE
-    return tab[opcode];
-}
+int  aup_emitChunk(aupChunk *chunk, uint32_t inst, int line, int column);
+int  aup_addConstant(aupChunk *chunk, aupVal val);
 
 typedef enum {
-    // Single-character tokens.                         
+    // Characters
     AUP_TOK_LPAREN,             // (
     AUP_TOK_RPAREN,             // )
     AUP_TOK_LBRACKET,           // [
     AUP_TOK_RBRACKET,           // ]
     AUP_TOK_LBRACE,             // {
     AUP_TOK_RBRACE,             // }
-
-    AUP_TOK_ARROW,              // -> =>
+    //
     AUP_TOK_COMMA,              // ,
     AUP_TOK_DOT,                // .
-    AUP_TOK_SEMICOLON,          // ;
-
     AUP_TOK_COLON,              // :
+    AUP_TOK_SEMICOLON,          // ;
     AUP_TOK_QMARK,              // ?
-
+    //
     AUP_TOK_MINUS,              // -
     AUP_TOK_PLUS,               // +
     AUP_TOK_SLASH,              // /
     AUP_TOK_STAR,               // *
     AUP_TOK_PERCENT,            // %
-
+    //
     AUP_TOK_AMPERSAND,          // &
     AUP_TOK_VBAR,               // |
     AUP_TOK_TILDE,              // ~
     AUP_TOK_CARET,              // ^
     AUP_TOK_LESS_LESS,          // <<
     AUP_TOK_GREATER_GREATER,    // >>
-
-    // One or two character tokens.                     
+    //
     AUP_TOK_BANG,               // !
     AUP_TOK_BANG_EQUAL,         // !=
     AUP_TOK_EQUAL,              // =
@@ -140,76 +147,69 @@ typedef enum {
     AUP_TOK_GREATER_EQUAL,      // >=
     AUP_TOK_LESS,               // <
     AUP_TOK_LESS_EQUAL,         // <=
-
+    //
+    AUP_TOK_AMPERSAND_EQUAL,    // &=
+    AUP_TOK_VBAR_EQUAL,         // |=
+    AUP_TOK_CARET_EQUAL,        // ^=
+    //
     AUP_TOK_PLUS_EQUAL,         // +=
     AUP_TOK_MINUS_EQUAL,        // -=
     AUP_TOK_STAR_EQUAL,         // *=
     AUP_TOK_SLASH_EQUAL,        // /=
     AUP_TOK_PERCENT_EQUAL,      // %=
-
-    // Literals.                                        
-    AUP_TOK_IDENTIFIER,
-    AUP_TOK_STRING,
-    AUP_TOK_NUMBER,
-    AUP_TOK_INTEGER,
-    AUP_TOK_HEXADECIMAL,
-
-    // Keywords.                                        
-    AUP_TOK_AND,                // and
-    AUP_TOK_BREAK,              // break
-    AUP_TOK_CLASS,              // class
-    AUP_TOK_DO,                 // do
-    AUP_TOK_ELSE,               // else
-    AUP_TOK_ELSEIF,             // elseif
-    AUP_TOK_END,                // end
-    AUP_TOK_FALSE,              // false
-    AUP_TOK_FOR,                // for
-    AUP_TOK_FUNC,               // func
-    AUP_TOK_IF,                 // if
-    AUP_TOK_LOOP,               // loop
-    AUP_TOK_MATCH,              // match
-    AUP_TOK_NIL,                // nil
-    AUP_TOK_NOT,                // not
-    AUP_TOK_OR,                 // or
-    AUP_TOK_PRINT,              // print
-    AUP_TOK_RETURN,             // return
-    AUP_TOK_SUPER,              // super
-    AUP_TOK_THEN,               // then
-    AUP_TOK_THIS,               // this
-    AUP_TOK_TRUE,               // true
-    AUP_TOK_VAR,                // var
-
+    //
+    AUP_TOK_STAR_STAR,          // **
+    AUP_TOK_QMARK_DOT,          // ?.
+    AUP_TOK_ARROW,              // -> =>
+    // Literals
+    AUP_TOK_IDENTIFIER,         // [a-zA-Z_$][a-zA-Z_$0-9]+
+    AUP_TOK_STRING,             // ".*?" '.*?'
+    AUP_TOK_NUMBER,             // [0-9]+([.]?[0-9])*
+    AUP_TOK_INTEGER,            // [0-9]+
+    AUP_TOK_HEXADECIMAL,        // 0x[a-fA-F0-9]+
+    // Keywords
+    AUP_TOK_KW_AND,             // and
+    AUP_TOK_KW_BREAK,           // break
+    AUP_TOK_KW_CASE,            // case
+    AUP_TOK_KW_CLASS,           // class
+    AUP_TOK_KW_DO,              // do
+    AUP_TOK_KW_ELSE,            // else
+    AUP_TOK_KW_FALSE,           // false
+    AUP_TOK_KW_FOR,             // for
+    AUP_TOK_KW_FUNC,            // func
+    AUP_TOK_KW_IF,              // if
+    AUP_TOK_KW_MATCH,           // match
+    AUP_TOK_KW_NIL,             // nil
+    AUP_TOK_KW_NOT,             // not
+    AUP_TOK_KW_OR,              // or
+    AUP_TOK_KW_PUTS,            // puts
+    AUP_TOK_KW_RETURN,          // return
+    AUP_TOK_KW_SUPER,           // super
+    AUP_TOK_KW_SWITCH,          // switch
+    AUP_TOK_KW_THEN,            // then
+    AUP_TOK_KW_THIS,            // this
+    AUP_TOK_KW_TRUE,            // true
+    AUP_TOK_KW_VAR,             // var
+    AUP_TOK_KW_WHILE,           // while
+    //
     AUP_TOK_ERROR,
-    AUP_TOK_EOF,
-
-    AUP_TOKENCOUNT
-} aupTokType;
+    AUP_TOK_EOF
+} aupTTok;
 
 typedef struct {
     const char *start;
     const char *lineStart;
-    int lineLength;
-    aupTokType type;
+    aupTTok type;
     int length;
     int line;
     int column;
 } aupTok;
 
-typedef struct {
-    const char *start;
-    const char *current;
-    const char *lineStart;
-    int lineLength;
-    int line;
-    int position;
-} aupLexer;
-
-typedef struct _aupCompiler aupCompiler;
-
-void aup_initLexer(aupLexer *lexer, const char *source);
-aupTok aup_scanToken(aupLexer *lexer);
+void aup_initLexer(const char *source);
+aupTok aup_scanToken();
+aupTok aup_peekToken(int n);
 
 aupFun *aup_compile(aupVM *vm, aupSrc *source);
-void aup_markCompilerRoots(aupVM *vm);
 
-#endif
+int aup_dasmInst(aupChunk *chunk, int offset);
+void aup_dasmChunk(aupChunk *chunk, const char *name);

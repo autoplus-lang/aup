@@ -4,72 +4,75 @@
 
 #include "value.h"
 #include "code.h"
-#include "table.h"
 
-#define AUP_OBJBASE aupObj obj
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#endif
 
+// Size always is 8 bytes
 struct _aupObj {
-    aupObj *next;
-    aupOType type : 8;
-    unsigned isMarked : 1;
+#ifdef AUP_X64
+    union {
+        // Pointer tag 0000FFFFFFFFFFFF
+        uintptr_t next : 48;
+        struct {
+            unsigned : 32;
+            unsigned : 24;
+#else
+            uintptr_t next;
+#endif
+            aupTObj type : 7;
+            unsigned isMarked : 1;
+#ifdef AUP_X64
+        };
+    };
+#endif
 };
 
 struct _aupStr {
-    AUP_OBJBASE;
-    char *chars;
+    aupObj base;
     int length;
     uint32_t hash;
+    char *chars;
 };
 
 struct _aupFun {
-    AUP_OBJBASE;
+    aupObj base;
     aupStr *name;
-    aupUpv **upvalues;
-    aupChunk chunk;   
+    aupUpv **upvals;
     int arity;
-    int upvalueCount;
+    int upvalCount;
+    aupChunk chunk;
 };
 
 struct _aupUpv {
-    AUP_OBJBASE;
+    aupObj base;
+    aupUpv *next;
     aupVal *location;
-    aupVal closed;
-    struct _aupUpv *next;
+    aupVal closed; 
 };
 
-struct _aupMap {
-    AUP_OBJBASE;
-    aupTab table;
-    aupHash hash;
-};
+#define aup_asStr(v)    ((aupStr *)aup_asObj(v))
+#define aup_asCStr(v)   (aup_asStr(v)->chars)
+#define aup_asFun(v)    ((aupFun *)aup_asObj(v))
 
-#define AUP_OBJTYPE(v)  (AUP_AS_OBJ(v)->type)
-#define AUP_IS_STR(v)   (aup_isObject(v, AUP_TSTR))
-#define AUP_IS_FUN(v)   (aup_isObject(v, AUP_TFUN))
-#define AUP_IS_MAP(v)   (aup_isObject(v, AUP_TMAP))
+#define aup_objType(v)  (aup_asObj(v)->type)
 
-#define AUP_AS_STR(v)   ((aupStr *)AUP_AS_OBJ(v))
-#define AUP_AS_CSTR(v)  (AS_STR(v)->chars)
-#define AUP_AS_FUN(v)   ((aupFun *)AUP_AS_OBJ(v))
-#define AUP_AS_MAP(v)   ((aupMap *)AUP_AS_OBJ(v))
-
-static inline bool aup_isObject(aupVal value, aupOType type) {
-    return AUP_IS_OBJ(value) && AUP_OBJTYPE(value) == type;
+static inline bool aup_checkObj(aupVal val, aupTObj type) {
+    return aup_isObj(val) && aup_objType(val) == type;
 }
 
+#define aup_isStr(v)    (aup_checkObj(v, AUP_OSTR))
+#define aup_isFun(v)    (aup_checkObj(v, AUP_OFUN))
+
 void aup_printObject(aupObj *object);
-const char *aup_typeofObject(aupObj *object);
 void aup_freeObject(aupGC *gc, aupObj *object);
 
 aupStr *aup_takeString(aupVM *vm, char *chars, int length);
 aupStr *aup_copyString(aupVM *vm, const char *chars, int length);
+aupStr *aup_catString(aupVM *vm, aupStr *s1, aupStr *s2);
 
 aupFun *aup_newFunction(aupVM *vm, aupSrc *source);
 void aup_makeClosure(aupFun *function);
-
-aupUpv *aup_newUpvalue(aupVM *vm, aupVal *slot);
-
-aupMap *aup_newMap(aupVM *vm);
-void aup_setMap(aupVM *vm, aupMap *map, const char *name, aupVal value);
 
 #endif
