@@ -57,7 +57,7 @@ static void markObject(aupGC *gc, aupObj *object)
     object->isMarked = true;
 
     if (gc->graySpace <= gc->grayCount) {
-        gc->graySpace = aup_growCap(gc->graySpace);
+        gc->graySpace = AUP_GROW(gc->graySpace);
         gc->grayStack = realloc(gc->grayStack,
             sizeof(aupObj *) * gc->graySpace);
     }
@@ -67,8 +67,8 @@ static void markObject(aupGC *gc, aupObj *object)
 
 static void markValue(aupGC *gc, aupVal value)
 {
-    if (!aup_isObj(value)) return;
-    markObject(gc, aup_asObj(value));
+    if (!AUP_IsObj(value)) return;
+    markObject(gc, AUP_AsObj(value));
 }
 
 static void markArray(aupGC *gc, aupArr *array)

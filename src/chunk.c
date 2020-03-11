@@ -22,7 +22,7 @@ int aup_emitChunk(aupChunk *chunk, uint32_t inst, int line, int column)
     int count = chunk->count++;
 
     if (count >= chunk->space) {
-        int space = chunk->space = aup_growCap(chunk->space);
+        int space = chunk->space = AUP_GROW(chunk->space);
         chunk->code = realloc(chunk->code,
             sizeof(uint32_t) * space);
         chunk->lines = realloc(chunk->lines,
@@ -99,15 +99,15 @@ int aup_dasmInst(aupChunk *chunk, int offset)
         printf("%-3d ", chunk->columns[offset]);
     }
 
-#define Op      aup_getOp(i)
-#define A       aup_getA(i)
-#define B       aup_getB(i)
-#define C       aup_getC(i)
-#define Bx      aup_getBx(i)
-#define Cx      aup_getCx(i)
-#define sB      aup_getsB(i)
-#define sC      aup_getsC(i)
-#define Axx     aup_getAxx(i)
+#define Op      AUP_GetOp(i)
+#define A       AUP_GetA(i)
+#define B       AUP_GetB(i)
+#define C       AUP_GetC(i)
+#define Bx      AUP_GetBx(i)
+#define Cx      AUP_GetCx(i)
+#define sB      AUP_GetsB(i)
+#define sC      AUP_GetsC(i)
+#define Axx     AUP_GetAxx(i)
 
 #define R(i)    printf("R[%d]", i)
 #define K(i)    printf("K[%d]", i)

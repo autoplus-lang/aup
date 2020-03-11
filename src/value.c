@@ -7,26 +7,26 @@
 
 void aup_printValue(aupVal val)
 {
-    switch (aup_typeof(val)) {
+    switch (val.type) {
         case AUP_TNIL:
         default:
             printf("nil");
             break;
         case AUP_TBOOL:
-            printf(aup_asBool(val) ? "true" : "false");
+            printf(AUP_AsBool(val) ? "true" : "false");
             break;
         case AUP_TNUM:
-            printf("%.14g", aup_asNum(val));
+            printf("%.14g", AUP_AsNum(val));
             break;
         case AUP_TOBJ:
-            aup_printObject(aup_asObj(val));
+            aup_printObject(AUP_AsObj(val));
             break;
     }
 }
 
 const char *aup_typeName(aupVal val)
 {
-    switch (aup_typeof(val)) {
+    switch (val.type) {
         case AUP_TNIL:
             return "nil";
         case AUP_TBOOL:
@@ -34,7 +34,7 @@ const char *aup_typeName(aupVal val)
         case AUP_TNUM:
             return "num";
         case AUP_TOBJ: {
-            switch (aup_objType(val)) {
+            switch (AUP_OType(val)) {
                 case AUP_OSTR:
                     return "str";
                 case AUP_OFUN:
@@ -48,48 +48,28 @@ const char *aup_typeName(aupVal val)
 
 bool aup_isEqual(aupVal a, aupVal b)
 {
-    if (aup_typeof(a) == aup_typeof(b)) {
-        switch (aup_typeof(a)) {
+    if (a.type == b.type) {
+        switch (a.type) {
             case AUP_TNIL:
                 return true;
             case AUP_TBOOL:
-                return aup_asBool(a) == aup_asBool(b);
+                return AUP_AsBool(a) == AUP_AsBool(b);
             case AUP_TNUM:
-                return aup_asNum(a) == aup_asNum(b);
+                return AUP_AsNum(a) == AUP_AsNum(b);
             case AUP_TOBJ:
-                return aup_asObj(a) == aup_asObj(b);
+                return AUP_AsObj(a) == AUP_AsObj(b);
             default:
                 return false;
         }
     }
-    else if (aup_isNum(a) && aup_isBool(b)) {
-        return aup_asNum(a) == aup_asBool(b);
+    else if (AUP_IsNum(a) && AUP_IsBool(b)) {
+        return AUP_AsNum(a) == AUP_AsBool(b);
     }
-    else if (aup_isBool(a) && aup_isNum(b)) {
-        return aup_asBool(a) == aup_asNum(b);
+    else if (AUP_IsBool(a) && AUP_IsNum(b)) {
+        return AUP_AsBool(a) == AUP_AsNum(b);
     }
 
     return false;
-}
-
-aupStr *aup_toString(aupVM *vm, aupVal val)
-{
-    switch (aup_typeof(val)) {
-        case AUP_TNIL:
-        case AUP_TBOOL:
-        case AUP_TNUM:
-        case AUP_TOBJ: {
-            aupObj *object = aup_asObj(val);
-            switch (object->type) {
-                case AUP_OSTR:
-                    return (aupStr *)object;
-                case AUP_OFUN:
-                    return ((aupFun *)object)->name;
-            }
-        }
-    }
-
-    return NULL;
 }
 
 void aup_initArray(aupArr *arr)
@@ -111,7 +91,7 @@ int aup_pushArray(aupArr *arr, aupVal val, bool allow_dup)
     }
 
     if (arr->count >= arr->space) {
-        arr->space = aup_growCap(arr->space);
+        arr->space = AUP_GROW(arr->space);
         arr->values = realloc(arr->values, arr->space * sizeof(aupVal));
     }
 

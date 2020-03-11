@@ -55,7 +55,7 @@ struct _aupUpv {
 #define AUP_OType(v)    (AUP_AsObj(v)->type)
 
 static inline bool AUP_CheckObj(aupVal val, aupTObj type) {
-    return aup_isObj(val) && aup_objType(val) == type;
+    return AUP_IsObj(val) && AUP_OType(val) == type;
 }
 
 #define AUP_IsStr(v)    (AUP_CheckObj(v, AUP_OSTR))

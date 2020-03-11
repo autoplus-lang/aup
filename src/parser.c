@@ -194,9 +194,9 @@ static void emit(uint32_t instruction)
 static int emitJump(aupOp jmpOp, REG src)
 {
     if (jmpOp == AUP_OP_JMP)
-        emit(aup_OpAxx(jmpOp, 0));
+        emit(AUP_OpAxx(jmpOp, 0));
     else
-        emit(aup_OpAxxCx(jmpOp, 0, src));
+        emit(AUP_OpAxxCx(jmpOp, 0, src));
     
     return getChunk()->count - 1;
 }
@@ -212,11 +212,11 @@ static void patchJump(int offset)
     }
 
     uint32_t i = chunk->code[offset];
-    uint8_t op = aup_getOp(i);
-    REG RK = aup_getCx(i);
+    uint8_t op = AUP_GetOp(i);
+    REG RK = AUP_GetCx(i);
 
     // Patch the hole.
-    i = aup_OpAxxCx(op, jump, RK);
+    i = AUP_OpAxxCx(op, jump, RK);
     chunk->code[offset] = i;
 }
 
@@ -224,12 +224,12 @@ static void emitReturn(REG src)
 {
     aupChunk *chunk = getChunk();
 
-    if (chunk->count == 0 || aup_getOp(chunk->code[chunk->count - 1]) != AUP_OP_RET) {
+    if (chunk->count == 0 || AUP_GetOp(chunk->code[chunk->count - 1]) != AUP_OP_RET) {
         if (src == -1) {
-            emit(aup_OpA(AUP_OP_RET, false));
+            emit(AUP_OpA(AUP_OP_RET, false));
         }
         else {
-            emit(aup_OpABx(AUP_OP_RET, true, src));
+            emit(AUP_OpABx(AUP_OP_RET, true, src));
         }
     }
 }
@@ -316,7 +316,7 @@ static uint8_t identifierConstant(aupTok *name)
 {
     aupStr *identifier = aup_copyString(VM,
         name->start, name->length);
-    return makeConstant(aup_vObj(identifier));
+    return makeConstant(AUP_VObj(identifier));
 }
 
 static bool identifiersEqual(aupTok *a, aupTok *b)
@@ -398,9 +398,9 @@ static void defineVariable(REG global, REG src)
     }
 
     if (src == -1)
-        emit(aup_OpAsC(AUP_OP_GST, global, true));
+        emit(AUP_OpAsC(AUP_OP_GST, global, true));
     else
-        emit(aup_OpABx(AUP_OP_GST, global, src));
+        emit(AUP_OpABx(AUP_OP_GST, global, src));
 }
 
 static uint8_t argumentList()
@@ -455,56 +455,56 @@ static PARSE_INFIX(binary)
     // Emit the operator instruction.
     switch (operatorType) {
         case AUP_TOK_LESS:
-            emit(aup_OpABxCx(AUP_OP_LT, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_LT, dest, left, right));
             break;
         case AUP_TOK_LESS_EQUAL:
-            emit(aup_OpABxCx(AUP_OP_LE, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_LE, dest, left, right));
             break;
         case AUP_TOK_EQUAL_EQUAL:
-            emit(aup_OpABxCx(AUP_OP_EQ, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_EQ, dest, left, right));
             break;
         case AUP_TOK_BANG_EQUAL:
-            emit(aup_OpABxCx(AUP_OP_EQ, dest, left, right));
-            emit(aup_OpABx(AUP_OP_NOT, dest, dest));
+            emit(AUP_OpABxCx(AUP_OP_EQ, dest, left, right));
+            emit(AUP_OpABx(AUP_OP_NOT, dest, dest));
             break;
         case AUP_TOK_GREATER:
-            emit(aup_OpABxCx(AUP_OP_GT, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_GT, dest, left, right));
             break;
         case AUP_TOK_GREATER_EQUAL:
-            emit(aup_OpABxCx(AUP_OP_GE, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_GE, dest, left, right));
             break;
         case AUP_TOK_PLUS:
-            emit(aup_OpABxCx(AUP_OP_ADD, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_ADD, dest, left, right));
             break;
         case AUP_TOK_MINUS:
-            emit(aup_OpABxCx(AUP_OP_SUB, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_SUB, dest, left, right));
             break;
         case AUP_TOK_STAR:
-            emit(aup_OpABxCx(AUP_OP_MUL, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_MUL, dest, left, right));
             break;
         case AUP_TOK_SLASH:
-            emit(aup_OpABxCx(AUP_OP_DIV, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_DIV, dest, left, right));
             break;
         case AUP_TOK_PERCENT:
-            emit(aup_OpABxCx(AUP_OP_MOD, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_MOD, dest, left, right));
             break;
         case AUP_TOK_STAR_STAR:
-            emit(aup_OpABxCx(AUP_OP_POW, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_POW, dest, left, right));
             break;
         case AUP_TOK_AMPERSAND:
-            emit(aup_OpABxCx(AUP_OP_BAND, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_BAND, dest, left, right));
             break;
         case AUP_TOK_VBAR:
-            emit(aup_OpABxCx(AUP_OP_BOR, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_BOR, dest, left, right));
             break;
         case AUP_TOK_CARET:
-            emit(aup_OpABxCx(AUP_OP_BXOR, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_BXOR, dest, left, right));
             break;
         case AUP_TOK_LESS_LESS:
-            emit(aup_OpABxCx(AUP_OP_SHL, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_SHL, dest, left, right));
             break;
         case AUP_TOK_GREATER_GREATER:
-            emit(aup_OpABxCx(AUP_OP_SHR, dest, left, right));
+            emit(AUP_OpABxCx(AUP_OP_SHR, dest, left, right));
             break;
     }
 
@@ -515,7 +515,7 @@ static PARSE_INFIX(call)
 {
     int argc = argumentList();
 
-    emit(aup_OpAB(AUP_OP_CALL, dest, argc));
+    emit(AUP_OpAB(AUP_OP_CALL, dest, argc));
     POP_N(argc);
 
     return dest;
@@ -569,16 +569,16 @@ static PARSE_PREFIX(literal)
 {
     switch (PREVIOUS.type) {
         case AUP_TOK_KW_NIL:
-            emit(aup_OpA(AUP_OP_NIL, dest));
+            emit(AUP_OpA(AUP_OP_NIL, dest));
             break;
         case AUP_TOK_KW_TRUE:
-            emit(aup_OpAsB(AUP_OP_BOOL, dest, true));
+            emit(AUP_OpAsB(AUP_OP_BOOL, dest, true));
             break;
         case AUP_TOK_KW_FALSE:
-            emit(aup_OpAsB(AUP_OP_BOOL, dest, false));
+            emit(AUP_OpAsB(AUP_OP_BOOL, dest, false));
             break;
         case AUP_TOK_KW_FUNC:
-            emit(aup_OpAB(AUP_OP_MOV, dest, 0));
+            emit(AUP_OpAB(AUP_OP_MOV, dest, 0));
             break;
     }
 
@@ -596,7 +596,7 @@ static PARSE_PREFIX(grouping)
 static PARSE_PREFIX(number)
 {
     double value = strtod(PREVIOUS.start, NULL);
-    return emitConstant(aup_vNum(value));
+    return emitConstant(AUP_VNum(value));
 }
 
 static PARSE_PREFIX(integer)
@@ -612,7 +612,7 @@ static PARSE_PREFIX(integer)
             break;
     }
 
-    return emitConstant(aup_vNum(value));
+    return emitConstant(AUP_VNum(value));
 }
 
 static PARSE_PREFIX(string)
@@ -621,7 +621,7 @@ static PARSE_PREFIX(string)
     const char *start = PREVIOUS.start + 1;
 
     aupStr *string = aup_copyString(VM, start, length);
-    return emitConstant(aup_vObj(string));
+    return emitConstant(AUP_VObj(string));
 }
 
 static REG namedVariable(aupTok name, REG dest, bool canAssign)
@@ -643,14 +643,14 @@ static REG namedVariable(aupTok name, REG dest, bool canAssign)
 
     if (canAssign && match(AUP_TOK_EQUAL)) {
         REG src = exprEx(dest);
-        emit(aup_OpABx(storeOp, arg, src));
+        emit(AUP_OpABx(storeOp, arg, src));
 
         dest = src;
         P.hadAssign = true;
     }
     else {
         if (isLocal) return arg;
-        emit(aup_OpABx(loadOp, dest, arg));
+        emit(AUP_OpABx(loadOp, dest, arg));
     }
 
     return dest;
@@ -671,14 +671,14 @@ static PARSE_PREFIX(unary)
     // Emit the operator instruction.              
     switch (operatorType) {
         case AUP_TOK_TILDE:
-            emit(aup_OpABx(AUP_OP_BNOT, dest, right));
+            emit(AUP_OpABx(AUP_OP_BNOT, dest, right));
             break;
         case AUP_TOK_KW_NOT:
         case AUP_TOK_BANG:
-            emit(aup_OpABx(AUP_OP_NOT, dest, right));
+            emit(AUP_OpABx(AUP_OP_NOT, dest, right));
             break;
         case AUP_TOK_MINUS:
-            emit(aup_OpABx(AUP_OP_NEG, dest, right));
+            emit(AUP_OpABx(AUP_OP_NEG, dest, right));
             break;
     }
 
@@ -826,7 +826,7 @@ static REG exprPrec(REG dest, Precedence prec)
     if (P.subExprs <= 1) {
         REG src = dest;
         REG dest = PEEK(0);
-        emit(aup_OpABx(AUP_OP_LD, dest, src));
+        emit(AUP_OpABx(AUP_OP_LD, dest, src));
     }
 
     return dest;
@@ -868,7 +868,7 @@ static REG func(TFunc type)
 
     // Create the function object.                                
     aupFun *function = endCompiler();
-    return emitConstant(aup_vObj(function));
+    return emitConstant(AUP_VObj(function));
 }
 
 static void funcDecl()
@@ -941,7 +941,7 @@ static void putsStmt()
         count++;
     } while (match(AUP_TOK_COMMA));
 
-    emit(aup_OpAB(AUP_OP_PRI, src, count));
+    emit(AUP_OpAB(AUP_OP_PRI, src, count));
     POP_N(count);
 }
 

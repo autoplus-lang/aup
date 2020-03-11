@@ -56,9 +56,9 @@ static aupStr *allocString(aupVM *vm, char *chars, int length, uint32_t hash)
     string->length = length;
     string->hash = hash;
 
-    aup_pushRoot(vm, (aupObj *)string);
-    aup_setKey(&vm->gc->strings, string, aup_vNil);
-    aup_popRoot(vm);
+    AUP_PushRoot(vm, (aupObj *)string);
+    aup_setKey(&vm->gc->strings, string, AUP_VNil);
+    AUP_PopRoot(vm);
     return string;
 }
 
@@ -133,7 +133,7 @@ void aup_makeClosure(aupFun *function)
 aupUpv *aup_newUpval(aupVM *vm, aupVal *slot)
 {
     aupUpv *upval = ALLOC_OBJ(vm, aupUpv, AUP_OUPV);
-    upval->closed = aup_vNil;
+    upval->closed = AUP_VNil;
     upval->location = slot;
     upval->next = NULL;
 

@@ -73,10 +73,12 @@ struct _aupVal {
 #define AUP_AsI64(v)    ((int64_t)AUP_AsNum(v))
 #define AUP_AsRaw(v)    ((v).raw)
 
-#define AUP_IsNil(v)    ((v).type == AUP_TNIL)
-#define AUP_IsBool(v)   ((v).type == AUP_TBOOL)
-#define AUP_IsNum(v)    ((v).type == AUP_TNUM)
-#define AUP_IsObj(v)    ((v).type == AUP_TOBJ)
+#define AUP_Typeof(v)   ((v).type)
+
+#define AUP_IsNil(v)    (AUP_Typeof(v) == AUP_TNIL)
+#define AUP_IsBool(v)   (AUP_Typeof(v) == AUP_TBOOL)
+#define AUP_IsNum(v)    (AUP_Typeof(v) == AUP_TNUM)
+#define AUP_IsObj(v)    (AUP_Typeof(v) == AUP_TOBJ)
 
 #if (defined(_MSC_VER) && _MSC_VER <= 1600) || defined(__clang__)
 static bool AUP_IsFalsey(aupVal v) {
@@ -89,7 +91,7 @@ static bool AUP_IsFalsey(aupVal v) {
     }
 }
 #else
-#define AUP_IsFalsey(v) (!(bool)aup_asRaw(v))
+#define AUP_IsFalsey(v) (!(bool)AUP_AsRaw(v))
 #endif
 
 void aup_printValue(aupVal val);

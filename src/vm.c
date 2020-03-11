@@ -96,10 +96,10 @@ static bool call(aupVM *vm, aupFun *function, int argCount)
 
 static bool callValue(aupVM *vm, aupVal callee, int argCount)
 {
-    if (aup_isObj(callee)) {
-        switch (aup_objType(callee)) {
+    if (AUP_IsObj(callee)) {
+        switch (AUP_OType(callee)) {
             case AUP_OFUN:
-                return call(vm, aup_asFun(callee), argCount);
+                return call(vm, AUP_AsFun(callee), argCount);
 
             default:
                 // Non-callable object type.                   
@@ -129,30 +129,30 @@ static int exec(aupVM *vm)
     STORE_FRAME(), \
     runtimeError(vm, fmt, ##__VA_ARGS__)
 
-#define FETCH() aup_getOp(*ip++)
+#define FETCH() AUP_GetOp(*ip++)
 #define READ()  (ip[-1])
 
 #define R(i)    (frame->stack[i])
 #define K(i)    (frame->function->chunk.constants.values[i])
 
-#define A       aup_getA(READ())
-#define B       aup_getB(READ())
-#define C       aup_getC(READ())
+#define A       AUP_GetA(READ())
+#define B       AUP_GetB(READ())
+#define C       AUP_GetC(READ())
 
-#define Op      aup_getOp(READ())
-#define Axx     aup_getAxx(READ())
-#define Bxx     aup_getBxx(READ())
+#define Op      AUP_GetOp(READ())
+#define Axx     AUP_GetAxx(READ())
+#define Bxx     AUP_GetBxx(READ())
 
-#define RA      R(aup_getA(READ()))
-#define RB      R(aup_getB(READ()))
-#define RC      R(aup_getC(READ()))
+#define RA      R(AUP_GetA(READ()))
+#define RB      R(AUP_GetB(READ()))
+#define RC      R(AUP_GetC(READ()))
 
-#define KA      K(aup_getA(READ()))
-#define KB      K(aup_getB(READ()))
-#define KC      K(aup_getC(READ()))
+#define KA      K(AUP_GetA(READ()))
+#define KB      K(AUP_GetB(READ()))
+#define KC      K(AUP_GetC(READ()))
 
-#define sB      aup_getsB(READ())
-#define sC      aup_getsC(READ())
+#define sB      AUP_GetsB(READ())
+#define sC      AUP_GetsC(READ())
 
 #define RKB     (sB ? KB : RB)
 #define RKC     (sC ? KC : RC)
@@ -208,12 +208,12 @@ static int exec(aupVM *vm)
 
         CODE(NIL) // %R = nil
         {
-            RA = aup_vNil;
+            RA = AUP_VNil;
             NEXT;
         }
         CODE(BOOL) // %R = %bool
         {
-            RA = aup_vBool(sB);
+            RA = AUP_VBool(sB);
             NEXT;
         }
 
@@ -239,7 +239,7 @@ static int exec(aupVM *vm)
                 return AUP_OK;
             }
             //vm->top = frame->stack;
-            R(0) = A ? RKB : aup_vNil;
+            R(0) = A ? RKB : AUP_VNil;
             LOAD_FRAME();
             NEXT;
         }
@@ -251,7 +251,7 @@ static int exec(aupVM *vm)
         }
         CODE(JMPF) // %offset %RK
         {
-            if (aup_isFalsey(RKC)) ip += Axx;
+            if (AUP_IsFalsey(RKC)) ip += Axx;
             NEXT;
         }
         CODE(JNE) // %offset %RK
@@ -264,15 +264,15 @@ static int exec(aupVM *vm)
 
         CODE(NOT) // %R %RK
         {
-            RA = aup_vBool(aup_isFalsey(RKB));
+            RA = AUP_VBool(AUP_IsFalsey(RKB));
             NEXT;
-        } 
+        }
         CODE(LT) // %R = %RK < %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vBool(aup_asNum(left) < aup_asNum(right));
+                    RA = AUP_VBool(AUP_AsNum(left) < AUP_AsNum(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform < operator, got <%s> and <%s>.",
@@ -283,9 +283,9 @@ static int exec(aupVM *vm)
         CODE(LE) // %R = %RK <= %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vBool(aup_asNum(left) <= aup_asNum(right));
+                    RA = AUP_VBool(AUP_AsNum(left) <= AUP_AsNum(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform <= operator, got <%s> and <%s>.",
@@ -296,9 +296,9 @@ static int exec(aupVM *vm)
         CODE(GT) // %R = %RK > %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vBool(aup_asNum(left) > aup_asNum(right));
+                    RA = AUP_VBool(AUP_AsNum(left) > AUP_AsNum(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform > operator, got <%s> and <%s>.",
@@ -309,9 +309,9 @@ static int exec(aupVM *vm)
         CODE(GE) // %R = %RK >= %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vBool(aup_asNum(left) >= aup_asNum(right));
+                    RA = AUP_VBool(AUP_AsNum(left) >= AUP_AsNum(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform >= operator, got <%s> and <%s>.",
@@ -321,19 +321,19 @@ static int exec(aupVM *vm)
         }
         CODE(EQ) // %R = %RK == %RK
         {
-            RA = aup_vBool(aup_isEqual(RKB, RKC));
+            RA = AUP_VBool(aup_isEqual(RKB, RKC));
             NEXT;
         }
 
         CODE(NEG) // %R = -%RK
         {
             right = RKB;
-            switch (aup_typeof(right)) {
+            switch (AUP_Typeof(right)) {
                 case AUP_TNUM:
-                    RA = aup_vNum(-aup_asNum(right));
+                    RA = AUP_VNum(-AUP_AsNum(right));
                     NEXT;
                 case AUP_TBOOL:
-                    RA = aup_vNum(-(char)aup_asBool(right));
+                    RA = AUP_VNum(-(char)AUP_AsBool(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform - operator, got <%s>.",
@@ -344,15 +344,15 @@ static int exec(aupVM *vm)
         CODE(ADD) // %R = %RK + %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asNum(left) + aup_asNum(right));
+                    RA = AUP_VNum(AUP_AsNum(left) + AUP_AsNum(right));
                     NEXT;
                 case AUP_TNUM_BOOL:
-                    RA = aup_vNum(aup_asNum(left) + (char)aup_asBool(right));
+                    RA = AUP_VNum(AUP_AsNum(left) + (char)AUP_AsBool(right));
                     NEXT;
                 case AUP_TBOOL_NUM:               
-                    RA = aup_vNum((char)aup_asBool(left) + aup_asNum(right));
+                    RA = AUP_VNum((char)AUP_AsBool(left) + AUP_AsNum(right));
                     NEXT;
                 case AUP_TOBJ_NIL:
                 case AUP_TOBJ_BOOL:
@@ -373,9 +373,9 @@ static int exec(aupVM *vm)
         CODE(SUB) // %R = %RK - %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asNum(left) - aup_asNum(right));
+                    RA = AUP_VNum(AUP_AsNum(left) - AUP_AsNum(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform - operator, got <%s> and <%s>.",
@@ -386,9 +386,9 @@ static int exec(aupVM *vm)
         CODE(MUL) // %R = %RK * %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asNum(left) * aup_asNum(right));
+                    RA = AUP_VNum(AUP_AsNum(left) * AUP_AsNum(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform * operator, got <%s> and <%s>.",
@@ -399,9 +399,9 @@ static int exec(aupVM *vm)
         CODE(DIV) // %R = %RK / %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asNum(left) / aup_asNum(right));
+                    RA = AUP_VNum(AUP_AsNum(left) / AUP_AsNum(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform / operator, got <%s> and <%s>.",
@@ -412,9 +412,9 @@ static int exec(aupVM *vm)
         CODE(MOD) // %R = %RK % %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(fmod(aup_asNum(left), aup_asNum(right)));
+                    RA = AUP_VNum(fmod(AUP_AsNum(left), AUP_AsNum(right)));
                     NEXT;
                 default:
                     ERROR("Cannot perform % operator, got <%s> and <%s>.",
@@ -425,9 +425,9 @@ static int exec(aupVM *vm)
         CODE(POW) // %R = %RK ** %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(pow(aup_asNum(left), aup_asNum(right)));
+                    RA = AUP_VNum(pow(AUP_AsNum(left), AUP_AsNum(right)));
                     NEXT;
                 default:
                     ERROR("Cannot perform ** operator, got <%s> and <%s>.",
@@ -439,9 +439,9 @@ static int exec(aupVM *vm)
         CODE(BNOT) // %R = ~%RK
         {
             right = RKB;
-            switch (aup_typeof(right)) {
+            switch (AUP_Typeof(right)) {
                 case AUP_TNUM:
-                    RA = aup_vNum(~aup_asI64(right));
+                    RA = AUP_VNum(~AUP_AsI64(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform ~ operator, got <%s>.",
@@ -452,9 +452,9 @@ static int exec(aupVM *vm)
         CODE(BAND) // %R = %RK & %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asI64(left) & aup_asI64(right));
+                    RA = AUP_VNum(AUP_AsI64(left) & AUP_AsI64(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform & operator, got <%s> and <%s>.",
@@ -465,9 +465,9 @@ static int exec(aupVM *vm)
         CODE(BOR) // %R = %RK | %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asI64(left) | aup_asI64(right));
+                    RA = AUP_VNum(AUP_AsI64(left) | AUP_AsI64(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform | operator, got <%s> and <%s>.",
@@ -478,9 +478,9 @@ static int exec(aupVM *vm)
         CODE(BXOR) // %R = %RK ^ %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asI64(left) ^ aup_asI64(right));
+                    RA = AUP_VNum(AUP_AsI64(left) ^ AUP_AsI64(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform ^ operator, got <%s> and <%s>.",
@@ -491,9 +491,9 @@ static int exec(aupVM *vm)
         CODE(SHL) // %R = %RK << %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asI64(left) << aup_asI64(right));
+                    RA = AUP_VNum(AUP_AsI64(left) << AUP_AsI64(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform << operator, got <%s> and <%s>.",
@@ -504,9 +504,9 @@ static int exec(aupVM *vm)
         CODE(SHR) // %R = %RK >> %RK
         {
             left = RKB, right = RKC;
-            switch (aup_cmb(aup_typeof(left), aup_typeof(right))) {
+            switch (AUP_PAIR(AUP_Typeof(left), AUP_Typeof(right))) {
                 case AUP_TNUM_NUM:
-                    RA = aup_vNum(aup_asI64(left) >> aup_asI64(right));
+                    RA = AUP_VNum(AUP_AsI64(left) >> AUP_AsI64(right));
                     NEXT;
                 default:
                     ERROR("Cannot perform >> operator, got <%s> and <%s>.",
@@ -528,14 +528,14 @@ static int exec(aupVM *vm)
 
         CODE(GLD) // %R = G.%K
         {
-            aupStr *name = aup_asStr(KB);
+            aupStr *name = AUP_AsStr(KB);
             aup_getKey(globals, name, &RA);
             NEXT;
         }
         CODE(GST) // G.%K = %RK (?nil)
         {
-            aupStr *name = aup_asStr(KA);
-            aup_setKey(globals, name, sC ? aup_vNil : RKB);
+            aupStr *name = AUP_AsStr(KA);
+            aup_setKey(globals, name, sC ? AUP_VNil : RKB);
             NEXT;
         }
 
@@ -563,8 +563,8 @@ int aup_interpret(aupVM *vm, aupSrc *source)
         return AUP_COMPILE_ERROR;
 
     //push(OBJ_VAL(function));
-    *vm->top = aup_vObj(function);
-    callValue(vm, aup_vObj(function), 0);
+    *vm->top = AUP_VObj(function);
+    callValue(vm, AUP_VObj(function), 0);
 
     return exec(vm);
 }
