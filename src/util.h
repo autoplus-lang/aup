@@ -26,7 +26,7 @@
 #endif
 
 #define AUP_PAIR(l, r)  (uint8_t)(((char)(l)) | ((char)(r)) << 4)
-#define AUP_GROW(cap)   (((cap) < 8) ? 8 : ((cap) * 2))
+#define AUP_GROW(cap)   (((cap) < 8) ? 8 : ((cap) << 1))
 
 // N, bytes1, length1, ..., bytesN, lengthN
 uint32_t aup_hashBytes(int count, ...);

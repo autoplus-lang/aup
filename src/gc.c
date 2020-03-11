@@ -80,7 +80,7 @@ static void markArray(aupGC *gc, aupArr *array)
 
 static void markTable(aupGC *gc, aupTab *table)
 {
-    for (int i = 0; i < table->space; i++) {
+    for (int i = 0; i <= table->capMask; i++) {
         aupEnt *entry = &table->entries[i];
         markObject(gc, (aupObj *)entry->key);
         markValue(gc, entry->value);
@@ -151,7 +151,7 @@ void aup_collect(aupVM *vm)
     }
 
     /* === Remove unreferenced strings === */
-    for (int i = 0; i < strings->space; i++)
+    for (int i = 0; i <= strings->capMask; i++)
     {
         aupStr *key = strings->entries[i].key;      
         if (key != NULL && !key->base.isMarked)

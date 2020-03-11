@@ -117,7 +117,7 @@ typedef struct {
 
 typedef struct {
     int count;
-    int space;
+    int capMask;
     aupEnt *entries;
 } aupTab;
 

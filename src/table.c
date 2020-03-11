@@ -4,12 +4,12 @@
 #include "object.h"
 #include "value.h"
 
-#define TABLE_MAX_LOAD  0.75
+#define TABLE_MAX_LOAD  (0.75)
 
 void aup_initTable(aupTab *table)
 {
     table->count = 0;
-    table->space = 0;
+    table->capMask = -1;
     table->entries = NULL;
 }
 
@@ -19,9 +19,9 @@ void aup_freeTable(aupTab *table)
     aup_initTable(table);
 }
 
-static aupEnt *findEntry(aupEnt *entries, int space, aupStr *key)
+static aupEnt *findEntry(aupEnt *entries, int capMask, aupStr *key)
 {
-    uint32_t index = key->hash % space;
+    uint32_t index = key->hash & capMask;
     aupEnt *tombstone = NULL;
 
     for (;;) {
@@ -42,7 +42,7 @@ static aupEnt *findEntry(aupEnt *entries, int space, aupStr *key)
             return entry;
         }
 
-        index = (index + 1) % space;
+        index = (index + 1) & capMask;
     }
 }
 
@@ -50,7 +50,7 @@ bool aup_getKey(aupTab *table, aupStr *key, aupVal *value)
 {
     if (table->count == 0) return false;
 
-    aupEnt *entry = findEntry(table->entries, table->space, key);
+    aupEnt *entry = findEntry(table->entries, table->capMask, key);
     if (entry->key == NULL) {
         *value = AUP_VNil;
         return false;
@@ -60,44 +60,39 @@ bool aup_getKey(aupTab *table, aupStr *key, aupVal *value)
     return true;
 }
 
-static void expandTable(aupTab *table)
+static void expandTable(aupTab *table, int capMask)
 {
-    int newSpace = AUP_GROW(table->space);
-    aupEnt *entries = malloc(newSpace * sizeof(aupEnt));
-    memset(entries, '\0', sizeof(aupEnt) * newSpace);
-
-    /*
-    for (int i = 0; i < newSpace; i++) {
+    aupEnt *entries = malloc(sizeof(aupEnt) * (capMask + 1));
+    memset(entries, '\0', sizeof(aupEnt) * (capMask + 1));
+    /*for (int i = 0; i <= capMask; i++) {
         entries[i].key = NULL;
-        entries[i].value = aup_vNil;
-    }
-    */
+        entries[i].value = AUP_VNil;
+    }*/
 
     table->count = 0;
-    for (int i = 0; i < table->space; i++) {
+    for (int i = 0; i <= table->capMask; i++) {
         aupEnt *entry = &table->entries[i];
         if (entry->key == NULL) continue;
 
-        aupEnt *dest = findEntry(entries, newSpace, entry->key);
+        aupEnt *dest = findEntry(entries, capMask, entry->key);
         dest->key = entry->key;
         dest->value = entry->value;
-        //*dest = *entry;
-        //memcpy(dest, entry, sizeof(aupEnt));
         table->count++;
     }
 
     free(table->entries);
     table->entries = entries;
-    table->space = newSpace;
+    table->capMask = capMask;
 }
 
 bool aup_setKey(aupTab *table, aupStr *key, aupVal value)
 {
-    if (table->count >= (table->space * TABLE_MAX_LOAD)) {
-        expandTable(table);
+    if (table->count >= (table->capMask + 1) * TABLE_MAX_LOAD) {
+        int capMask = AUP_GROW(table->capMask + 1) - 1;
+        expandTable(table, capMask);
     }
 
-    aupEnt *entry = findEntry(table->entries, table->space, key);
+    aupEnt *entry = findEntry(table->entries, table->capMask, key);
 
     bool isNewKey = entry->key == NULL;
     if (isNewKey && AUP_IsNil(entry->value)) {
@@ -114,7 +109,7 @@ bool aup_removeKey(aupTab *table, aupStr *key)
     if (table->count == 0) return false;
 
     // Find the entry.
-    aupEnt *entry = findEntry(table->entries, table->space, key);
+    aupEnt *entry = findEntry(table->entries, table->capMask, key);
     if (entry->key == NULL) return false;
 
     // Place a tombstone in the entry.
@@ -126,7 +121,7 @@ bool aup_removeKey(aupTab *table, aupStr *key)
 
 void aup_copyTable(aupTab *from, aupTab *to)
 {
-    for (int i = 0; i < from->space; i++) {
+    for (int i = 0; i <= from->capMask; i++) {
         aupEnt *entry = &from->entries[i];
         if (entry->key != NULL) {
             aup_setKey(to, entry->key, entry->value);
@@ -138,7 +133,7 @@ aupStr *aup_findString(aupTab *table, int length, uint32_t hash)
 {
     if (table->count == 0) return NULL;
 
-    uint32_t index = hash % table->space;
+    uint32_t index = hash & table->capMask;
 
     for (;;) {
         aupEnt *entry = &table->entries[index];
@@ -155,6 +150,6 @@ aupStr *aup_findString(aupTab *table, int length, uint32_t hash)
             return key;
         }
 
-        index = (index + 1) % table->space;
+        index = (index + 1) & table->capMask;
     }
 }
