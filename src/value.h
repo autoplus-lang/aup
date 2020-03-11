@@ -23,7 +23,7 @@ typedef enum {
 } aupTObj;
 
 enum {
-#define PAIR(x, y)  aup_cmb(AUP_T##x, AUP_T##y)
+#define PAIR(a, b)  AUP_PAIR(AUP_T##a, AUP_T##b)
 
     AUP_TNIL_NIL    = PAIR(NIL, NIL),
     AUP_TNIL_BOOL   = PAIR(NIL, BOOL),
@@ -58,31 +58,29 @@ struct _aupVal {
     };
 };
 
-#define aup_vNil        (aupVal){ AUP_TNIL }
-#define aup_vTrue       (aupVal){ AUP_TBOOL, .Bool = true }
-#define aup_vFalse      (aupVal){ AUP_TBOOL, .Bool = false }
+#define AUP_VNil        ((aupVal){ AUP_TNIL })
+#define AUP_VTrue       ((aupVal){ AUP_TBOOL, .Bool = true })
+#define AUP_VFalse      ((aupVal){ AUP_TBOOL, .Bool = false })
 
-#define aup_vBool(b)    ((aupVal){ AUP_TBOOL, .Bool = (bool)(b) })
-#define aup_vNum(n)     ((aupVal){ AUP_TNUM,  .Num = (double)(n) })
-#define aup_vObj(o)     ((aupVal){ AUP_TOBJ,  .Obj = (aupObj *)(o) })
+#define AUP_VBool(b)    ((aupVal){ AUP_TBOOL, .Bool = (bool)(b) })
+#define AUP_VNum(n)     ((aupVal){ AUP_TNUM,  .Num = (double)(n) })
+#define AUP_VObj(o)     ((aupVal){ AUP_TOBJ,  .Obj = (aupObj *)(o) })
 
-#define aup_asBool(v)   ((v).Bool)
-#define aup_asNum(v)    ((v).Num)
-#define aup_asObj(v)    ((v).Obj)
-#define aup_asInt(v)    ((int)aup_asNum(v))
-#define aup_asI64(v)    ((int64_t)aup_asNum(v))
-#define aup_asRaw(v)    ((v).raw)
+#define AUP_AsBool(v)   ((v).Bool)
+#define AUP_AsNum(v)    ((v).Num)
+#define AUP_AsObj(v)    ((v).Obj)
+#define AUP_AsInt(v)    ((int)AUP_AsNum(v))
+#define AUP_AsI64(v)    ((int64_t)AUP_AsNum(v))
+#define AUP_AsRaw(v)    ((v).raw)
 
-#define aup_typeof(v)   ((v).type)
-
-#define aup_isNil(v)    (aup_typeof(v) == AUP_TNIL)
-#define aup_isBool(v)   (aup_typeof(v) == AUP_TBOOL)
-#define aup_isNum(v)    (aup_typeof(v) == AUP_TNUM)
-#define aup_isObj(v)    (aup_typeof(v) == AUP_TOBJ)
+#define AUP_IsNil(v)    ((v).type == AUP_TNIL)
+#define AUP_IsBool(v)   ((v).type == AUP_TBOOL)
+#define AUP_IsNum(v)    ((v).type == AUP_TNUM)
+#define AUP_IsObj(v)    ((v).type == AUP_TOBJ)
 
 #if (defined(_MSC_VER) && _MSC_VER <= 1600) || defined(__clang__)
-static bool aup_isFalsey(aupVal v) {
-    switch (aup_typeof(v)) {
+static bool AUP_IsFalsey(aupVal v) {
+    switch (v.type) {
         case AUP_TNIL:  return true;
         case AUP_TBOOL: return !aup_asBool(v);
         case AUP_TNUM:  return aup_asNum(v) == 0;
@@ -91,7 +89,7 @@ static bool aup_isFalsey(aupVal v) {
     }
 }
 #else
-#define aup_isFalsey(v) (!(bool)aup_asRaw(v))
+#define AUP_IsFalsey(v) (!(bool)aup_asRaw(v))
 #endif
 
 void aup_printValue(aupVal val);

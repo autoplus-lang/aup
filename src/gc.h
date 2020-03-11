@@ -12,15 +12,14 @@ struct _aupGC {
     aupObj **grayStack;
     int    grayCount;
     int    graySpace;
-
     aupTab strings;
     aupTab globals;
 };
 
-#define aup_pushRoot(vm, obj) \
-    (vm)->tempRoots[(vm)->numRoots++] = (obj)
-#define aup_popRoot(vm) \
-    (vm)->numRoots--
+#define AUP_PushRoot(vm, obj) \
+    ((vm)->tempRoots[(vm)->numRoots++] = (obj))
+#define AUP_PopRoot(vm) \
+    ((vm)->numRoots--)
 
 void aup_initGC(aupGC *gc);
 void aup_freeGC(aupGC *gc);

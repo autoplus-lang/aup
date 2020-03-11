@@ -5,10 +5,6 @@
 #include "value.h"
 #include "code.h"
 
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-#endif
-
 // Size always is 8 bytes
 struct _aupObj {
 #ifdef AUP_X64
@@ -31,17 +27,17 @@ struct _aupObj {
 
 struct _aupStr {
     aupObj base;
-    int length;
-    uint32_t hash;
-    char *chars;
+    char  *chars;
+    int    length;
+    uint32_t hash; 
 };
 
 struct _aupFun {
     aupObj base;
     aupStr *name;
     aupUpv **upvals;
-    int arity;
-    int upvalCount;
+    int    arity;
+    int    upvalCount;
     aupChunk chunk;
 };
 
@@ -52,18 +48,18 @@ struct _aupUpv {
     aupVal closed; 
 };
 
-#define aup_asStr(v)    ((aupStr *)aup_asObj(v))
-#define aup_asCStr(v)   (aup_asStr(v)->chars)
-#define aup_asFun(v)    ((aupFun *)aup_asObj(v))
+#define AUP_AsStr(v)    ((aupStr *)AUP_AsObj(v))
+#define AUP_AsCStr(v)   (AUP_AsStr(v)->chars)
+#define AUP_AsFun(v)    ((aupFun *)AUP_AsObj(v))
 
-#define aup_objType(v)  (aup_asObj(v)->type)
+#define AUP_OType(v)    (AUP_AsObj(v)->type)
 
-static inline bool aup_checkObj(aupVal val, aupTObj type) {
+static inline bool AUP_CheckObj(aupVal val, aupTObj type) {
     return aup_isObj(val) && aup_objType(val) == type;
 }
 
-#define aup_isStr(v)    (aup_checkObj(v, AUP_OSTR))
-#define aup_isFun(v)    (aup_checkObj(v, AUP_OFUN))
+#define AUP_IsStr(v)    (AUP_CheckObj(v, AUP_OSTR))
+#define AUP_IsFun(v)    (AUP_CheckObj(v, AUP_OFUN))
 
 void aup_printObject(aupObj *object);
 void aup_freeObject(aupGC *gc, aupObj *object);

@@ -1,3 +1,5 @@
+#ifndef _AUP_UTIL_H
+#define _AUP_UTIL_H
 #pragma once
 
 #include "aup.h"
@@ -12,11 +14,19 @@
 #endif
 #endif
 
-#define UINT8_COUNT     (UINT8_MAX + 1)
-#define UINT16_COUNT    (UINT16_MAX + 1)
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#endif
 
-#define aup_cmb(l, r)   (uint8_t)(((char)(l)) | ((char)(r)) << 4)
-#define aup_growCap(c)  (((c) < 8) ? 8 : ((c) * 2))
+#ifndef UINT8_COUNT
+#define UINT8_COUNT     (UINT8_MAX + 1)
+#endif
+#ifndef UINT16_COUNT
+#define UINT16_COUNT    (UINT16_MAX + 1)
+#endif
+
+#define AUP_PAIR(l, r)  (uint8_t)(((char)(l)) | ((char)(r)) << 4)
+#define AUP_GROW(cap)   (((cap) < 8) ? 8 : ((cap) * 2))
 
 // N, bytes1, length1, ..., bytesN, lengthN
 uint32_t aup_hashBytes(int count, ...);
@@ -33,3 +43,5 @@ enum {
     AUP_COMPILE_ERROR,
     AUP_RUNTIME_ERROR
 };
+
+#endif
