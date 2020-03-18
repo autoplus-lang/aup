@@ -49,6 +49,11 @@
     _CODE(GLD)      \
     _CODE(GST)      \
     \
+    _CODE(ULD)      \
+    _CODE(UST)      \
+    _CODE(OPEN)     \
+    _CODE(CLOSE)    \
+    \
     _CODE(GET)      \
     _CODE(SET)
 

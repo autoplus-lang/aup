@@ -66,7 +66,13 @@ typedef struct {
 typedef struct {
     aupTok name;
     int depth;
+    bool isCaptured;
 } Local;
+
+typedef struct {
+    uint8_t index;
+    bool isLocal;
+} Upvalue;
 
 typedef enum {
     TYPE_FUNCTION,
@@ -79,6 +85,7 @@ struct _Compiler {
     TFunc type;
 
     Local locals[UINT8_COUNT];
+    Upvalue upvalues[UINT8_COUNT];
     int localCount;
     int scopeDepth;
     int localTotal;
@@ -271,6 +278,7 @@ static void initCompiler(Compiler *compiler, TFunc type)
 
     Local *local = &COMPILER->locals[COMPILER->localCount++];
     local->depth = 0;
+    local->isCaptured = false;
     local->name.start = "";
     local->name.length = 0;
     COMPILER->localTotal++;
@@ -304,7 +312,12 @@ static void endScope()
 
     while (COMPILER->localCount > 0 &&
         COMPILER->locals[COMPILER->localCount - 1].depth > COMPILER->scopeDepth) {
-        //emitByte(OP_POP);
+        if (COMPILER->locals[COMPILER->localCount - 1].isCaptured) {
+            emit(AUP_OpA(AUP_OP_CLOSE, COMPILER->localCount - 1));
+        }
+        else {
+            //emitByte(OP_POP);
+        }
         COMPILER->localCount--;
     }
 }
@@ -345,6 +358,46 @@ static int resolveLocal(Compiler *compiler, aupTok *name)
     return -1;
 }
 
+static int addUpvalue(Compiler *compiler, uint8_t index, bool isLocal)
+{
+    int upvalueCount = compiler->function->upvalCount;
+
+    for (int i = 0; i < upvalueCount; i++) {
+        Upvalue *upvalue = &compiler->upvalues[i];
+        if (upvalue->index == index && upvalue->isLocal == isLocal) {
+            return i;
+        }
+    }
+
+    if (upvalueCount == UINT8_COUNT) {
+        error("Too many closure variables in function.");
+        return 0;
+    }
+
+    compiler->upvalues[upvalueCount].isLocal = isLocal;
+    compiler->upvalues[upvalueCount].index = index;
+
+    return compiler->function->upvalCount++;
+}
+
+static int resolveUpvalue(Compiler *compiler, aupTok *name)
+{
+    if (compiler->enclosing == NULL) return -1;
+
+    int local = resolveLocal(compiler->enclosing, name);
+    if (local != -1) {
+        compiler->enclosing->locals[local].isCaptured = true;
+        return addUpvalue(compiler, (uint8_t)local, true);
+    }
+
+    int upvalue = resolveUpvalue(compiler->enclosing, name);
+    if (upvalue != -1) {
+        return addUpvalue(compiler, (uint8_t)upvalue, false);
+    }
+
+    return -1;
+}
+
 static void addLocal(aupTok name)
 {
     if (COMPILER->localCount == UINT8_COUNT) {
@@ -355,6 +408,7 @@ static void addLocal(aupTok name)
     Local *local = &COMPILER->locals[COMPILER->localCount++];
     local->name = name;
     local->depth = -1;
+    local->isCaptured = false;
 
     if (COMPILER->localCount > COMPILER->localTotal)
         COMPILER->localTotal++;
@@ -643,6 +697,10 @@ static REG namedVariable(aupTok name, REG dest, bool canAssign)
         loadOp = AUP_OP_LD;
         storeOp = AUP_OP_LD;
     }
+    else if ((arg = resolveUpvalue(COMPILER, &name)) != -1) {
+        loadOp = AUP_OP_ULD;
+        storeOp = AUP_OP_UST;
+    }
     else {
         arg = identifierConstant(&name);
         loadOp = AUP_OP_GLD;
@@ -876,7 +934,17 @@ static REG func(TFunc type)
 
     // Create the function object.                                
     aupFun *function = endCompiler();
-    return emitConstant(AUP_VObj(function));
+    REG k = emitConstant(AUP_VObj(function));
+
+    if (function->upvalCount > 0) {
+        emit(AUP_OpA(AUP_OP_OPEN, k));
+        for (int i = 0; i < function->upvalCount; i++) {
+            emit(AUP_OpAsB(AUP_OP_OPEN, compiler.upvalues[i].index,
+                compiler.upvalues[i].isLocal));
+        }
+    }
+
+    return k;
 }
 
 static void funcDecl()

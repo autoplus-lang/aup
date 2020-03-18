@@ -72,4 +72,6 @@ aupStr *aup_catString(aupVM *vm, aupStr *s1, aupStr *s2);
 aupFun *aup_newFunction(aupVM *vm, aupSrc *source);
 void aup_makeClosure(aupFun *function);
 
+aupUpv *aup_newUpval(aupVM *vm, aupVal *slot);
+
 #endif

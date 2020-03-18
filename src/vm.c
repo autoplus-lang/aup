@@ -111,6 +111,42 @@ static bool callValue(aupVM *vm, aupVal callee, int argCount)
     return false;
 }
 
+static aupUpv *captureUpval(aupVM *vm, aupVal *local)
+{
+    aupUpv *prevUpval = NULL;
+    aupUpv *upval = vm->openUpvals;
+
+    while (upval != NULL && upval->location > local) {
+        prevUpval = upval;
+        upval = upval->next;
+    }
+
+    if (upval != NULL && upval->location == local) return upval;
+
+    aupUpv *createdUpval = aup_newUpval(vm, local);
+    createdUpval->next = upval;
+
+    if (prevUpval == NULL) {
+        vm->openUpvals = createdUpval;
+    }
+    else {
+        prevUpval->next = createdUpval;
+    }
+
+    return createdUpval;
+}
+
+static void closeUpvals(aupVM *vm, aupVal *last)
+{
+    while (vm->openUpvals != NULL &&
+           vm->openUpvals->location >= last) {
+        aupUpv *upval = vm->openUpvals;
+        upval->closed = *upval->location;
+        upval->location = &upval->closed;
+        vm->openUpvals = upval->next;
+    }
+}
+
 static int exec(aupVM *vm)
 {
     register uint32_t *ip;
@@ -134,6 +170,7 @@ static int exec(aupVM *vm)
 
 #define R(i)    (frame->stack[i])
 #define K(i)    (frame->function->chunk.constants.values[i])
+#define U(i)    *(frame->function->upvals[i]->location)
 
 #define A       AUP_GetA(READ())
 #define B       AUP_GetB(READ())
@@ -536,6 +573,38 @@ static int exec(aupVM *vm)
         {
             aupStr *name = AUP_AsStr(KA);
             aup_setKey(globals, name, sC ? AUP_VNil : RKB);
+            NEXT;
+        }
+
+        CODE(ULD)
+        {
+            RA = U(B);
+            NEXT;
+        }
+        CODE(UST)
+        {
+            U(A) = RKB;
+            NEXT;
+        }
+        CODE(OPEN)
+        {
+            aupFun *function = AUP_AsFun(KA);
+            aup_makeClosure(function);
+
+            for (int i = 0; i < function->upvalCount; i++) {
+                FETCH();
+                if (sB) {
+                    function->upvals[i] = captureUpval(vm, frame->stack + A);
+                }
+                else {
+                    function->upvals[i] = frame->function->upvals[A];
+                }
+            }
+            NEXT;
+        }
+        CODE(CLOSE)
+        {
+            closeUpvals(vm, frame->stack + A);
             NEXT;
         }
 
