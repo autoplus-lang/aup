@@ -309,6 +309,28 @@ int aup_dasmInst(aupChunk *chunk, int offset)
             NEXT;
         }
 
+        CODE(ULD)
+        {
+            RA, PUTF(" = U(%d)", B);
+            NEXT;
+        }
+        CODE(UST)
+        {
+            PUTF("U(%d) = ", A), RKB;
+            NEXT;
+        }
+        CODE(OPEN)
+        {
+            PUT("closure "), KA;
+            // TODO
+            NEXT;
+        }
+        CODE(CLOSE)
+        {
+            // TODO
+            NEXT;
+        }
+
         CODE(GET)
         {
         }
