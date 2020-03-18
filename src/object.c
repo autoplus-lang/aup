@@ -19,7 +19,12 @@ void aup_printObject(aupObj *object)
             if (function->name == NULL)
                 printf("<script>");
             else
-                printf("fn: %s", function->name->chars);
+                printf("func: %s@%p", function->name->chars, function);
+            break;
+        }
+        case AUP_OCLASS: {
+            aupClass *klass = (aupClass *)object;
+            printf("class: %s@%p", klass->name->chars, klass);
             break;
         }
         default:
@@ -140,6 +145,13 @@ aupUpv *aup_newUpval(aupVM *vm, aupVal *slot)
     return upval;
 }
 
+aupClass *aup_newClass(aupVM *vm, aupStr *name)
+{
+    aupClass *klass = ALLOC_OBJ(vm, aupClass, AUP_OCLASS);
+    klass->name = name;
+    return klass;
+}
+
 void aup_freeObject(aupGC *gc, aupObj *object)
 {
     switch (object->type) {
@@ -158,6 +170,10 @@ void aup_freeObject(aupGC *gc, aupObj *object)
         }
         case AUP_OUPV: {
             FREE(gc, object, aupUpv);
+            break;
+        }
+        case AUP_OCLASS: {
+            FREE(gc, object, aupClass);
             break;
         }
     }

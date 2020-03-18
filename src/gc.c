@@ -146,8 +146,13 @@ void aup_collect(aupVM *vm)
                 markObject(gc, (aupObj *)function->name);
                 markArray(gc, &function->chunk.constants);
                 for (int i = 0; i < function->upvalCount; i++) {
-                    markObject(gc, (aupObj*)function->upvals[i]);
+                    markObject(gc, (aupObj *)function->upvals[i]);
                 }
+                break;
+            }
+            case AUP_OCLASS: {
+                aupClass *klass = (aupClass *)object;
+                markObject(gc, (aupObj *)klass->name);
                 break;
             }
         }

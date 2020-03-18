@@ -8,6 +8,7 @@ typedef struct _aupObj aupObj;
 typedef struct _aupStr aupStr;
 typedef struct _aupFun aupFun;
 typedef struct _aupUpv aupUpv;
+typedef struct _aupClass aupClass;
 
 typedef enum {
     AUP_TNIL,
@@ -19,7 +20,8 @@ typedef enum {
 typedef enum {
     AUP_OSTR,
     AUP_OFUN,
-    AUP_OUPV
+    AUP_OUPV,
+    AUP_OCLASS,
 } aupTObj;
 
 enum {

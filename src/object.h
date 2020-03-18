@@ -49,9 +49,15 @@ struct _aupUpv {
     aupVal closed; 
 };
 
+struct _aupClass {
+    aupObj base;
+    aupStr *name;
+};
+
 #define AUP_AsStr(v)    ((aupStr *)AUP_AsObj(v))
 #define AUP_AsCStr(v)   (AUP_AsStr(v)->chars)
 #define AUP_AsFun(v)    ((aupFun *)AUP_AsObj(v))
+#define AUP_AsClass(v)  ((aupClass *)AUP_AsObj(v))
 
 #define AUP_OType(v)    (AUP_AsObj(v)->type)
 
@@ -61,6 +67,7 @@ static inline bool AUP_CheckObj(aupVal val, aupTObj type) {
 
 #define AUP_IsStr(v)    (AUP_CheckObj(v, AUP_OSTR))
 #define AUP_IsFun(v)    (AUP_CheckObj(v, AUP_OFUN))
+#define AUP_IsClass(v)  (AUP_CheckObj(v, AUP_OCLASS))
 
 void aup_printObject(aupObj *object);
 void aup_freeObject(aupGC *gc, aupObj *object);
@@ -73,5 +80,7 @@ aupFun *aup_newFunction(aupVM *vm, aupSrc *source);
 void aup_makeClosure(aupFun *function);
 
 aupUpv *aup_newUpval(aupVM *vm, aupVal *slot);
+
+aupClass *aup_newClass(aupVM *vm, aupStr *name);
 
 #endif
