@@ -107,7 +107,10 @@ void aup_collect(aupVM *vm)
         markObject(gc, vm->tempRoots[i]);
     }
 
-    for (aupVal *slot = vm->stack; slot < vm->top; slot++)
+    // Mark stack
+    aupVal *top = vm->top +
+        vm->frames[vm->frameCount - 1].function->locals;
+    for (aupVal *slot = vm->stack; slot < top; slot++)
     {
         markValue(gc, *slot);
     }
