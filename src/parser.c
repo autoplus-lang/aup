@@ -964,6 +964,9 @@ static void varDecl()
     if (match(AUP_TOK_EQUAL)) {
         src = exprEx(-1);
     }
+    else if (COMPILER->scopeDepth > 0 && src == -1) {
+        emit(AUP_OpA(AUP_OP_NIL, PUSH()));
+    }
 
     defineVariable(global, src);
 }
