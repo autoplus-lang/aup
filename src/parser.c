@@ -81,6 +81,7 @@ struct _Compiler {
     Local locals[UINT8_COUNT];
     int localCount;
     int scopeDepth;
+    int localTotal;
 
     REG regCount;
 };
@@ -257,20 +258,23 @@ static void initCompiler(Compiler *compiler, TFunc type)
     compiler->type = type;
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
+    compiler->localTotal = 0;
     compiler->function = aup_newFunction(VM, P.source);
 
     COMPILER = compiler;
     REG_COUNT = 0;
 
     if (type != TYPE_SCRIPT) {
-        COMPILER->function->name = aup_copyString(VM, PREVIOUS.start,
-            PREVIOUS.length);
+        COMPILER->function->name = aup_copyString(VM,
+            PREVIOUS.start, PREVIOUS.length);
     }
 
     Local *local = &COMPILER->locals[COMPILER->localCount++];
     local->depth = 0;
     local->name.start = "";
     local->name.length = 0;
+    COMPILER->localTotal++;
+
     PUSH();
 }
 
@@ -278,12 +282,13 @@ static aupFun *endCompiler()
 {
     emitReturn(-1);
     aupFun *function = COMPILER->function;
+    function->locals = COMPILER->localTotal;
 
     if (!P.hadError) {
         aup_dasmChunk(CHUNK,
             function->name != NULL ? function->name->chars : "<script>");
     }
-
+   
     COMPILER = COMPILER->enclosing;
     return function;
 }
@@ -350,6 +355,9 @@ static void addLocal(aupTok name)
     Local *local = &COMPILER->locals[COMPILER->localCount++];
     local->name = name;
     local->depth = -1;
+
+    if (COMPILER->localCount > COMPILER->localTotal)
+        COMPILER->localTotal++;
 }
 
 static void declareVariable()

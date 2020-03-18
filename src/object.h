@@ -39,6 +39,7 @@ struct _aupFun {
     int    arity;
     int    upvalCount;
     aupChunk chunk;
+    int    locals;
 };
 
 struct _aupUpv {
