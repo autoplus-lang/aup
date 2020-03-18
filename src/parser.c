@@ -949,7 +949,8 @@ static REG func(TFunc type)
 
 static void funcDecl()
 {
-    if (COMPILER->type != TYPE_SCRIPT) {
+    if (COMPILER->type != TYPE_SCRIPT ||
+        COMPILER->scopeDepth > 0) {
         error("Function can be declared only in the global scope.");
         return;
     }
