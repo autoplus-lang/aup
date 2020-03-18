@@ -949,6 +949,11 @@ static REG func(TFunc type)
 
 static void funcDecl()
 {
+    if (COMPILER->type != TYPE_SCRIPT) {
+        error("Function can be declared only in the global scope.");
+        return;
+    }
+
     uint8_t global = parseVariable("Expect function name.");
     markInitialized();
     REG src = func(TYPE_FUNCTION);
