@@ -151,7 +151,7 @@ void aup_collect(aupVM *vm)
                 break;
             }
             case AUP_OCLASS: {
-                aupClass *klass = (aupClass *)object;
+                aupKls *klass = (aupKls *)object;
                 markObject(gc, (aupObj *)klass->name);
                 break;
             }
