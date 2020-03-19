@@ -27,6 +27,11 @@ void aup_printObject(aupObj *object)
             printf("class: %s@%p", klass->name->chars, klass);
             break;
         }
+        case AUP_OINC: {
+            aupInc *instance = (aupInc *)object;
+            printf("instance: %s@%p", instance->klass->name->chars, instance);
+            break;
+        }
         default:
             printf("obj: %p", object);
                 break;
