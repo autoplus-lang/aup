@@ -73,7 +73,7 @@ static inline bool AUP_CheckObj(aupVal val, aupTObj type) {
 
 #define AUP_IsStr(v)    (AUP_CheckObj(v, AUP_OSTR))
 #define AUP_IsFun(v)    (AUP_CheckObj(v, AUP_OFUN))
-#define AUP_IsClass(v)  (AUP_CheckObj(v, AUP_OCLASS))
+#define AUP_IsClass(v)  (AUP_CheckObj(v, AUP_OKLS))
 
 void aup_printObject(aupObj *object);
 void aup_freeObject(aupGC *gc, aupObj *object);

@@ -22,7 +22,7 @@ void aup_printObject(aupObj *object)
                 printf("func: %s@%p", function->name->chars, function);
             break;
         }
-        case AUP_OCLASS: {
+        case AUP_OKLS: {
             aupKls *klass = (aupKls *)object;
             printf("class: %s@%p", klass->name->chars, klass);
             break;
@@ -147,7 +147,7 @@ aupUpv *aup_newUpval(aupVM *vm, aupVal *slot)
 
 aupKls *aup_newClass(aupVM *vm, aupStr *name)
 {
-    aupKls *klass = ALLOC_OBJ(vm, aupKls, AUP_OCLASS);
+    aupKls *klass = ALLOC_OBJ(vm, aupKls, AUP_OKLS);
     klass->name = name;
     return klass;
 }
@@ -180,7 +180,7 @@ void aup_freeObject(aupGC *gc, aupObj *object)
             FREE(gc, object, aupUpv);
             break;
         }
-        case AUP_OCLASS: {
+        case AUP_OKLS: {
             FREE(gc, object, aupKls);
             break;
         }

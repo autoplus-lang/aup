@@ -22,7 +22,7 @@ typedef enum {
     AUP_OSTR,
     AUP_OFUN,
     AUP_OUPV,
-    AUP_OCLASS,
+    AUP_OKLS,
     AUP_OINC,
 } aupTObj;
 
