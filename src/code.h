@@ -13,6 +13,7 @@
     \
     _CODE(NIL)      \
     _CODE(BOOL)     \
+    _CODE(CLASS)    \
     \
     _CODE(CALL)     \
     _CODE(RET)      \

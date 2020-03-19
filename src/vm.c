@@ -253,6 +253,12 @@ static int exec(aupVM *vm)
             RA = AUP_VBool(sB);
             NEXT;
         }
+        CODE(CLASS)
+        {
+            aupStr *name = AUP_AsStr(KB);
+            RA = AUP_VObj(aup_newClass(vm, name));
+            NEXT;
+        }
 
         CODE(CALL) // %R %argc
         {

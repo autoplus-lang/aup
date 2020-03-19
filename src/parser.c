@@ -947,6 +947,26 @@ static REG func(TFunc type)
     return k;
 }
 
+static void classDecl()
+{
+    if (COMPILER->type != TYPE_SCRIPT ||
+        COMPILER->scopeDepth > 0) {
+        error("Class can be declared only in the global scope.");
+        return;
+    }
+
+    consume(AUP_TOK_IDENTIFIER, "Expect class name.");
+    uint8_t nameConstant = identifierConstant(&PREVIOUS);
+    declareVariable();
+
+    REG klass = PUSH();
+    emit(AUP_OpABx(AUP_OP_CLASS, klass, nameConstant));
+    defineVariable(nameConstant, klass);
+
+    consume(AUP_TOK_LBRACE, "Expect '{' before class body.");
+    consume(AUP_TOK_RBRACE, "Expect '}' after class body.");
+}
+
 static void funcDecl()
 {
     if (COMPILER->type != TYPE_SCRIPT ||
@@ -1107,6 +1127,9 @@ static void decl()
 {
     if (match(AUP_TOK_KW_VAR)) {
         varDecl();
+    }
+    else if (match(AUP_TOK_KW_CLASS)) {
+        classDecl();
     }
     else if (match(AUP_TOK_KW_FUNC)) {
         funcDecl();
