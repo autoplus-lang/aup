@@ -155,6 +155,12 @@ void aup_collect(aupVM *vm)
                 markObject(gc, (aupObj *)klass->name);
                 break;
             }
+            case AUP_OINC: {
+                aupInc *instance = (aupInc *)object;
+                markObject(gc, (aupObj *)instance->klass);
+                markTable(gc, &instance->fields);
+                break;
+            }
         }
     }
 

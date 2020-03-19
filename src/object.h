@@ -54,6 +54,12 @@ struct _aupKls {
     aupStr *name;
 };
 
+struct _aupInc {
+    aupObj base;
+    aupKls *klass;
+    aupTab fields;
+};
+
 #define AUP_AsStr(v)    ((aupStr *)AUP_AsObj(v))
 #define AUP_AsCStr(v)   (AUP_AsStr(v)->chars)
 #define AUP_AsFun(v)    ((aupFun *)AUP_AsObj(v))
@@ -82,5 +88,6 @@ void aup_makeClosure(aupFun *function);
 aupUpv *aup_newUpval(aupVM *vm, aupVal *slot);
 
 aupKls *aup_newClass(aupVM *vm, aupStr *name);
+aupInc *aup_newInstance(aupVM *vm, aupKls *klass);
 
 #endif

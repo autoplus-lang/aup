@@ -9,12 +9,13 @@ typedef struct _aupStr aupStr;
 typedef struct _aupFun aupFun;
 typedef struct _aupUpv aupUpv;
 typedef struct _aupKls aupKls;
+typedef struct _aupInc aupInc;
 
 typedef enum {
     AUP_TNIL,
     AUP_TBOOL,
     AUP_TNUM,
-    AUP_TOBJ
+    AUP_TOBJ,
 } aupTVal;
 
 typedef enum {
@@ -22,6 +23,7 @@ typedef enum {
     AUP_OFUN,
     AUP_OUPV,
     AUP_OCLASS,
+    AUP_OINC,
 } aupTObj;
 
 enum {

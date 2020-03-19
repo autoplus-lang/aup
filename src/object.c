@@ -152,6 +152,14 @@ aupKls *aup_newClass(aupVM *vm, aupStr *name)
     return klass;
 }
 
+aupInc *aup_newInstance(aupVM *vm, aupKls *klass)
+{
+    aupInc *instance = ALLOC_OBJ(vm, aupInc, AUP_OINC);
+    instance->klass = klass;
+    aup_initTable(&instance->fields);
+    return instance;
+}
+
 void aup_freeObject(aupGC *gc, aupObj *object)
 {
     switch (object->type) {
@@ -174,6 +182,12 @@ void aup_freeObject(aupGC *gc, aupObj *object)
         }
         case AUP_OCLASS: {
             FREE(gc, object, aupKls);
+            break;
+        }
+        case AUP_OINC: {
+            aupInc *instance = (aupInc *)object;
+            aup_freeTable(&instance->fields);
+            FREE(gc, object, aupInc);
             break;
         }
     }
