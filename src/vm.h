@@ -24,7 +24,6 @@ struct _aupVM {
     int numRoots;
     aupObj *tempRoots[8];
     aupUpv *openUpvals;
-    aupGC *gc;
 
     aupVM *next;
 };
