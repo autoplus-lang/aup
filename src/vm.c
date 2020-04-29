@@ -21,13 +21,11 @@ aupVM *aup_createVM(aupVM *from)
     memset(vm, '\0', sizeof(aupVM));
 
     if (from != NULL) {
-        vm->gc = from->gc;
         vm->next = from->next;
         from->next = vm;
     }
     else {
-        vm->gc = malloc(sizeof(aupGC));
-        aup_initGC(vm->gc);
+        aup_initGC();
         vm->next = vm;
     }
 
@@ -40,8 +38,7 @@ void aup_closeVM(aupVM *vm)
     if (vm == NULL) return;
 
     if (vm->next == vm) {
-        aup_freeGC(vm->gc);
-        free(vm->gc);
+        aup_freeGC();
     }
 
     free(vm);
@@ -123,7 +120,7 @@ static aupUpv *captureUpval(aupVM *vm, aupVal *local)
 
     if (upval != NULL && upval->location == local) return upval;
 
-    aupUpv *createdUpval = aup_newUpval(vm, local);
+    aupUpv *createdUpval = aup_newUpval(local);
     createdUpval->next = upval;
 
     if (prevUpval == NULL) {
@@ -218,7 +215,7 @@ static int exec(aupVM *vm)
 #endif
 
     LOAD_FRAME();
-    globals = &vm->gc->globals;
+    globals = aup_getGlobals();
 
     INTERPRET
     {
@@ -256,7 +253,7 @@ static int exec(aupVM *vm)
         CODE(CLASS)
         {
             aupStr *name = AUP_AsStr(KB);
-            RA = AUP_VObj(aup_newClass(vm, name));
+            RA = AUP_VObj(aup_newClass(name));
             NEXT;
         }
 
