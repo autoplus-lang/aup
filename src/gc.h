@@ -5,26 +5,22 @@
 #include "util.h"
 #include "object.h"
 
-struct _aupGC {
-    size_t nextGC;
-    size_t allocated;
-    aupObj *objects;
-    aupObj **grayStack;
-    int    grayCount;
-    int    graySpace;
-    aupTab strings;
-    aupTab globals;
-};
-
 #define AUP_PushRoot(vm, obj) \
     ((vm)->tempRoots[(vm)->numRoots++] = (obj))
 #define AUP_PopRoot(vm) \
     ((vm)->numRoots--)
 
-void aup_initGC(aupGC *gc);
-void aup_freeGC(aupGC *gc);
+void aup_initGC();
+void aup_freeGC();
 
-void aup_collect(aupVM *vm);
-void *aup_realloc(aupVM *vm, aupGC *gc, void *ptr, size_t old, size_t _new);
+aupTab *aup_getStrings();
+aupTab *aup_getGlobals();
+
+void *aup_alloc(size_t size);
+void *aup_realloc(void *ptr, size_t old, size_t _new);
+void aup_dealloc(void *ptr, size_t);
+void *aup_allocObject(size_t size, aupTObj type);
+
+void aup_collect();
 
 #endif

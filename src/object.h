@@ -76,18 +76,18 @@ static inline bool AUP_CheckObj(aupVal val, aupTObj type) {
 #define AUP_IsClass(v)  (AUP_CheckObj(v, AUP_OKLS))
 
 void aup_printObject(aupObj *object);
-void aup_freeObject(aupGC *gc, aupObj *object);
+void aup_freeObject(aupObj *object);
 
-aupStr *aup_takeString(aupVM *vm, char *chars, int length);
-aupStr *aup_copyString(aupVM *vm, const char *chars, int length);
-aupStr *aup_catString(aupVM *vm, aupStr *s1, aupStr *s2);
+aupStr *aup_takeString(char *chars, int length);
+aupStr *aup_copyString(const char *chars, int length);
+aupStr *aup_catString(aupStr *s1, aupStr *s2);
 
-aupFun *aup_newFunction(aupVM *vm, aupSrc *source);
+aupFun *aup_newFunction(aupSrc *source);
 void aup_makeClosure(aupFun *function);
 
-aupUpv *aup_newUpval(aupVM *vm, aupVal *slot);
+aupUpv *aup_newUpval(aupVal *slot);
 
-aupKls *aup_newClass(aupVM *vm, aupStr *name);
-aupInc *aup_newInstance(aupVM *vm, aupKls *klass);
+aupKls *aup_newClass(aupStr *name);
+aupInc *aup_newInstance(aupKls *klass);
 
 #endif

@@ -266,13 +266,13 @@ static void initCompiler(Compiler *compiler, TFunc type)
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
     compiler->localTotal = 0;
-    compiler->function = aup_newFunction(VM, P.source);
+    compiler->function = aup_newFunction(P.source);
 
     COMPILER = compiler;
     REG_COUNT = 0;
 
     if (type != TYPE_SCRIPT) {
-        COMPILER->function->name = aup_copyString(VM,
+        COMPILER->function->name = aup_copyString(
             PREVIOUS.start, PREVIOUS.length);
     }
 
@@ -332,7 +332,7 @@ static ParseRule *getRule(aupTTok type);
 
 static uint8_t identifierConstant(aupTok *name)
 {
-    aupStr *identifier = aup_copyString(VM,
+    aupStr *identifier = aup_copyString(
         name->start, name->length);
     return makeConstant(AUP_VObj(identifier));
 }
@@ -682,7 +682,7 @@ static PARSE_PREFIX(string)
     int length = PREVIOUS.length - 2;
     const char *start = PREVIOUS.start + 1;
 
-    aupStr *string = aup_copyString(VM, start, length);
+    aupStr *string = aup_copyString(start, length);
     return emitConstant(AUP_VObj(string));
 }
 

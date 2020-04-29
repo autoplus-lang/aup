@@ -5,41 +5,74 @@
 #include "gc.h"
 #include "vm.h"
 
-void aup_initGC(aupGC *gc)
-{
-    gc->allocated = 0;
-    gc->nextGC = 1024 * 1024;
-    
-    gc->grayCount = 0;
-    gc->graySpace = 0;
-    gc->grayStack = NULL;
-    gc->objects = NULL;
+static struct {
+    size_t nextGC;
+    size_t allocated;
+    aupObj *objects;
+    aupObj **grayStack;
+    int    grayCount;
+    int    graySpace;
+    aupTab strings;
+    aupTab globals;
+    aupVM  *root;
+} m_gc;
 
-    aup_initTable(&gc->strings);
-    aup_initTable(&gc->globals);
+void aup_initGC()
+{
+    m_gc.allocated = 0;
+    m_gc.nextGC = 1024 * 1024;
+
+    m_gc.grayCount = 0;
+    m_gc.graySpace = 0;
+    m_gc.grayStack = NULL;
+    m_gc.objects = NULL;
+
+    aup_initTable(&m_gc.strings);
+    aup_initTable(&m_gc.globals);
 }
 
-void aup_freeGC(aupGC *gc)
+void aup_freeGC()
 {
-    aupObj *object = gc->objects;
+    aupObj *object = m_gc.objects;
 
     while (object != NULL) {
         aupObj *next = (aupObj *)object->next;
-        aup_freeObject(gc, object);
+        aup_freeObject(object);
         object = next;
     }
 
-    free(gc->grayStack);
-    aup_freeTable(&gc->globals);
-    aup_freeTable(&gc->strings);
+    free(m_gc.grayStack);
+    aup_freeTable(&m_gc.globals);
+    aup_freeTable(&m_gc.strings);
 }
 
-void *aup_realloc(aupVM *vm, aupGC *gc, void *ptr, size_t old, size_t _new)
+aupTab *aup_getStrings()
 {
-    gc->allocated += _new - old;
+    return &m_gc.strings;
+}
 
-    if (_new > old && gc->allocated > gc->nextGC) {
-        aup_collect(vm);
+aupTab *aup_getGlobals()
+{
+    return &m_gc.globals;
+}
+
+void *aup_alloc(size_t size)
+{
+    m_gc.allocated += size;
+
+    if (m_gc.allocated > m_gc.nextGC) {
+        aup_collect();
+    }
+
+    return malloc(size);
+}
+
+void *aup_realloc(void *ptr, size_t old, size_t _new)
+{
+    m_gc.allocated += _new - old;
+
+    if (_new > old && m_gc.allocated > m_gc.nextGC) {
+        aup_collect();
     }
 
     if (_new == 0) {
@@ -50,115 +83,141 @@ void *aup_realloc(aupVM *vm, aupGC *gc, void *ptr, size_t old, size_t _new)
     return realloc(ptr, _new);
 }
 
-static void markObject(aupGC *gc, aupObj *object)
+void aup_dealloc(void *ptr, size_t size)
+{
+    m_gc.allocated -= size;
+    free(ptr);
+}
+
+void *aup_allocObject(size_t size, aupTObj type)
+{
+    aupObj *object = aup_alloc(size);
+    object->type = type;
+    object->isMarked = false;
+
+    object->next = (uintptr_t)m_gc.objects;
+    m_gc.objects = object;
+    return object;
+}
+
+static void markObject(aupObj *object)
 {
     if (object == NULL) return;
     if (object->isMarked) return;
     object->isMarked = true;
 
-    if (gc->graySpace <= gc->grayCount) {
-        gc->graySpace = AUP_GROW(gc->graySpace);
-        gc->grayStack = realloc(gc->grayStack,
-            sizeof(aupObj *) * gc->graySpace);
+    if (m_gc.graySpace <= m_gc.grayCount) {
+        m_gc.graySpace = AUP_GROW(m_gc.graySpace);
+        m_gc.grayStack = realloc(m_gc.grayStack,
+            sizeof(aupObj *) * m_gc.graySpace);
     }
 
-    gc->grayStack[gc->grayCount++] = object;
+    m_gc.grayStack[m_gc.grayCount++] = object;
 }
 
-static void markValue(aupGC *gc, aupVal value)
+static void markValue(aupVal value)
 {
     if (!AUP_IsObj(value)) return;
-    markObject(gc, AUP_AsObj(value));
+    markObject(AUP_AsObj(value));
 }
 
-static void markArray(aupGC *gc, aupArr *array)
+static void markArray(aupArr *array)
 {
     for (int i = 0; i < array->count; i++) {
-        markValue(gc, array->values[i]);
+        markValue(array->values[i]);
     }
 }
 
-static void markTable(aupGC *gc, aupTab *table)
+static void markTable(aupTab *table)
 {
     for (int i = 0; i <= table->capMask; i++) {
         aupEnt *entry = &table->entries[i];
-        markObject(gc, (aupObj *)entry->key);
-        markValue(gc, entry->value);
+        markObject((aupObj *)entry->key);
+        markValue(entry->value);
     }
 }
 
-void aup_collect(aupVM *vm)
+void aup_collect()
 {
-    aupGC *gc = vm->gc;
-    aupTab *strings = &gc->strings;
-    aupTab *globals = &gc->globals;
+    aupTab *strings = &m_gc.strings;
+    aupTab *globals = &m_gc.globals;
 
     /* === Suspend all threads === */
+    /*
     for (aupVM *next = vm->next;
         next != vm;
         next = next->next)
     {
         // TODO
     }
+    */
 
     /* === Mark roots === */
-    for (int i = 0; i < vm->numRoots; i++)
+    for (aupVM *vm = m_gc.root;
+        vm != NULL;
+        vm = vm->next)
     {
-        markObject(gc, vm->tempRoots[i]);
+        // Mark temp objects
+        for (int i = 0; i < vm->numRoots; i++)
+        {
+            markObject(vm->tempRoots[i]);
+        }
+
+        // Mark stack
+        aupVal *top = vm->top +
+            vm->frames[vm->frameCount - 1].function->locals;
+        for (aupVal *slot = vm->stack; slot < top; slot++)
+        {
+            markValue(*slot);
+        }
+
+        // Mark call frames
+        for (int i = 0; i < vm->frameCount; i++)
+        {
+            markObject((aupObj *)vm->frames[i].function);
+        }
+
+        // Mark upvalues
+        for (aupUpv *upvalue = vm->openUpvals;
+            upvalue != NULL;
+            upvalue = upvalue->next)
+        {
+            markObject((aupObj *)upvalue);
+        }
     }
 
-    // Mark stack
-    aupVal *top = vm->top +
-        vm->frames[vm->frameCount - 1].function->locals;
-    for (aupVal *slot = vm->stack; slot < top; slot++)
-    {
-        markValue(gc, *slot);
-    }
-
-    for (int i = 0; i < vm->frameCount; i++)
-    {
-        markObject(gc, (aupObj *)vm->frames[i].function);
-    }
-
-    for (aupUpv *upvalue = vm->openUpvals;
-         upvalue != NULL;
-         upvalue = upvalue->next)
-    {
-        markObject(gc, (aupObj *)upvalue);
-    }
-
-    markTable(gc, globals);
+    markTable(globals);
     //markCompilerRoots(vm);
 
     /* === Trace references === */
-    while (gc->grayCount > 0)
+    while (m_gc.grayCount > 0)
     {
-        aupObj *object = gc->grayStack[--gc->grayCount];
+        aupObj *object = m_gc.grayStack[--m_gc.grayCount];
         switch (object->type) {
             case AUP_OSTR:
                 break;
             case AUP_OUPV: {
-                markValue(gc, ((aupUpv *)object)->closed);
+                markValue(((aupUpv *)object)->closed);
                 break;
             }
             case AUP_OFUN: {
                 aupFun *function = (aupFun *)object;
-                markObject(gc, (aupObj *)function->name);
-                markArray(gc, &function->chunk.constants);
+                markObject((aupObj *)function->name);
+                markArray(&function->chunk.constants);
                 for (int i = 0; i < function->upvalCount; i++) {
-                    markObject(gc, (aupObj *)function->upvals[i]);
+                    markObject((aupObj *)function->upvals[i]);
                 }
                 break;
             }
             case AUP_OKLS: {
                 aupKls *klass = (aupKls *)object;
-                markObject(gc, (aupObj *)klass->name);
+                markObject((aupObj *)klass->name);
                 break;
             }
             case AUP_OINC: {
                 aupInc *instance = (aupInc *)object;
-                markObject(gc, (aupObj *)instance->klass);
-                markTable(gc, &instance->fields);
+                markObject((aupObj *)instance->klass);
+                markTable(&instance->fields);
                 break;
             }
         }
@@ -176,7 +235,7 @@ void aup_collect(aupVM *vm)
 
     /* === Sweep === */
     for (aupObj *previous = NULL,
-                *object = gc->objects;
+                *object = m_gc.objects;
         object != NULL;)
     {
         if (object->isMarked)
@@ -196,20 +255,22 @@ void aup_collect(aupVM *vm)
             }
             else
             {
-                gc->objects = object;
+                m_gc.objects = object;
             }
 
-            aup_freeObject(gc, unreached);
+            aup_freeObject(unreached);
         }
     }
 
-    gc->nextGC = gc->allocated * 2;
+    m_gc.nextGC = m_gc.allocated * 2;
 
     /* === Resume all threads === */
+    /*
     for (aupVM *next = vm->next;
         next != vm;
         next = next->next)
     {
         // TODO
     }
+    */
 }

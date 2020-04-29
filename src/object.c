@@ -38,41 +38,30 @@ void aup_printObject(aupObj *object)
     }
 }
 
-#define ALLOC(vm, size) \
-    aup_realloc(vm, (vm)->gc, NULL, 0, size)
-#define FREE(gc, ptr, type) \
-    aup_realloc(NULL, gc, ptr, sizeof(type), 0)
-#define FREE_ARR(gc, ptr, type, count) \
-    aup_realloc(NULL, gc, ptr, sizeof(type) * (count), 0)
+#define ALLOC(size) \
+    aup_alloc(size)
+#define FREE(ptr, type) \
+    aup_dealloc(ptr, sizeof(type))
+#define FREE_ARR(ptr, type, count) \
+    aup_dealloc(ptr, sizeof(type) * (count))
 
-#define ALLOC_OBJ(vm, t, ot) \
-    (t *)allocObject(vm, sizeof(t), ot)
+#define ALLOC_OBJ(t, ot) \
+    (t *)aup_allocObject(sizeof(t), ot)
 
-static aupObj *allocObject(aupVM *vm, size_t size, aupTObj type)
+static aupStr *allocString(char *chars, int length, uint32_t hash)
 {
-    aupObj *object = ALLOC(vm, size);
-    object->type = type;
-    object->isMarked = false;
-
-    object->next = (uintptr_t)vm->gc->objects;
-    vm->gc->objects = object;
-    return object;
-}
-
-static aupStr *allocString(aupVM *vm, char *chars, int length, uint32_t hash)
-{
-    aupStr *string = ALLOC_OBJ(vm, aupStr, AUP_OSTR);
+    aupStr *string = ALLOC_OBJ(aupStr, AUP_OSTR);
     string->chars = chars;
     string->length = length;
     string->hash = hash;
 
-    AUP_PushRoot(vm, (aupObj *)string);
-    aup_setKey(&vm->gc->strings, string, AUP_VNil);
-    AUP_PopRoot(vm);
+    //AUP_PushRoot(vm, (aupObj *)string);
+    aup_setKey(aup_getStrings(), string, AUP_VNil);
+    //AUP_PopRoot(vm);
     return string;
 }
 
-aupStr *aup_catString(aupVM *vm, aupStr *s1, aupStr *s2)
+aupStr *aup_catString(aupStr *s1, aupStr *s2)
 {
     int l1 = s1->length;
     int l2 = s2->length;
@@ -81,47 +70,47 @@ aupStr *aup_catString(aupVM *vm, aupStr *s1, aupStr *s2)
     const char *cs2 = s2->chars;
 
     uint32_t hash = aup_hashBytes(2, cs1, l1, cs2, l2);
-    aupStr *interned = aup_findString(&vm->gc->strings, length, hash);
+    aupStr *interned = aup_findString(aup_getStrings(), length, hash);
     if (interned != NULL) return interned;
 
-    char *heapChars = ALLOC(vm, (length + 1) * sizeof(char));
+    char *heapChars = ALLOC((length + 1) * sizeof(char));
     memcpy(heapChars, cs1, l1);
     memcpy(heapChars + l1 , cs2, l2);
     heapChars[length] = '\0';
 
-    return allocString(vm, heapChars, length, hash);
+    return allocString(heapChars, length, hash);
 }
 
-aupStr *aup_takeString(aupVM *vm, char *chars, int length)
+aupStr *aup_takeString(char *chars, int length)
 {
     uint32_t hash = aup_hashBytes(1, chars, length);
-    aupStr *interned = aup_findString(&vm->gc->strings, length, hash);
+    aupStr *interned = aup_findString(aup_getStrings(), length, hash);
     if (interned != NULL) {
-        FREE_ARR(vm->gc, chars, char, length);
+        FREE_ARR(chars, char, length);
         return interned;
     }
 
-    return allocString(vm, chars, length, hash);
+    return allocString(chars, length, hash);
 }
 
-aupStr *aup_copyString(aupVM *vm, const char *chars, int length)
+aupStr *aup_copyString(const char *chars, int length)
 {
     if (length < 0) length = (int)strlen(chars);
 
     uint32_t hash = aup_hashBytes(1, chars, length);
-    aupStr *interned = aup_findString(&vm->gc->strings, length, hash);
+    aupStr *interned = aup_findString(aup_getStrings(), length, hash);
     if (interned != NULL) return interned;
 
-    char *heapChars = ALLOC(vm, (length + 1) * sizeof(char));
+    char *heapChars = ALLOC((length + 1) * sizeof(char));
     memcpy(heapChars, chars, length);
     heapChars[length] = '\0';
 
-    return allocString(vm, heapChars, length, hash);
+    return allocString(heapChars, length, hash);
 }
 
-aupFun *aup_newFunction(aupVM *vm, aupSrc *source)
+aupFun *aup_newFunction(aupSrc *source)
 {
-    aupFun *function = ALLOC_OBJ(vm, aupFun, AUP_OFUN);
+    aupFun *function = ALLOC_OBJ(aupFun, AUP_OFUN);
 
     function->arity = 0;
     function->upvalCount = 0;
@@ -140,9 +129,9 @@ void aup_makeClosure(aupFun *function)
     function->upvals = upvals;
 }
 
-aupUpv *aup_newUpval(aupVM *vm, aupVal *slot)
+aupUpv *aup_newUpval(aupVal *slot)
 {
-    aupUpv *upval = ALLOC_OBJ(vm, aupUpv, AUP_OUPV);
+    aupUpv *upval = ALLOC_OBJ(aupUpv, AUP_OUPV);
     upval->closed = AUP_VNil;
     upval->location = slot;
     upval->next = NULL;
@@ -150,49 +139,49 @@ aupUpv *aup_newUpval(aupVM *vm, aupVal *slot)
     return upval;
 }
 
-aupKls *aup_newClass(aupVM *vm, aupStr *name)
+aupKls *aup_newClass(aupStr *name)
 {
-    aupKls *klass = ALLOC_OBJ(vm, aupKls, AUP_OKLS);
+    aupKls *klass = ALLOC_OBJ(aupKls, AUP_OKLS);
     klass->name = name;
     return klass;
 }
 
-aupInc *aup_newInstance(aupVM *vm, aupKls *klass)
+aupInc *aup_newInstance(aupKls *klass)
 {
-    aupInc *instance = ALLOC_OBJ(vm, aupInc, AUP_OINC);
+    aupInc *instance = ALLOC_OBJ(aupInc, AUP_OINC);
     instance->klass = klass;
     aup_initTable(&instance->fields);
     return instance;
 }
 
-void aup_freeObject(aupGC *gc, aupObj *object)
+void aup_freeObject(aupObj *object)
 {
     switch (object->type) {
         case AUP_OSTR: {
             aupStr *string = (aupStr *)object;
-            FREE_ARR(gc, string->chars, char, string->length);
-            FREE(gc, string, aupStr);
+            FREE_ARR(string->chars, char, string->length);
+            FREE(string, aupStr);
             break;
         }
         case AUP_OFUN: {
             aupFun *function = (aupFun *)object;
             aup_freeChunk(&function->chunk);
             if (function->upvalCount > 0) free(function->upvals);
-            FREE(gc, function, aupFun);
+            FREE(function, aupFun);
             break;
         }
         case AUP_OUPV: {
-            FREE(gc, object, aupUpv);
+            FREE(object, aupUpv);
             break;
         }
         case AUP_OKLS: {
-            FREE(gc, object, aupKls);
+            FREE(object, aupKls);
             break;
         }
         case AUP_OINC: {
             aupInc *instance = (aupInc *)object;
             aup_freeTable(&instance->fields);
-            FREE(gc, object, aupInc);
+            FREE(object, aupInc);
             break;
         }
     }
