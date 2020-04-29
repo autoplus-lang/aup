@@ -33,10 +33,9 @@ uint32_t aup_hashBytes(int count, ...);
 char *aup_readFile(const char *path, size_t *size);
 
 typedef struct _aupVM aupVM;
-typedef struct _aupGC aupGC;
 typedef struct _aupVal aupVal;
 
-typedef aupVal(*aupCFn)(aupVM *vm, int argc, aupVal *args);
+typedef aupVal (* aupCFn)(aupVM *vm, int argc, aupVal *args);
 
 enum {
     AUP_OK,
