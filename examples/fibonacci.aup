@@ -1,0 +1,7 @@
+func fib(n)
+    if n < 2 then return n
+    return fib(n-2) + fib(n-1)
+end
+
+var n = 30
+puts "fib(" + n + ") = ", fib(n
