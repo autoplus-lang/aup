@@ -16,9 +16,9 @@ The **AutoIt+** programming language, based on my [Lox implementation](https://g
 
 ### work in progress
 - Issues are welcome!
-- The first release can be in:
-  ```js
-  year(2020).from('June').to('December')
+- ~~The first release can be in:~~
+  ```diff
+  -year(2020).from('June').to('December')
   ```
   
 <br>
