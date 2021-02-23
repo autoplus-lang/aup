@@ -1,0 +1,11 @@
+func routine(name) {
+    for i = 0, 100 {
+        puts(i, name)
+    }
+}
+
+let task1 = routine.start(['foo'])
+let task2 = routine.start(['bar'])
+
+task1.join()
+task2.join()
