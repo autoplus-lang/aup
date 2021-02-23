@@ -1,0 +1,9 @@
+let arr = [1, 2, 3]
+
+puts arr
+puts arr.pop()
+
+arr.push(10)
+puts arr
+
+puts [...arr, 15, 20]
