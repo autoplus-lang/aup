@@ -1,0 +1,6 @@
+use dll
+
+const user32 = dll.load('user32')
+const MsgBox = user32.def('MessageBox', ['u32', 'str', 'str', 'u32'])
+
+MsgBox(0, 'Hello, world!', 'Hi', 0)
