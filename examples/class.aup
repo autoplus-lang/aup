@@ -1,0 +1,9 @@
+class Dog(name) {
+    $name = name
+    $speak() {
+        puts('Hi, I am ' + $name)
+    }
+}
+
+let milu = Dog('Miluuu')
+milu.speak()
