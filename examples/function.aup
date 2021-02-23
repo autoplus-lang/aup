@@ -1,0 +1,13 @@
+func add(a, b) {
+    return a + b
+}
+
+func sub(a, b)
+    return a - b
+end
+
+func mul(a, b) = a * b
+
+puts add(4, 5)    // 9
+puts add(3, 10)   // -7
+puts add(5, 6)    // 30
