@@ -2,9 +2,9 @@ let sec = 0
 
 func timer() {
     puts(sec, 'sec')
-    if (++sec > 10) {
+    if ++sec > 10 {
         this.stop()
     }
 }
 
-timer.sched(1000).wait()
+timer.sched(0, 1000).wait()
