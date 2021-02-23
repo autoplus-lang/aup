@@ -1,0 +1,47 @@
+let a = 2
+
+// If then-end
+
+if a < 5 then puts(100)
+
+if a < 5 then
+    // Statements
+end
+
+if a < 5 then
+    // Statements
+else
+    // Statements
+end
+
+if a < 5 then
+    // Statements
+else if a > 9 then
+    // Statements
+elseif a > 10 then
+    // Statements
+else
+    // Statements
+end
+
+// If { }
+
+if a < 5 {
+    // Statements
+}
+
+if a < 5 {
+    // Statements
+} else {
+    // Statements
+}
+
+if a < 5 {
+    // Statements
+} else if a > 9 {
+    // Statements
+} elseif a > 10 {
+    // Statements
+} else {
+    // Statements
+}
