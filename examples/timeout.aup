@@ -1,0 +1,5 @@
+func do_later() {
+    puts('do something...')
+}
+
+do_later.sched(3000).wait()
