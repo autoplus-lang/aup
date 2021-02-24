@@ -1,0 +1,4 @@
+var a = 10
+let b = 20
+
+puts a + b
