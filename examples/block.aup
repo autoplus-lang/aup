@@ -1,0 +1,9 @@
+{
+    puts 10
+    // do something
+}
+
+do
+    puts 20
+    // do something
+end
