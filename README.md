@@ -16,9 +16,10 @@ The **AutoIt+** programming language, based on my [Lox implementation](https://g
 
 ### work in progress
 - Issues are welcome!
-- ~~The first release can be in:~~
+- ~~The first release can be in~~ Implementation plan:
   ```diff
   -year(2020).from('June').to('December')
+  +Q2 2021 -> Q1 2022
   ```
   
 <br>
