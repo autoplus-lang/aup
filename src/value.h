@@ -88,8 +88,8 @@ struct _aupVal {
 static bool AUP_IsFalsey(aupVal v) {
     switch (v.type) {
         case AUP_TNIL:  return true;
-        case AUP_TBOOL: return !aup_asBool(v);
-        case AUP_TNUM:  return aup_asNum(v) == 0;
+        case AUP_TBOOL: return !AUP_AsBool(v);
+        case AUP_TNUM:  return AUP_AsNum(v) == 0;
         case AUP_TOBJ:
         default: return false;
     }
